@@ -26,6 +26,7 @@ import { ROLES, type Role } from '@/lib/constants';
 import { Logo } from '../logo';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
 const formSchemaBase = {
   username: z.string().min(2, {
