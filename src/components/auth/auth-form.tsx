@@ -65,33 +65,20 @@ export function AuthForm({ mode }: AuthFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof schema>) {
+  async function onSubmit(values: z.infer<typeof schema>) {
     try {
       if (isLogin) {
-        // In a real app, you would validate credentials here.
-        // For this mock, we need to know the role. Since the login form doesn't have it,
-        // we'll assign one. Let's make it possible to log in as any role by convention.
-        // e.g., username "admin" gets Admin role.
-        let role: Role = ROLES.OPERATOR;
-        const usernameLower = values.username.toLowerCase();
-        if (usernameLower === 'admin') role = ROLES.ADMIN;
-        if (usernameLower === 'analyst') role = ROLES.ANALYST;
-        if (usernameLower === 'auditor') role = ROLES.AUDITOR;
-
-        login({ username: values.username, role });
+        await login(values);
       } else {
-        register(values as { username: string; password: any; role: Role });
+        await register(values as { username: string; password: any; role: Role });
       }
-      toast({
-        title: `Successfully ${isLogin ? 'logged in' : 'registered'}!`,
-        description: `Welcome to NETRA-X, ${values.username}.`,
-      });
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Authentication Failed',
         description: error instanceof Error ? error.message : 'An unknown error occurred.',
       });
+      form.setError('root', { message: error instanceof Error ? error.message : 'An unknown error occurred.' });
     }
   }
 
@@ -157,7 +144,11 @@ export function AuthForm({ mode }: AuthFormProps) {
                 )}
               />
             )}
-            <Button type="submit" className="w-full !mt-6 bg-accent text-accent-foreground hover:bg-accent/90">
+             {form.formState.errors.root && (
+                <FormMessage>{form.formState.errors.root.message}</FormMessage>
+            )}
+            <Button type="submit" className="w-full !mt-6 bg-accent text-accent-foreground hover:bg-accent/90" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLogin ? 'Login' : 'Register'}
             </Button>
           </form>
