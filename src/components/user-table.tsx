@@ -28,7 +28,7 @@ import {
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ROLES, Role } from '@/lib/constants';
-import { useToast } from './ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 
 export function UserTable() {
