@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { VirusTotalScanner } from '@/components/virustotal-scanner';
+import { SteganographyAnalyzer } from '@/components/steganography-analyzer';
 
 const formSchema = z.object({
   file: z
@@ -200,6 +201,7 @@ export default function AnalysisPage() {
       )}
 
       <VirusTotalScanner />
+      <SteganographyAnalyzer />
     </div>
   );
 }
