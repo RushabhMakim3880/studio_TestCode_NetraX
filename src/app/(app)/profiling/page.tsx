@@ -131,7 +131,7 @@ export default function ProfilingPage() {
       toast({ title: 'Profile Updated', description: `Profile for "${values.fullName}" has been updated.` });
     } else { // Creating new profile
       const newProfile: Profile = {
-        id: `PROF-${String(profiles.length + 1).padStart(3, '0')}`,
+        id: `PROF-${crypto.randomUUID()}`,
         ...values,
       }
       updateProfiles([...profiles, newProfile]);
