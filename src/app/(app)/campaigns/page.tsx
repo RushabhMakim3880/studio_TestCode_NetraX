@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -19,6 +19,8 @@ import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type Campaign = {
   id: string;
@@ -64,6 +66,7 @@ const campaignSchema = z.object({
   target: z.string().min(3, 'Target must be at least 3 characters.'),
   startDate: z.string().nonempty('Start date is required.'),
   endDate: z.string().nonempty('End date is required.'),
+  generateAiTasks: z.boolean().default(false).optional(),
 });
 
 const taskSchema = z.object({
@@ -99,6 +102,8 @@ export default function CampaignsPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [currentCampaignIdForTask, setCurrentCampaignIdForTask] = useState<string | null>(null);
+
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const { toast } = useToast();
   
@@ -145,7 +150,7 @@ export default function CampaignsPage() {
   // Campaign Handlers
   const handleCreateCampaign = () => {
     setSelectedCampaign(null);
-    campaignForm.reset({ name: '', target: '', startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
+    campaignForm.reset({ name: '', target: '', startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '', generateAiTasks: false });
     setIsCampaignFormOpen(true);
   }
   
@@ -172,16 +177,59 @@ export default function CampaignsPage() {
     }
   }
 
-  const onCampaignSubmit = (values: z.infer<typeof campaignSchema>) => {
+  const onCampaignSubmit = async (values: z.infer<typeof campaignSchema>) => {
     if(selectedCampaign) {
       const updatedCampaigns = campaigns.map(c => c.id === selectedCampaign.id ? { ...c, ...values } : c );
       updateCampaigns(updatedCampaigns);
       toast({ title: 'Campaign Updated', description: `Campaign "${values.name}" has been updated.` });
-    } else {
-      const newCampaign: Campaign = { id: `CAM-${crypto.randomUUID()}`, ...values, status: 'Planning' }
-      updateCampaigns([...campaigns, newCampaign]);
-      toast({ title: 'Campaign Created', description: `New campaign "${values.name}" has been added.` });
+      setIsCampaignFormOpen(false);
+      setSelectedCampaign(null);
+      return;
+    } 
+
+    const newCampaign: Campaign = { 
+        id: `CAM-${crypto.randomUUID()}`, 
+        name: values.name,
+        target: values.target,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        status: 'Planning' 
     }
+    updateCampaigns([...campaigns, newCampaign]);
+    toast({ title: 'Campaign Created', description: `New campaign "${values.name}" has been added.` });
+
+    if (values.generateAiTasks) {
+        setIsAiLoading(true);
+        toast({ title: 'Generating AI Tasks...', description: 'Please wait a moment.' });
+        try {
+            const result = await suggestCampaignTasks({
+                campaignName: newCampaign.name,
+                campaignTarget: newCampaign.target,
+            });
+
+            const newAiTasks: Task[] = result.tasks.map(task => ({
+                id: `TSK-${crypto.randomUUID()}`,
+                campaignId: newCampaign.id,
+                description: task.description,
+                type: task.type as TaskType,
+                status: 'To Do',
+            }));
+            
+            updateTasks([...tasks, ...newAiTasks]);
+            toast({ title: 'AI Tasks Added', description: `${newAiTasks.length} tasks were generated for your campaign.` });
+
+        } catch (err) {
+            console.error('Failed to generate AI tasks:', err);
+            toast({
+                variant: 'destructive',
+                title: 'AI Task Generation Failed',
+                description: 'Could not generate tasks for the campaign.',
+            });
+        } finally {
+            setIsAiLoading(false);
+        }
+    }
+
     setIsCampaignFormOpen(false);
     setSelectedCampaign(null);
   }
@@ -356,9 +404,28 @@ export default function CampaignsPage() {
                  <div className="space-y-2"><Label htmlFor="startDate">Start Date</Label><Input id="startDate" type="date" {...campaignForm.register('startDate')} />{campaignForm.formState.errors.startDate && <p className="text-sm text-destructive">{campaignForm.formState.errors.startDate.message}</p>}</div>
                  <div className="space-y-2"><Label htmlFor="endDate">End Date</Label><Input id="endDate" type="date" {...campaignForm.register('endDate')} />{campaignForm.formState.errors.endDate && <p className="text-sm text-destructive">{campaignForm.formState.errors.endDate.message}</p>}</div>
               </div>
+               {!selectedCampaign && (
+                <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox id="generate-ai-tasks" {...campaignForm.register('generateAiTasks')} />
+                    <div className="grid gap-1.5 leading-none">
+                        <label
+                            htmlFor="generate-ai-tasks"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                            Use AI to suggest initial tasks
+                        </label>
+                        <p className="text-sm text-muted-foreground">
+                            Automatically create a set of starter tasks for this campaign.
+                        </p>
+                    </div>
+                </div>
+                )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCampaignFormOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Campaign</Button>
+              <Button type="button" variant="outline" onClick={() => setIsCampaignFormOpen(false)} disabled={isAiLoading}>Cancel</Button>
+              <Button type="submit" disabled={isAiLoading}>
+                {isAiLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Campaign
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
