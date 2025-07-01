@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, Bug, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, Bug, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -47,6 +47,12 @@ export const APP_MODULES: Module[] = [
     name: 'Phishing',
     path: '/phishing',
     icon: Bot,
+    roles: [ROLES.ADMIN, ROLES.OPERATOR],
+  },
+  {
+    name: 'Templates',
+    path: '/templates',
+    icon: MessageSquarePlus,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
   },
   {
