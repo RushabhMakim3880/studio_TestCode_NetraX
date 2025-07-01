@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Clipboard, Search } from 'lucide-react';
-import { Label } from './ui/label';
+import { Label } from '@/components/ui/label';
 
 const dorkSchema = z.object({
   keywords: z.string().optional(),
