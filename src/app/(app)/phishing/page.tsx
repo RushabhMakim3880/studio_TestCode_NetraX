@@ -15,6 +15,7 @@ import { Loader2, AlertTriangle, Mail, Download, Link as LinkIcon } from 'lucide
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester, type CapturedCredential } from '@/components/credential-harvester';
+import { PhishingCampaignLauncher } from '@/components/phishing-campaign-launcher';
 
 const emailSchema = z.object({
   company: z.string().min(2, { message: 'Company name is required.' }),
@@ -159,13 +160,14 @@ export default function PhishingPage() {
         <p className="text-muted-foreground">Craft custom emails and clone login pages.</p>
       </div>
       <Tabs defaultValue="email-generator" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="email-generator">Email Generator</TabsTrigger>
           <TabsTrigger value="page-cloner">Login Page Cloner</TabsTrigger>
           <TabsTrigger value="harvester">
             Credential Harvester
             {capturedCredentials.length > 0 && <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs">{capturedCredentials.length}</span>}
           </TabsTrigger>
+           <TabsTrigger value="campaign-launcher">Campaign Launcher</TabsTrigger>
         </TabsList>
         <TabsContent value="email-generator">
           <div className="grid lg:grid-cols-5 gap-6 mt-4">
@@ -248,6 +250,11 @@ export default function PhishingPage() {
         <TabsContent value="harvester">
             <div className="mt-4">
                 <CredentialHarvester credentials={capturedCredentials} onClear={handleClearCredentials} />
+            </div>
+        </TabsContent>
+         <TabsContent value="campaign-launcher">
+            <div className="mt-4">
+                <PhishingCampaignLauncher />
             </div>
         </TabsContent>
       </Tabs>
