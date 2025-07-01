@@ -8,3 +8,4 @@ import '@/ai/flows/phishing-flow.ts';
 import '@/ai/flows/osint-flow.ts';
 import '@/ai/flows/vapt-flow.ts';
 import '@/ai/flows/reporting-flow.ts';
+import '@/ai/flows/cve-feed-flow.ts';

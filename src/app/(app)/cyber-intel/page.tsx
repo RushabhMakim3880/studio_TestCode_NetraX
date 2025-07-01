@@ -13,6 +13,7 @@ import { Loader2, AlertTriangle, ShieldCheck, Terminal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { GoogleDorkGenerator } from '@/components/google-dork-generator';
 import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
+import { CveFeed } from '@/components/cve-feed';
 
 const formSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -51,6 +52,8 @@ export default function CyberIntelPage() {
         <h1 className="font-headline text-3xl font-semibold">Cyber Threat Intelligence</h1>
         <p className="text-muted-foreground">Monitor and analyze the latest cyber threats.</p>
       </div>
+
+      <CveFeed />
 
       <Card>
         <CardHeader>
