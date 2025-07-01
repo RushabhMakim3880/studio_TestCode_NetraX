@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { getThreatIntel, type ThreatIntelOutput } from '@/ai/flows/cyber-intel-flow';
 import { Loader2, AlertTriangle, ShieldCheck, Terminal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { GoogleDorkGenerator } from '@/components/google-dork-generator';
 
 const formSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -132,6 +133,8 @@ export default function CyberIntelPage() {
           </CardContent>
         </Card>
       )}
+
+      <GoogleDorkGenerator />
     </div>
   );
 }

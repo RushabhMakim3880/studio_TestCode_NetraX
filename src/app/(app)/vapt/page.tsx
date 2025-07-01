@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { generateComplianceChecklist, type VaptOutput } from '@/ai/flows/vapt-flow';
 import { Loader2, AlertTriangle, ListChecks } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { CvssCalculator } from '@/components/cvss-calculator';
 
 const formSchema = z.object({
   standard: z.string().min(1, { message: 'Please select a standard.' }),
@@ -56,6 +57,8 @@ export default function VaptPage() {
         <h1 className="font-headline text-3xl font-semibold">VAPT & Compliance</h1>
         <p className="text-muted-foreground">Assess vulnerabilities and ensure compliance.</p>
       </div>
+
+      <CvssCalculator />
 
       <Card>
         <CardHeader>
