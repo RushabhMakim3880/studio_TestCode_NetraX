@@ -13,6 +13,7 @@ import { Loader2, AlertTriangle, FileScan, CheckCircle, ShieldAlert, ShieldX, Ha
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { VirusTotalScanner } from '@/components/virustotal-scanner';
 
 const formSchema = z.object({
   file: z
@@ -197,6 +198,8 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
       )}
+
+      <VirusTotalScanner />
     </div>
   );
 }
