@@ -15,6 +15,7 @@ import { RubberDuckyEditor } from '@/components/rubber-ducky-editor';
 import { PasswordCracker } from '@/components/password-cracker';
 import { HashCalculator } from '@/components/hash-calculator';
 import { ExploitSuggester } from '@/components/exploit-suggester';
+import { PayloadGenerator } from '@/components/payload-generator';
 
 const formSchema = z.object({
   tool: z.string().min(1, { message: 'Please select a tool.' }),
@@ -144,6 +145,8 @@ export default function OffensivePage() {
           </CardContent>
         </Card>
       )}
+
+      <PayloadGenerator />
 
       <ExploitSuggester />
 
