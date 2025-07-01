@@ -287,7 +287,7 @@ export default function TemplatesPage() {
                     <Textarea id="body" {...form.register('body')} className="col-span-3 min-h-[150px]"/>
                     {form.formState.errors.body && <p className="col-span-4 text-sm text-destructive text-right">{form.formState.errors.body.message}</p>}
                   </div>
-                  <CardDescription className="col-span-4 text-center">Use `{{variable_name}}` for personalization (e.g., `{{name}}`, `{{company}}`).</CardDescription>
+                  <CardDescription className="col-span-4 text-center">{'Use `{{variable_name}}` for personalization (e.g., `{{name}}`, `{{company}}`).'}</CardDescription>
               </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
