@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { runOffensiveTool, type OffensiveToolOutput } from '@/ai/flows/offensive-tool-flow';
 import { Loader2, AlertTriangle, Terminal } from 'lucide-react';
+import { RubberDuckyEditor } from '@/components/rubber-ducky-editor';
 
 const formSchema = z.object({
   tool: z.string().min(1, { message: 'Please select a tool.' }),
@@ -140,6 +141,8 @@ export default function OffensivePage() {
           </CardContent>
         </Card>
       )}
+
+      <RubberDuckyEditor />
     </div>
   );
 }
