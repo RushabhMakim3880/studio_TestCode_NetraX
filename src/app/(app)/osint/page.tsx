@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { gatherOsint, type OsintOutput } from '@/ai/flows/osint-flow';
 import { Loader2, AlertTriangle, Fingerprint, Mail, Link as LinkIcon, Server } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { SocialMediaAnalyzer } from '@/components/social-media-analyzer';
 
 const formSchema = z.object({
   domain: z.string().min(3, { message: 'Domain must be at least 3 characters.' }).includes('.', { message: 'Please enter a valid domain.' }),
@@ -128,6 +129,7 @@ export default function OsintPage() {
           </CardContent>
         </Card>
       )}
+      <SocialMediaAnalyzer />
     </div>
   );
 }
