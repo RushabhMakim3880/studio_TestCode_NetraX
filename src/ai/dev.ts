@@ -24,3 +24,4 @@ import '@/ai/flows/exploit-suggester-flow.ts';
 import '@/ai/flows/suggest-campaign-tasks-flow.ts';
 import '@/ai/flows/phishing-simulation-flow.ts';
 import '@/ai/flows/network-analysis-flow.ts';
+import '@/ai/flows/threat-actor-flow.ts';
