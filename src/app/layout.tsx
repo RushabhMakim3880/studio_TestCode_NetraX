@@ -27,7 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={cn('font-body antialiased', fontBody.variable, fontHeadline.variable)}>
+      <body
+        className={cn('font-body antialiased', fontBody.variable, fontHeadline.variable)}
+        suppressHydrationWarning={true}
+      >
         <AuthProvider>
           {children}
           <Toaster />
