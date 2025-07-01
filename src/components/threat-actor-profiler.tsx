@@ -8,24 +8,28 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { getThreatActorProfile, ThreatActorInputSchema, type ThreatActorProfileOutput } from '@/ai/flows/threat-actor-flow';
+import { getThreatActorProfile, type ThreatActorInput, type ThreatActorProfileOutput } from '@/ai/flows/threat-actor-flow';
 import { Loader2, AlertTriangle, User, GitBranch, Crosshair, Code } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+const formSchema = z.object({
+  actorName: z.string().min(3, { message: 'Actor name must be at least 3 characters.' }),
+});
 
 export function ThreatActorProfiler() {
   const [result, setResult] = useState<ThreatActorProfileOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof ThreatActorInputSchema>>({
-    resolver: zodResolver(ThreatActorInputSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       actorName: 'APT28 (Fancy Bear)',
     },
   });
 
-  async function onSubmit(values: z.infer<typeof ThreatActorInputSchema>) {
+  async function onSubmit(values: ThreatActorInput) {
     setIsLoading(true);
     setResult(null);
     setError(null);
