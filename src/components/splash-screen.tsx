@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -49,7 +50,7 @@ export default function SplashScreen() {
         <div className="h-48 w-full overflow-hidden text-left text-sm text-muted-foreground">
           {loadingSteps.slice(0, step + 1).map((text, i) => (
             <p key={i} className={cn("animate-in fade-in", { 'text-accent': i === step })}>
-              <span className="text-accent/50 mr-2">&gt;</span>{text}
+              <span className="text-accent/50 mr-2">></span>{text}
             </p>
           ))}
         </div>
