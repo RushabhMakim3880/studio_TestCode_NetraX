@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Clipboard, Code2, Sparkles, Loader2 } from 'lucide-react';
 import { generateDuckyScript } from '@/ai/flows/duckyscript-generator-flow';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   prompt: z.string().min(10, { message: 'Prompt must be at least 10 characters.' }),
@@ -100,7 +101,7 @@ export function RubberDuckyEditor() {
           </form>
         </Form>
         <div className="space-y-2 pt-4">
-          <FormLabel>Generated Script</FormLabel>
+          <Label htmlFor="script-editor">Generated Script</Label>
           <Textarea
             id="script-editor"
             value={script}
