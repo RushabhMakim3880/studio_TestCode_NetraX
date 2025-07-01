@@ -5,6 +5,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { APP_MODULES } from '@/lib/constants';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { ActivityFeed } from '@/components/activity-feed';
+import { ActiveCampaigns } from '@/components/active-campaigns';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -18,34 +20,37 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div>
         <h1 className="font-headline text-3xl font-semibold">Welcome, {user.username}</h1>
         <p className="text-muted-foreground">Here is your operational dashboard.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>System Status</CardTitle>
-          <CardDescription>Overview of the NETRA-X system.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div className="p-4 rounded-lg bg-primary/30">
-              <p className="text-sm text-muted-foreground">Your Role</p>
-              <p className="text-xl font-bold text-accent">{user.role}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-primary/30">
-              <p className="text-sm text-muted-foreground">Active Modules</p>
-              <p className="text-xl font-bold">{accessibleModules.length}</p>
-            </div>
-             <div className="p-4 rounded-lg bg-primary/30">
-              <p className="text-sm text-muted-foreground">Security Level</p>
-              <p className="text-xl font-bold text-green-400">Nominal</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <ActivityFeed />
+        </div>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-4 rounded-lg bg-primary/30">
+                  <p className="text-sm text-muted-foreground">Your Role</p>
+                  <p className="text-xl font-bold text-accent">{user.role}</p>
+                </div>
+                 <div className="p-4 rounded-lg bg-primary/30">
+                  <p className="text-sm text-muted-foreground">Security Level</p>
+                  <p className="text-xl font-bold text-green-400">Nominal</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <ActiveCampaigns />
+        </div>
+      </div>
       
       <div>
         <h2 className="font-headline text-2xl font-semibold mb-4">Your Toolkit</h2>

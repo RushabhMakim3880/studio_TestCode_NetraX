@@ -17,3 +17,4 @@ import '@/ai/flows/virustotal-scan-flow.ts';
 import '@/ai/flows/steganography-flow.ts';
 import '@/ai/flows/social-media-analysis-flow.ts';
 import '@/ai/flows/password-cracker-flow.ts';
+import '@/ai/flows/activity-feed-flow.ts';
