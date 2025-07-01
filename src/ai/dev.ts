@@ -23,3 +23,4 @@ import '@/ai/flows/duckyscript-generator-flow.ts';
 import '@/ai/flows/exploit-suggester-flow.ts';
 import '@/ai/flows/suggest-campaign-tasks-flow.ts';
 import '@/ai/flows/phishing-simulation-flow.ts';
+import '@/ai/flows/network-analysis-flow.ts';
