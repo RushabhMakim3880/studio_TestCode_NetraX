@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, Bug, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, Bug, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -66,6 +66,12 @@ export const APP_MODULES: Module[] = [
     path: '/vapt',
     icon: ShieldCheck,
     roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.AUDITOR],
+  },
+  {
+    name: 'Malware Analysis',
+    path: '/analysis',
+    icon: FileScan,
+    roles: [ROLES.ADMIN, ROLES.ANALYST],
   },
   {
     name: 'Reporting',

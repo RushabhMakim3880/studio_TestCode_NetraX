@@ -12,3 +12,4 @@ import '@/ai/flows/cve-feed-flow.ts';
 import '@/ai/flows/law-updates-flow.ts';
 import '@/ai/flows/wordlist-generator-flow.ts';
 import '@/ai/flows/page-cloner-flow.ts';
+import '@/ai/flows/malware-analysis-flow.ts';
