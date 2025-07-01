@@ -150,10 +150,10 @@ export function ConfigAnalyzer() {
                             {result.findings.map((finding, index) => (
                                 <AccordionItem value={`item-${index}`} key={index}>
                                 <AccordionTrigger>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 flex-1 text-left">
                                         {getSeverityIcon(finding.severity)}
                                         <Badge variant={getSeverityVariant(finding.severity)}>{finding.severity}</Badge>
-                                        <span className="text-left flex-1">{finding.description.split('.')[0]}</span>
+                                        <span className="flex-1">{finding.description.split('.')[0]}</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="space-y-3">
