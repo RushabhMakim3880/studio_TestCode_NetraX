@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { GoogleDorkGenerator } from '@/components/google-dork-generator';
 import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 import { CveFeed } from '@/components/cve-feed';
+import { LawUpdatesFeed } from '@/components/law-updates-feed';
 
 const formSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -137,6 +138,8 @@ export default function CyberIntelPage() {
           </CardContent>
         </Card>
       )}
+      
+      <LawUpdatesFeed />
 
       <GoogleDorkGenerator />
       <ShodanDorkGenerator />
