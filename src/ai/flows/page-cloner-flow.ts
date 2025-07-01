@@ -10,13 +10,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const PageClonerInputSchema = z.object({
+const PageClonerInputSchema = z.object({
   targetUrl: z.string().url().describe('The URL of the site to clone the login page from. This is for context.'),
   pageDescription: z.string().describe('A description of the login page to create (e.g., "A Microsoft 365 login page", "A generic corporate SSO portal").'),
 });
 export type PageClonerInput = z.infer<typeof PageClonerInputSchema>;
 
-export const PageClonerOutputSchema = z.object({
+const PageClonerOutputSchema = z.object({
   htmlContent: z.string().describe('The full HTML content of the generated login page, styled with inline Tailwind CSS classes.'),
 });
 export type PageClonerOutput = z.infer<typeof PageClonerOutputSchema>;
