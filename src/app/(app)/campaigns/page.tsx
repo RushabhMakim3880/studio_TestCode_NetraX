@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,6 +17,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 type Campaign = {
   id: string;
@@ -27,12 +29,20 @@ type Campaign = {
   endDate: string;
 };
 
+type TaskType = 'Recon' | 'Phishing' | 'Payload' | 'Post-Exploitation' | 'General';
+
 type Task = {
   id: string;
   campaignId: string;
   description: string;
   status: 'To Do' | 'In Progress' | 'Completed';
+  type: TaskType;
+  targetProfileId?: string;
+  templateId?: string;
 };
+
+type Profile = { id: string; fullName: string; };
+type Template = { id: string; name: string; };
 
 const initialCampaigns: Campaign[] = [
   { id: 'CAM-001', name: 'Project Chimera', target: 'Global-Corp Inc.', status: 'Active', startDate: '2023-10-01', endDate: '2023-12-31' },
@@ -42,11 +52,11 @@ const initialCampaigns: Campaign[] = [
 ];
 
 const initialTasks: Task[] = [
-  { id: 'TSK-001', campaignId: 'CAM-001', description: 'Initial recon on target subdomains.', status: 'Completed' },
-  { id: 'TSK-002', campaignId: 'CAM-001', description: 'Craft phishing email template.', status: 'In Progress' },
-  { id: 'TSK-003', campaignId: 'CAM-001', description: 'Deploy cloned login page.', status: 'To Do' },
-  { id: 'TSK-004', campaignId: 'CAM-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed' },
-  { id: 'TSK-005', campaignId: 'CAM-002', description: 'Prepare initial access payload.', status: 'In Progress' },
+  { id: 'TSK-001', campaignId: 'CAM-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon' },
+  { id: 'TSK-002', campaignId: 'CAM-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001' },
+  { id: 'TSK-003', campaignId: 'CAM-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload' },
+  { id: 'TSK-004', campaignId: 'CAM-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon' },
+  { id: 'TSK-005', campaignId: 'CAM-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload' },
 ];
 
 const campaignSchema = z.object({
@@ -54,6 +64,13 @@ const campaignSchema = z.object({
   target: z.string().min(3, 'Target must be at least 3 characters.'),
   startDate: z.string().nonempty('Start date is required.'),
   endDate: z.string().nonempty('End date is required.'),
+});
+
+const taskSchema = z.object({
+    description: z.string().min(3, 'Description must be at least 3 characters.'),
+    type: z.string().min(1, 'Task type is required.'),
+    targetProfileId: z.string().optional(),
+    templateId: z.string().optional(),
 });
 
 const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
@@ -72,30 +89,47 @@ const taskStatusIcons: { [key: string]: React.ReactNode } = {
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+
+  const [isCampaignFormOpen, setIsCampaignFormOpen] = useState(false);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [newTaskInputs, setNewTaskInputs] = useState<Record<string, string>>({});
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [currentCampaignIdForTask, setCurrentCampaignIdForTask] = useState<string | null>(null);
+
   const { toast } = useToast();
   
-  const form = useForm<z.infer<typeof campaignSchema>>({
+  const campaignForm = useForm<z.infer<typeof campaignSchema>>({
     resolver: zodResolver(campaignSchema),
   });
 
-  useEffect(() => {
-    try {
-      const storedCampaigns = localStorage.getItem('netra-campaigns');
-      if (storedCampaigns) { setCampaigns(JSON.parse(storedCampaigns)); } 
-      else { setCampaigns(initialCampaigns); localStorage.setItem('netra-campaigns', JSON.stringify(initialCampaigns)); }
+  const taskForm = useForm<z.infer<typeof taskSchema>>({
+    resolver: zodResolver(taskSchema),
+  });
+  const watchedTaskType = taskForm.watch('type');
 
-      const storedTasks = localStorage.getItem('netra-tasks');
-      if (storedTasks) { setTasks(JSON.parse(storedTasks)); }
-      else { setTasks(initialTasks); localStorage.setItem('netra-tasks', JSON.stringify(initialTasks)); }
-    } catch (error) {
-      console.error('Failed to load data from localStorage', error);
-      setCampaigns(initialCampaigns);
-      setTasks(initialTasks);
-    }
+  useEffect(() => {
+    const loadData = () => {
+        try {
+          const storedCampaigns = localStorage.getItem('netra-campaigns');
+          setCampaigns(storedCampaigns ? JSON.parse(storedCampaigns) : initialCampaigns);
+
+          const storedTasks = localStorage.getItem('netra-tasks');
+          setTasks(storedTasks ? JSON.parse(storedTasks) : initialTasks);
+          
+          const storedProfiles = localStorage.getItem('netra-profiles');
+          setProfiles(storedProfiles ? JSON.parse(storedProfiles) : []);
+
+          const storedTemplates = localStorage.getItem('netra-templates');
+          setTemplates(storedTemplates ? JSON.parse(storedTemplates) : []);
+        } catch (error) {
+          console.error('Failed to load data from localStorage', error);
+        }
+    };
+    loadData();
   }, []);
 
   const updateCampaigns = (newCampaigns: Campaign[]) => {
@@ -107,25 +141,26 @@ export default function CampaignsPage() {
     setTasks(newTasks);
     localStorage.setItem('netra-tasks', JSON.stringify(newTasks));
   }
-
-  const handleCreate = () => {
+  
+  // Campaign Handlers
+  const handleCreateCampaign = () => {
     setSelectedCampaign(null);
-    form.reset({ name: '', target: '', startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
-    setIsFormOpen(true);
+    campaignForm.reset({ name: '', target: '', startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
+    setIsCampaignFormOpen(true);
   }
   
-  const handleEdit = (campaign: Campaign) => {
+  const handleEditCampaign = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
-    form.reset(campaign);
-    setIsFormOpen(true);
+    campaignForm.reset(campaign);
+    setIsCampaignFormOpen(true);
   }
   
-  const handleDelete = (campaign: Campaign) => {
+  const handleDeleteCampaign = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setIsDeleteAlertOpen(true);
   }
 
-  const confirmDelete = () => {
+  const confirmDeleteCampaign = () => {
     if (selectedCampaign) {
       const newCampaigns = campaigns.filter(c => c.id !== selectedCampaign.id);
       const newTasks = tasks.filter(t => t.campaignId !== selectedCampaign.id);
@@ -137,35 +172,56 @@ export default function CampaignsPage() {
     }
   }
 
-  const onSubmit = (values: z.infer<typeof campaignSchema>) => {
+  const onCampaignSubmit = (values: z.infer<typeof campaignSchema>) => {
     if(selectedCampaign) {
       const updatedCampaigns = campaigns.map(c => c.id === selectedCampaign.id ? { ...c, ...values } : c );
       updateCampaigns(updatedCampaigns);
       toast({ title: 'Campaign Updated', description: `Campaign "${values.name}" has been updated.` });
     } else {
-      const newCampaign: Campaign = { id: `CAM-${String(campaigns.length + 1).padStart(3, '0')}`, ...values, status: 'Planning' }
+      const newCampaign: Campaign = { id: `CAM-${crypto.randomUUID()}`, ...values, status: 'Planning' }
       updateCampaigns([...campaigns, newCampaign]);
       toast({ title: 'Campaign Created', description: `New campaign "${values.name}" has been added.` });
     }
-    setIsFormOpen(false);
+    setIsCampaignFormOpen(false);
     setSelectedCampaign(null);
   }
 
-  const handleAddTask = (campaignId: string) => {
-    const description = newTaskInputs[campaignId]?.trim();
-    if (!description) {
-      toast({ variant: 'destructive', title: 'Task description cannot be empty.' });
-      return;
-    }
-    const newTask: Task = {
-      id: `TSK-${crypto.randomUUID()}`,
-      campaignId,
-      description,
-      status: 'To Do',
-    };
-    updateTasks([...tasks, newTask]);
-    setNewTaskInputs(prev => ({ ...prev, [campaignId]: '' }));
+  // Task Handlers
+  const handleAddTaskClick = (campaignId: string) => {
+    setEditingTask(null);
+    setCurrentCampaignIdForTask(campaignId);
+    taskForm.reset({ description: '', type: 'General', targetProfileId: '', templateId: '' });
+    setIsTaskFormOpen(true);
   }
+
+  const handleEditTaskClick = (task: Task) => {
+    setEditingTask(task);
+    setCurrentCampaignIdForTask(task.campaignId);
+    taskForm.reset(task);
+    setIsTaskFormOpen(true);
+  }
+  
+  const onTaskSubmit = (values: z.infer<typeof taskSchema>) => {
+      if (editingTask) {
+        const updatedTasks = tasks.map(t => t.id === editingTask.id ? { ...t, ...values } : t);
+        updateTasks(updatedTasks);
+        toast({ title: "Task Updated" });
+      } else if (currentCampaignIdForTask) {
+        const newTask: Task = {
+            id: `TSK-${crypto.randomUUID()}`,
+            campaignId: currentCampaignIdForTask,
+            status: 'To Do',
+            ...values,
+            type: values.type as TaskType,
+        };
+        updateTasks([...tasks, newTask]);
+        toast({ title: "Task Added" });
+      }
+      setIsTaskFormOpen(false);
+      setEditingTask(null);
+      setCurrentCampaignIdForTask(null);
+  }
+
 
   const handleUpdateTaskStatus = (taskId: string, status: Task['status']) => {
     const newTasks = tasks.map(t => t.id === taskId ? { ...t, status } : t);
@@ -176,6 +232,9 @@ export default function CampaignsPage() {
     updateTasks(tasks.filter(t => t.id !== taskId));
     toast({ title: 'Task removed.' });
   }
+  
+  const getProfileName = (profileId?: string) => profiles.find(p => p.id === profileId)?.fullName || 'N/A';
+  const getTemplateName = (templateId?: string) => templates.find(t => t.id === templateId)?.name || 'N/A';
 
   return (
     <>
@@ -185,7 +244,7 @@ export default function CampaignsPage() {
             <h1 className="font-headline text-3xl font-semibold">Campaign Management</h1>
             <p className="text-muted-foreground">Oversee and manage all active campaigns and associated tasks.</p>
           </div>
-          <Button onClick={handleCreate}>
+          <Button onClick={handleCreateCampaign}>
             <PlusCircle className="mr-2 h-4 w-4" />
             New Campaign
           </Button>
@@ -211,9 +270,9 @@ export default function CampaignsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEdit(campaign)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditCampaign(campaign)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDelete(campaign)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/> Delete</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDeleteCampaign(campaign)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/> Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -234,14 +293,26 @@ export default function CampaignsPage() {
                         <AccordionContent className="space-y-4">
                           <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                             {campaignTasks.length > 0 ? campaignTasks.map(task => (
-                              <div key={task.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-primary/20">
-                                <span className="flex items-center gap-2">
-                                  {taskStatusIcons[task.status]}
-                                  {task.description}
-                                </span>
+                              <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
+                                <div className="flex-grow">
+                                    <div className="flex items-center gap-2">
+                                        {taskStatusIcons[task.status]}
+                                        <span className="font-medium">{task.description}</span>
+                                        <Badge variant="outline">{task.type}</Badge>
+                                    </div>
+                                    {task.type === 'Phishing' && (
+                                        <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
+                                            <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
+                                            <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
+                                        </div>
+                                    )}
+                                </div>
                                 <DropdownMenu>
-                                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                   <DropdownMenuContent>
+                                    <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuLabel>Change Status</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
@@ -253,15 +324,9 @@ export default function CampaignsPage() {
                               </div>
                             )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this campaign yet.</p>}
                           </div>
-                          <div className="flex gap-2">
-                            <Input 
-                              placeholder="New task description..." 
-                              value={newTaskInputs[campaign.id] || ''}
-                              onChange={(e) => setNewTaskInputs(prev => ({ ...prev, [campaign.id]: e.target.value }))}
-                              onKeyDown={(e) => e.key === 'Enter' && handleAddTask(campaign.id)}
-                            />
-                            <Button size="sm" onClick={() => handleAddTask(campaign.id)}>Add</Button>
-                          </div>
+                          <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(campaign.id)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+                          </Button>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
@@ -277,24 +342,81 @@ export default function CampaignsPage() {
         )}
       </div>
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      {/* Campaign Form Dialog */}
+      <Dialog open={isCampaignFormOpen} onOpenChange={setIsCampaignFormOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedCampaign ? 'Edit Campaign' : 'Create New Campaign'}</DialogTitle>
             <DialogDescription>{selectedCampaign ? `Update the details for "${selectedCampaign.name}".` : 'Fill in the details for the new campaign.'}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <div className="space-y-2"><Label htmlFor="name">Campaign Name</Label><Input id="name" {...form.register('name')} />{form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}</div>
-              <div className="space-y-2"><Label htmlFor="target">Target</Label><Input id="target" {...form.register('target')} />{form.formState.errors.target && <p className="text-sm text-destructive">{form.formState.errors.target.message}</p>}</div>
+          <form onSubmit={campaignForm.handleSubmit(onCampaignSubmit)} className="space-y-4 py-4">
+              <div className="space-y-2"><Label htmlFor="name">Campaign Name</Label><Input id="name" {...campaignForm.register('name')} />{campaignForm.formState.errors.name && <p className="text-sm text-destructive">{campaignForm.formState.errors.name.message}</p>}</div>
+              <div className="space-y-2"><Label htmlFor="target">Target</Label><Input id="target" {...campaignForm.register('target')} />{campaignForm.formState.errors.target && <p className="text-sm text-destructive">{campaignForm.formState.errors.target.message}</p>}</div>
               <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2"><Label htmlFor="startDate">Start Date</Label><Input id="startDate" type="date" {...form.register('startDate')} />{form.formState.errors.startDate && <p className="text-sm text-destructive">{form.formState.errors.startDate.message}</p>}</div>
-                 <div className="space-y-2"><Label htmlFor="endDate">End Date</Label><Input id="endDate" type="date" {...form.register('endDate')} />{form.formState.errors.endDate && <p className="text-sm text-destructive">{form.formState.errors.endDate.message}</p>}</div>
+                 <div className="space-y-2"><Label htmlFor="startDate">Start Date</Label><Input id="startDate" type="date" {...campaignForm.register('startDate')} />{campaignForm.formState.errors.startDate && <p className="text-sm text-destructive">{campaignForm.formState.errors.startDate.message}</p>}</div>
+                 <div className="space-y-2"><Label htmlFor="endDate">End Date</Label><Input id="endDate" type="date" {...campaignForm.register('endDate')} />{campaignForm.formState.errors.endDate && <p className="text-sm text-destructive">{campaignForm.formState.errors.endDate.message}</p>}</div>
               </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setIsCampaignFormOpen(false)}>Cancel</Button>
               <Button type="submit">Save Campaign</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Task Form Dialog */}
+      <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+                <DialogDescription>{editingTask ? 'Update the details for this task.' : 'Fill in the details for the new task.'}</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="task-description">Description</Label>
+                    <Textarea id="task-description" {...taskForm.register('description')} />
+                    {taskForm.formState.errors.description && <p className="text-sm text-destructive">{taskForm.formState.errors.description.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="task-type">Task Type</Label>
+                     <Select onValueChange={(v) => taskForm.setValue('type', v)} defaultValue={taskForm.getValues('type')}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="General">General</SelectItem>
+                            <SelectItem value="Recon">Recon</SelectItem>
+                            <SelectItem value="Phishing">Phishing</SelectItem>
+                            <SelectItem value="Payload">Payload</SelectItem>
+                            <SelectItem value="Post-Exploitation">Post-Exploitation</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {watchedTaskType === 'Phishing' && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="task-profile">Target Profile</Label>
+                            <Select onValueChange={(v) => taskForm.setValue('targetProfileId', v)} defaultValue={taskForm.getValues('targetProfileId')}>
+                                <SelectTrigger><SelectValue placeholder="Select Profile..." /></SelectTrigger>
+                                <SelectContent>
+                                    {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.fullName}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="task-template">Message Template</Label>
+                             <Select onValueChange={(v) => taskForm.setValue('templateId', v)} defaultValue={taskForm.getValues('templateId')}>
+                                <SelectTrigger><SelectValue placeholder="Select Template..." /></SelectTrigger>
+                                <SelectContent>
+                                    {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                )}
+                 <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsTaskFormOpen(false)}>Cancel</Button>
+                    <Button type="submit">Save Task</Button>
+                </DialogFooter>
+            </form>
         </DialogContent>
       </Dialog>
       
@@ -306,7 +428,7 @@ export default function CampaignsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDeleteCampaign} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
