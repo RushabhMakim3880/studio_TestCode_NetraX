@@ -12,6 +12,7 @@ import { getThreatIntel, type ThreatIntelOutput } from '@/ai/flows/cyber-intel-f
 import { Loader2, AlertTriangle, ShieldCheck, Terminal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { GoogleDorkGenerator } from '@/components/google-dork-generator';
+import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 
 const formSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -135,6 +136,7 @@ export default function CyberIntelPage() {
       )}
 
       <GoogleDorkGenerator />
+      <ShodanDorkGenerator />
     </div>
   );
 }
