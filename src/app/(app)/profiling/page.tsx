@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, User as UserIcon } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, User as UserIcon, KeyRound, Loader2, ClipboardCopy } from 'lucide-react';
+import { generateWordlist } from '@/ai/flows/wordlist-generator-flow';
 
 type Profile = {
   id: string;
@@ -32,7 +33,7 @@ const initialProfiles: Profile[] = [
     email: 'jane.doe@global-corp.com',
     role: 'Lead Accountant',
     company: 'Global-Corp Inc.',
-    notes: 'Potential target for invoice-themed phishing campaigns. Attends weekly finance meetings on Tuesdays.'
+    notes: 'Potential target for invoice-themed phishing campaigns. Attends weekly finance meetings on Tuesdays. Loves dogs, has a golden retriever named "Buddy". Anniversary is June 15th.'
   },
   {
     id: 'PROF-002',
@@ -40,7 +41,7 @@ const initialProfiles: Profile[] = [
     email: 'j.smith@tech-conglomerate.io',
     role: 'Senior Developer',
     company: 'Tech Conglomerate',
-    notes: 'Active on GitHub. Could be susceptible to technical lures or fake security alerts.'
+    notes: 'Active on GitHub. Could be susceptible to technical lures or fake security alerts. Big fan of "Star Wars". Birthday is May 4th.'
   }
 ];
 
@@ -58,6 +59,11 @@ export default function ProfilingPage() {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const { toast } = useToast();
+
+  const [isWordlistDialogOpen, setIsWordlistDialogOpen] = useState(false);
+  const [isGeneratingWordlist, setIsGeneratingWordlist] = useState(false);
+  const [generatedWordlist, setGeneratedWordlist] = useState<string[]>([]);
+  const [wordlistTarget, setWordlistTarget] = useState<Profile | null>(null);
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -135,6 +141,42 @@ export default function ProfilingPage() {
     setSelectedProfile(null);
   }
 
+  const handleGenerateWordlist = async (profile: Profile) => {
+    setWordlistTarget(profile);
+    setIsGeneratingWordlist(true);
+    setGeneratedWordlist([]);
+    setIsWordlistDialogOpen(true);
+    
+    try {
+        const result = await generateWordlist({
+            fullName: profile.fullName,
+            role: profile.role,
+            company: profile.company,
+            notes: profile.notes || '',
+        });
+        setGeneratedWordlist(result.wordlist);
+    } catch (err) {
+        toast({
+            variant: "destructive",
+            title: "Error Generating Wordlist",
+            description: "Could not generate wordlist. Please try again.",
+        });
+        setIsWordlistDialogOpen(false); // Close dialog on error
+    } finally {
+        setIsGeneratingWordlist(false);
+    }
+  }
+
+  const handleCopyWordlist = () => {
+    if (generatedWordlist.length > 0) {
+        navigator.clipboard.writeText(generatedWordlist.join('\n'));
+        toast({
+            title: "Copied!",
+            description: "Wordlist has been copied to your clipboard.",
+        });
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col gap-6">
@@ -152,7 +194,7 @@ export default function ProfilingPage() {
         {profiles.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {profiles.map((profile) => (
-              <Card key={profile.id}>
+              <Card key={profile.id} className="flex flex-col">
                 <CardHeader className="flex flex-row items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
@@ -176,17 +218,23 @@ export default function ProfilingPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-grow space-y-4">
                     <div className="space-y-2">
                         <p className="text-sm font-medium">Email: <span className="text-muted-foreground font-normal">{profile.email}</span></p>
                         {profile.notes && (
                             <div>
                                 <p className="text-sm font-medium">Notes:</p>
-                                <p className="text-sm text-muted-foreground bg-primary/20 p-2 rounded-md">{profile.notes}</p>
+                                <p className="text-sm text-muted-foreground bg-primary/20 p-2 rounded-md whitespace-pre-wrap">{profile.notes}</p>
                             </div>
                         )}
                     </div>
                 </CardContent>
+                <CardFooter>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => handleGenerateWordlist(profile)}>
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        Generate Wordlist
+                    </Button>
+                </CardFooter>
               </Card>
             ))}
           </div>
@@ -260,6 +308,39 @@ export default function ProfilingPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+       <Dialog open={isWordlistDialogOpen} onOpenChange={setIsWordlistDialogOpen}>
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Generated Wordlist for {wordlistTarget?.fullName}</DialogTitle>
+                <DialogDescription>
+                    A list of potential passwords based on the target's profile. Use with caution.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 max-h-[50vh] overflow-y-auto">
+                {isGeneratingWordlist ? (
+                    <div className="flex items-center justify-center h-40">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                ) : (
+                    <pre className="bg-primary/20 p-4 rounded-md text-sm text-foreground font-mono">
+                        <code>{generatedWordlist.join('\n')}</code>
+                    </pre>
+                )}
+            </div>
+            <DialogFooter>
+                <Button
+                    variant="secondary"
+                    onClick={handleCopyWordlist}
+                    disabled={isGeneratingWordlist || generatedWordlist.length === 0}
+                >
+                    <ClipboardCopy className="mr-2 h-4 w-4" />
+                    Copy to Clipboard
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setIsWordlistDialogOpen(false)}>Close</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     </>
   );
 }

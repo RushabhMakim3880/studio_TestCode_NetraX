@@ -10,3 +10,4 @@ import '@/ai/flows/vapt-flow.ts';
 import '@/ai/flows/reporting-flow.ts';
 import '@/ai/flows/cve-feed-flow.ts';
 import '@/ai/flows/law-updates-flow.ts';
+import '@/ai/flows/wordlist-generator-flow.ts';
