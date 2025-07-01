@@ -1,22 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, subDays, addDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { generateSummaryReport, type ReportingOutput } from '@/ai/flows/reporting-flow';
-import { Loader2, AlertTriangle, Calendar as CalendarIcon, FileText } from 'lucide-react';
+import { Loader2, AlertTriangle, Calendar as CalendarIcon, FileText, Download } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { ChartTooltip, ChartTooltipContent, ChartContainer } from '@/components/ui/chart';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   reportType: z.string().min(1, { message: 'Please select a report type.' }),
@@ -32,6 +35,9 @@ export default function ReportingPage() {
   const [result, setResult] = useState<ReportingOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const reportCardRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,6 +68,43 @@ export default function ReportingPage() {
       setIsLoading(false);
     }
   }
+
+  const handleDownloadPdf = async () => {
+    if (!reportCardRef.current || !result) return;
+    setIsDownloadingPdf(true);
+
+    try {
+      const canvas = await html2canvas(reportCardRef.current, {
+          scale: 2, // Higher scale for better quality
+      });
+      const imgData = canvas.toDataURL('image/png');
+      
+      const pdf = new jsPDF({
+          orientation: 'p',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      const safeTitle = result.title.replace(/\s+/g, '_').toLowerCase();
+      pdf.save(`report-${safeTitle}.pdf`);
+      
+      toast({
+          title: "Download Started",
+          description: "Your PDF report is being downloaded."
+      });
+
+    } catch (error) {
+        console.error("Failed to generate PDF", error);
+        toast({
+            variant: "destructive",
+            title: "PDF Generation Failed",
+            description: "There was an error creating the PDF report."
+        });
+    } finally {
+        setIsDownloadingPdf(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -149,9 +192,27 @@ export default function ReportingPage() {
       {isLoading && <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
 
       {result && (
-        <Card>
+        <Card ref={reportCardRef}>
           <CardHeader>
-            <div className="flex items-center gap-3"><FileText className="h-6 w-6" /><CardTitle>{result.title}</CardTitle></div>
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <FileText className="h-6 w-6" />
+                <CardTitle>{result.title}</CardTitle>
+              </div>
+              <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+              >
+                  {isDownloadingPdf ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                      <Download className="mr-2 h-4 w-4"/>
+                  )}
+                  Download PDF
+              </Button>
+            </div>
             <CardDescription>Report for period: {format(form.getValues('dateRange.from'), 'LLL dd, y')} - {format(form.getValues('dateRange.to'), 'LLL dd, y')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
