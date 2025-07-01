@@ -19,3 +19,4 @@ import '@/ai/flows/social-media-analysis-flow.ts';
 import '@/ai/flows/password-cracker-flow.ts';
 import '@/ai/flows/activity-feed-flow.ts';
 import '@/ai/flows/config-analyzer-flow.ts';
+import '@/ai/flows/duckyscript-generator-flow.ts';
