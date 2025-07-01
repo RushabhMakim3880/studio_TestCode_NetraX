@@ -14,6 +14,7 @@ import { Loader2, AlertTriangle, Terminal } from 'lucide-react';
 import { RubberDuckyEditor } from '@/components/rubber-ducky-editor';
 import { PasswordCracker } from '@/components/password-cracker';
 import { HashCalculator } from '@/components/hash-calculator';
+import { ExploitSuggester } from '@/components/exploit-suggester';
 
 const formSchema = z.object({
   tool: z.string().min(1, { message: 'Please select a tool.' }),
@@ -143,6 +144,8 @@ export default function OffensivePage() {
           </CardContent>
         </Card>
       )}
+
+      <ExploitSuggester />
 
       <PasswordCracker />
 
