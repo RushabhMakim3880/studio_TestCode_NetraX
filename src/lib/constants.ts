@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, Bug, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, Bug, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -32,10 +32,16 @@ export const APP_MODULES: Module[] = [
     roles: [ROLES.ADMIN, ROLES.ANALYST],
   },
   {
-    name: 'Offensive Tools',
-    path: '/offensive',
-    icon: Bug,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
+    name: 'OSINT',
+    path: '/osint',
+    icon: Fingerprint,
+    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR],
+  },
+  {
+    name: 'Profiling',
+    path: '/profiling',
+    icon: Target,
+    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR],
   },
   {
     name: 'Phishing',
@@ -44,22 +50,22 @@ export const APP_MODULES: Module[] = [
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
   },
   {
-    name: 'OSINT',
-    path: '/osint',
-    icon: Fingerprint,
-    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR],
-  },
-  {
-    name: 'VAPT & Compliance',
-    path: '/vapt',
-    icon: ShieldCheck,
-    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.AUDITOR],
+    name: 'Offensive Tools',
+    path: '/offensive',
+    icon: Bug,
+    roles: [ROLES.ADMIN, ROLES.OPERATOR],
   },
   {
     name: 'Campaigns',
     path: '/campaigns',
     icon: Route,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
+  },
+  {
+    name: 'VAPT & Compliance',
+    path: '/vapt',
+    icon: ShieldCheck,
+    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.AUDITOR],
   },
   {
     name: 'Reporting',
@@ -74,15 +80,15 @@ export const APP_MODULES: Module[] = [
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
   },
   {
-    name: 'Settings',
-    path: '/settings',
-    icon: Settings,
-    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR, ROLES.AUDITOR],
-  },
-   {
     name: 'User Management',
     path: '/user-management',
     icon: UserCog,
     roles: [ROLES.ADMIN],
+  },
+  {
+    name: 'Settings',
+    path: '/settings',
+    icon: Settings,
+    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR, ROLES.AUDITOR],
   },
 ];
