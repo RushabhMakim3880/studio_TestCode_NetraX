@@ -12,6 +12,7 @@ import { generateComplianceChecklist, type VaptOutput } from '@/ai/flows/vapt-fl
 import { Loader2, AlertTriangle, ListChecks } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CvssCalculator } from '@/components/cvss-calculator';
+import { ConfigAnalyzer } from '@/components/config-analyzer';
 
 const formSchema = z.object({
   standard: z.string().min(1, { message: 'Please select a standard.' }),
@@ -58,6 +59,7 @@ export default function VaptPage() {
         <p className="text-muted-foreground">Assess vulnerabilities and ensure compliance.</p>
       </div>
 
+      <ConfigAnalyzer />
       <CvssCalculator />
 
       <Card>
