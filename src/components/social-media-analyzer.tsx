@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { analyzeSocialMediaProfile, type SocialMediaAnalysisOutput } from '@/ai/flows/social-media-analysis-flow';
-import { Loader2, AlertTriangle, Users, BarChart, Heart, ShieldAlert } from 'lucide-react';
+import { Loader2, AlertTriangle, Users, Heart, ShieldAlert } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 
