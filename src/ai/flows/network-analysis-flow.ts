@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const PcapAnalysisInputSchema = z.object({
+const PcapAnalysisInputSchema = z.object({
   fileName: z.string().describe("The name of the PCAP file."),
   description: z.string().describe("A brief description of the network capture's context."),
 });
@@ -32,7 +32,7 @@ const NotableTrafficSchema = z.object({
     summary: z.string().describe("A brief summary of the communication."),
 });
 
-export const PcapAnalysisOutputSchema = z.object({
+const PcapAnalysisOutputSchema = z.object({
   analysisSummary: z.string().describe('A high-level executive summary of the findings from the network traffic analysis.'),
   detectedThreats: z.array(DetectedThreatSchema).describe('A list of security threats or significant anomalies discovered in the traffic.'),
   notableStreams: z.array(NotableTrafficSchema).describe("A list of 5-7 interesting or notable traffic streams for further investigation."),

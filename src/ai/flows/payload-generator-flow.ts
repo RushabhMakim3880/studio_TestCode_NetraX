@@ -10,14 +10,14 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const PayloadGeneratorInputSchema = z.object({
+const PayloadGeneratorInputSchema = z.object({
   payloadType: z.string().describe('The type of payload to generate (e.g., "Powershell TCP Reverse Shell", "Bash TCP Reverse Shell", "Python Reverse Shell").'),
   lhost: z.string().describe('The listening host IP address for the reverse shell.'),
   lport: z.string().describe('The listening port for the reverse shell.'),
 });
 export type PayloadGeneratorInput = z.infer<typeof PayloadGeneratorInputSchema>;
 
-export const PayloadGeneratorOutputSchema = z.object({
+const PayloadGeneratorOutputSchema = z.object({
   payload: z.string().describe('The generated payload script.'),
   description: z.string().describe('A brief description of the payload and how to use it.'),
 });

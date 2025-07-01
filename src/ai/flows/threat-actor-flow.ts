@@ -10,12 +10,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ThreatActorInputSchema = z.object({
+const ThreatActorInputSchema = z.object({
   actorName: z.string().describe('The name of the threat actor (e.g., "APT28", "Lazarus Group").'),
 });
 export type ThreatActorInput = z.infer<typeof ThreatActorInputSchema>;
 
-export const ThreatActorProfileOutputSchema = z.object({
+const ThreatActorProfileOutputSchema = z.object({
   name: z.string().describe("The name of the threat actor."),
   aliases: z.array(z.string()).describe("Known aliases for the threat actor."),
   description: z.string().describe("A summary of the threat actor's origin, motives, and typical operations."),
