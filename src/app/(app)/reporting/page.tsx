@@ -27,12 +27,6 @@ const formSchema = z.object({
 });
 
 const reportTypes = ['Phishing Campaign Results', 'Quarterly Vulnerability Summary', 'OSINT Activity Overview'];
-const chartData = [
-  { name: 'Week 1', value: Math.floor(Math.random() * 500) + 100 },
-  { name: 'Week 2', value: Math.floor(Math.random() * 500) + 100 },
-  { name: 'Week 3', value: Math.floor(Math.random() * 500) + 100 },
-  { name: 'Week 4', value: Math.floor(Math.random() * 500) + 100 },
-];
 
 export default function ReportingPage() {
   const [result, setResult] = useState<ReportingOutput | null>(null);
@@ -179,9 +173,9 @@ export default function ReportingPage() {
                     <p className="text-sm text-muted-foreground leading-relaxed">{result.summary}</p>
                 </div>
                 <div className="md:col-span-3">
-                     <h3 className="font-semibold mb-2">Activity Volume</h3>
+                     <h3 className="font-semibold mb-2">{result.chartTitle}</h3>
                      <ChartContainer config={{}} className="h-[200px] w-full">
-                        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <BarChart data={result.chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
                             <YAxis tickLine={false} axisLine={false} tickMargin={8}/>

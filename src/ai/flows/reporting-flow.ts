@@ -17,6 +17,11 @@ const ReportingInputSchema = z.object({
 });
 export type ReportingInput = z.infer<typeof ReportingInputSchema>;
 
+const ChartDataSchema = z.object({
+    name: z.string().describe("The label for the data point (e.g., a date, a category)."),
+    value: z.number().describe("The numerical value for the data point."),
+});
+
 const ReportingOutputSchema = z.object({
   title: z.string().describe('A suitable title for the generated report.'),
   summary: z.string().describe('The generated executive summary of the report. Should be 3-4 paragraphs long.'),
@@ -25,6 +30,8 @@ const ReportingOutputSchema = z.object({
     value: z.string().describe('The value of the metric.'),
     change: z.string().describe('The change from the previous period (e.g., "+5%").'),
   })),
+  chartTitle: z.string().describe("A title for the accompanying chart (e.g., 'Weekly Phishing Clicks')."),
+  chartData: z.array(ChartDataSchema).describe("An array of 4-6 data points for a bar chart."),
 });
 export type ReportingOutput = z.infer<typeof ReportingOutputSchema>;
 
@@ -46,9 +53,11 @@ const prompt = ai.definePrompt({
   1. A suitable title.
   2. A 3-4 paragraph executive summary analyzing trends and outcomes for the period. Invent plausible data and events.
   3. A list of 3-4 key metrics with plausible values and changes from the previous period.
+  4. A suitable title for a bar chart that visualizes a key aspect of the report.
+  5. An array of 4 to 6 data points for the bar chart. The 'name' should be a label (like a week or month) and 'value' a number.
 
-  For example, if the report is for Phishing, metrics could include 'Emails Sent', 'Click-Through Rate', 'Credentials Compromised'.
-  If for vulnerabilities, metrics could be 'New Critical Vulnerabilities', 'Time to Patch', 'Overall Risk Score'.
+  For example, if the report is for Phishing, metrics could include 'Emails Sent', 'Click-Through Rate', 'Credentials Compromised'. The chart could show clicks per week.
+  If for vulnerabilities, metrics could be 'New Critical Vulnerabilities', 'Time to Patch', 'Overall Risk Score'. The chart could show vulnerabilities found per month.
 
   The tone should be formal and data-driven. Do not include conversational text.
   `,
