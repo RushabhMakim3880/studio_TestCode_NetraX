@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const SteganographyAnalysisInputSchema = z.object({
+const SteganographyAnalysisInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe(
@@ -20,7 +20,7 @@ export const SteganographyAnalysisInputSchema = z.object({
 });
 export type SteganographyAnalysisInput = z.infer<typeof SteganographyAnalysisInputSchema>;
 
-export const SteganographyAnalysisOutputSchema = z.object({
+const SteganographyAnalysisOutputSchema = z.object({
   verdict: z.string().describe('A high-level verdict (e.g., "Hidden Data Detected", "Suspicious Anomalies Found", "No Hidden Data Detected").'),
   confidence: z.number().min(0).max(100).describe('A confidence score (0-100) for the verdict.'),
   method: z.string().optional().describe('The suspected steganographic method (e.g., LSB in RGB channels, Appended data, EXIF metadata). Omit if no data detected.'),

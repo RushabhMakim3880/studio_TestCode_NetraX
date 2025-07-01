@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const WordlistGeneratorInputSchema = z.object({
+const WordlistGeneratorInputSchema = z.object({
   fullName: z.string().describe("The target's full name."),
   role: z.string().describe("The target's job role or title."),
   company: z.string().describe("The target's company."),

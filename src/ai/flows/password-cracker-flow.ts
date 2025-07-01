@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const PasswordCrackerInputSchema = z.object({
+const PasswordCrackerInputSchema = z.object({
   hash: z.string().describe('The password hash to crack.'),
   hashType: z.string().describe('The type of hash (e.g., MD5, SHA1).'),
   wordlist: z.string().describe('The wordlist to use for the attack (e.g., rockyou.txt).'),
