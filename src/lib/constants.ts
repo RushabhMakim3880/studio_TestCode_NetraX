@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -89,6 +89,12 @@ export const APP_MODULES: Module[] = [
     name: 'Network Analysis',
     path: '/network',
     icon: Network,
+    roles: [ROLES.ADMIN, ROLES.ANALYST],
+  },
+  {
+    name: 'Log Analysis',
+    path: '/log-analysis',
+    icon: GanttChartSquare,
     roles: [ROLES.ADMIN, ROLES.ANALYST],
   },
   {

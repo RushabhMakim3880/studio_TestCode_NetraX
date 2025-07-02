@@ -33,3 +33,4 @@ import '@/ai/flows/network-topology-flow.ts';
 import '@/ai/flows/yara-rule-generator-flow.ts';
 import '@/ai/flows/breach-data-flow.ts';
 import '@/ai/flows/campaign-planner-flow.ts';
+import '@/ai/flows/log-analysis-flow.ts';
