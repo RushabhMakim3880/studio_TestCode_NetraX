@@ -7,15 +7,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, User as UserIcon, KeyRound, Loader2, ClipboardCopy } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, UserIcon, KeyRound, Loader2, ClipboardCopy, MailPlus, Mail, Sparkles } from 'lucide-react';
 import { generateWordlist } from '@/ai/flows/wordlist-generator-flow';
+import { generatePhishingEmail, type PhishingOutput } from '@/ai/flows/phishing-flow';
 
 type Profile = {
   id: string;
@@ -24,6 +24,14 @@ type Profile = {
   role: string;
   company: string;
   notes?: string;
+};
+
+type Template = {
+  id: string;
+  name: string;
+  type: 'Email' | 'SMS';
+  subject?: string;
+  body: string;
 };
 
 const initialProfiles: Profile[] = [
@@ -64,6 +72,13 @@ export default function ProfilingPage() {
   const [isGeneratingWordlist, setIsGeneratingWordlist] = useState(false);
   const [generatedWordlist, setGeneratedWordlist] = useState<string[]>([]);
   const [wordlistTarget, setWordlistTarget] = useState<Profile | null>(null);
+
+  const [isCraftingEmail, setIsCraftingEmail] = useState(false);
+  const [craftingTarget, setCraftingTarget] = useState<Profile | null>(null);
+  const [emailScenario, setEmailScenario] = useState('An urgent, overdue invoice requires immediate payment.');
+  const [generatedEmail, setGeneratedEmail] = useState<PhishingOutput | null>(null);
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -176,6 +191,64 @@ export default function ProfilingPage() {
         });
     }
   }
+  
+  const handleCraftEmail = (profile: Profile) => {
+    setCraftingTarget(profile);
+    setGeneratedEmail(null);
+    setNewTemplateName('');
+    setEmailScenario('An urgent, overdue invoice requires immediate payment.');
+    setIsCraftingEmail(true);
+  };
+
+  const handleGeneratePhishingEmail = async () => {
+    if (!craftingTarget) return;
+    setIsGeneratingEmail(true);
+    setGeneratedEmail(null);
+    try {
+      const result = await generatePhishingEmail({
+        company: craftingTarget.company,
+        role: craftingTarget.role,
+        scenario: emailScenario,
+      });
+      setGeneratedEmail(result);
+    } catch(err) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate email. The content may have been blocked.' });
+      console.error(err);
+    } finally {
+      setIsGeneratingEmail(false);
+    }
+  };
+
+  const handleSaveAsTemplate = () => {
+    if (!generatedEmail || !newTemplateName.trim()) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Template name is required.' });
+      return;
+    }
+
+    try {
+      const storedTemplates = localStorage.getItem('netra-templates') || '[]';
+      const templates: Template[] = JSON.parse(storedTemplates);
+
+      const newTemplate: Template = {
+        id: `TPL-${crypto.randomUUID()}`,
+        name: newTemplateName.trim(),
+        type: 'Email',
+        subject: generatedEmail.subject,
+        body: generatedEmail.body,
+      };
+
+      const updatedTemplates = [...templates, newTemplate];
+      localStorage.setItem('netra-templates', JSON.stringify(updatedTemplates));
+      
+      toast({ title: 'Template Saved!', description: `"${newTemplate.name}" has been added.` });
+      setIsCraftingEmail(false);
+      setNewTemplateName('');
+    } catch (error) {
+      console.error("Failed to save template", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not save the new template.' });
+    }
+  };
+
 
   return (
     <>
@@ -229,10 +302,14 @@ export default function ProfilingPage() {
                         )}
                     </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="grid grid-cols-2 gap-2">
                     <Button variant="outline" size="sm" className="w-full" onClick={() => handleGenerateWordlist(profile)}>
                         <KeyRound className="mr-2 h-4 w-4" />
                         Generate Wordlist
+                    </Button>
+                     <Button variant="outline" size="sm" className="w-full" onClick={() => handleCraftEmail(profile)}>
+                        <MailPlus className="mr-2 h-4 w-4" />
+                        Craft Phishing Email
                     </Button>
                 </CardFooter>
               </Card>
@@ -341,6 +418,69 @@ export default function ProfilingPage() {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+
+    <Dialog open={isCraftingEmail} onOpenChange={setIsCraftingEmail}>
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5"/> Craft Phishing Email for {craftingTarget?.fullName}
+                </DialogTitle>
+                <DialogDescription>
+                    Generate a targeted phishing email based on a scenario and optionally save it as a new template.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid md:grid-cols-2 gap-6 py-4">
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="scenario">Scenario Description</Label>
+                        <Textarea 
+                            id="scenario" 
+                            value={emailScenario} 
+                            onChange={(e) => setEmailScenario(e.target.value)}
+                            placeholder="Describe the pretext of the email..."
+                            className="h-32"
+                        />
+                    </div>
+                    <Button onClick={handleGeneratePhishingEmail} disabled={isGeneratingEmail} className="w-full">
+                        {isGeneratingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        Generate Email
+                    </Button>
+                    {generatedEmail && (
+                        <div className="space-y-2 pt-4 border-t">
+                            <Label htmlFor="template-name">Save as Template</Label>
+                            <Input 
+                                id="template-name" 
+                                value={newTemplateName} 
+                                onChange={(e) => setNewTemplateName(e.target.value)} 
+                                placeholder="Enter a name for the new template..." 
+                            />
+                            <Button onClick={handleSaveAsTemplate} disabled={!newTemplateName.trim()} className="w-full">
+                                Save as New Template
+                            </Button>
+                        </div>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <Label>Preview</Label>
+                    <div className="h-full min-h-[300px] border p-4 rounded-md bg-primary/20 overflow-y-auto">
+                        {isGeneratingEmail && <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/></div>}
+                        {!generatedEmail && !isGeneratingEmail && <div className="text-center text-muted-foreground h-full flex items-center justify-center">Generated email preview will appear here.</div>}
+                        {generatedEmail && (
+                            <div>
+                                <p className="font-bold mb-2">{generatedEmail.subject}</p>
+                                <div className="prose prose-sm dark:prose-invert" dangerouslySetInnerHTML={{ __html: generatedEmail.body }} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCraftingEmail(false)}>Close</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     </>
   );
 }
+
+    
