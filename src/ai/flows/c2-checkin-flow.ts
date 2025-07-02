@@ -11,8 +11,8 @@ import {z} from 'genkit';
 
 const AgentSchema = z.object({
   agentId: z.string().describe('A unique identifier for the agent (e.g., a short hash).'),
-  externalIp: z.string().ip().describe('The public IP address of the compromised host.'),
-  internalIp: z.string().ip().describe('The private IP address of the compromised host.'),
+  externalIp: z.string().describe('The public IP address of the compromised host. Must be a valid IPv4 or IPv6 address.'),
+  internalIp: z.string().describe('The private IP address of the compromised host. Must be a valid IPv4 or IPv6 address.'),
   hostname: z.string().describe('The hostname of the compromised machine.'),
   user: z.string().describe('The user account the agent is running as (e.g., "corp\\j.smith", "root").'),
   processName: z.string().describe('The name of the process the agent is running in (e.g., "svchost.exe", "rundll32.exe").'),

@@ -16,15 +16,15 @@ const NetworkTopologyInputSchema = z.object({
 export type NetworkTopologyInput = z.infer<typeof NetworkTopologyInputSchema>;
 
 const NodeSchema = z.object({
-  id: z.string().ip().describe('The unique IP address for the node.'),
+  id: z.string().describe('The unique IP address for the node. Must be a valid IPv4 or IPv6 address.'),
   type: z.enum(['workstation', 'server', 'router', 'printer', 'firewall', 'unknown']).describe('The type of device.'),
   hostname: z.string().describe('A plausible hostname for the device.'),
   os: z.string().optional().describe('The operating system, if applicable.'),
 });
 
 const LinkSchema = z.object({
-  source: z.string().ip().describe('The source IP of the connection.'),
-  target: z.string().ip().describe('The target IP of the connection.'),
+  source: z.string().describe('The source IP of the connection. Must be a valid IPv4 or IPv6 address.'),
+  target: z.string().describe('The target IP of the connection. Must be a valid IPv4 or IPv6 address.'),
   description: z.string().describe('A short description of the connection (e.g., "HTTP Traffic", "SMB Share Access").'),
 });
 

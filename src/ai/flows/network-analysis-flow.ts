@@ -19,8 +19,8 @@ export type PcapAnalysisInput = z.infer<typeof PcapAnalysisInputSchema>;
 const DetectedThreatSchema = z.object({
     severity: z.enum(['Critical', 'High', 'Medium', 'Low', 'Informational']).describe('The severity of the threat.'),
     type: z.string().describe("The type of threat or anomaly (e.g., 'C2 Beaconing', 'Potential Data Exfiltration', 'Anomalous Protocol Usage')."),
-    sourceIp: z.string().ip().describe("The source IP address of the suspicious traffic."),
-    destinationIp: z.string().ip().describe("The destination IP address of the suspicious traffic."),
+    sourceIp: z.string().describe("The source IP address of the suspicious traffic. Must be a valid IPv4 or IPv6 address."),
+    destinationIp: z.string().describe("The destination IP address of the suspicious traffic. Must be a valid IPv4 or IPv6 address."),
     description: z.string().describe('A clear description of the identified threat and the evidence supporting it.'),
 });
 
