@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -15,14 +15,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Only redirect on the client side after the initial render.
+    if (isClient && !isLoading && !user) {
       router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, isClient]);
 
-  if (isLoading || !user) {
+  // On the server, and on the initial client render, show a loading skeleton
+  // to prevent hydration mismatch.
+  if (!isClient || isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="w-full max-w-md space-y-4">
