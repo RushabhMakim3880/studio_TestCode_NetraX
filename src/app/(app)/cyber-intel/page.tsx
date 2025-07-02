@@ -11,8 +11,6 @@ import { Button } from '@/components/ui/button';
 import { getThreatIntel, type ThreatIntelOutput } from '@/ai/flows/cyber-intel-flow';
 import { Loader2, AlertTriangle, ShieldCheck, Terminal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { GoogleDorkGenerator } from '@/components/google-dork-generator';
-import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 import { CveFeed } from '@/components/cve-feed';
 import { LawUpdatesFeed } from '@/components/law-updates-feed';
 import { ThreatActorProfiler } from '@/components/threat-actor-profiler';
@@ -144,8 +142,6 @@ export default function CyberIntelPage() {
 
       <LawUpdatesFeed />
 
-      <GoogleDorkGenerator />
-      <ShodanDorkGenerator />
     </div>
   );
 }
