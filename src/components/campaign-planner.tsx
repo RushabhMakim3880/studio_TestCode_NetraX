@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { generateCampaignPlan, type CampaignPlannerOutput } from '@/ai/flows/campaign-planner-flow';
 import { Loader2, AlertTriangle, Sparkles, Map, Bot } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   objective: z.string().min(10, 'Objective must be at least 10 characters.'),
@@ -59,41 +60,43 @@ export function CampaignPlanner() {
       </CardHeader>
       <CardContent>
         <div className="grid md:grid-cols-2 gap-8">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="objective"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Campaign Objective</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Exfiltrate financial reports..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="targetDescription"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Describe the target organization..." {...field} className="h-28"/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              Generate Plan
-            </Button>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="objective"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Campaign Objective</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Exfiltrate financial reports..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="targetDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Target Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Describe the target organization..." {...field} className="h-28"/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Generate Plan
+              </Button>
+            </form>
+          </Form>
 
           <div className="space-y-4">
-            <FormLabel>Generated Plan</FormLabel>
+            <Label>Generated Plan</Label>
             <div className="h-full min-h-[300px] border rounded-md p-4 bg-primary/20 space-y-4 overflow-y-auto">
               {isLoading && <div className="flex items-center justify-center h-full text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>}
               {error && <div className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{error}</div>}
