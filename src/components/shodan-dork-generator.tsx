@@ -80,7 +80,7 @@ export function ShodanDorkGenerator() {
                 <FormItem>
                   <FormLabel>Search Query</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 'webcam'" {...field} />
+                    <Input placeholder="e.g., 'webcam'" {...field} value={field.value ?? ''} />
                   </FormControl>
                 </FormItem>
               )}
@@ -93,7 +93,7 @@ export function ShodanDorkGenerator() {
                   <FormItem>
                     <FormLabel>Hostname</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., .google.com" {...field} />
+                      <Input placeholder="e.g., .google.com" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -105,7 +105,7 @@ export function ShodanDorkGenerator() {
                   <FormItem>
                     <FormLabel>Organization</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., 'Google LLC'" {...field} />
+                      <Input placeholder="e.g., 'Google LLC'" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -117,7 +117,7 @@ export function ShodanDorkGenerator() {
                   <FormItem>
                     <FormLabel>Port</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., 22, 3389" {...field} />
+                      <Input placeholder="e.g., 22, 3389" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -129,7 +129,7 @@ export function ShodanDorkGenerator() {
                   <FormItem>
                     <FormLabel>Country Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., US, IN" {...field} />
+                      <Input placeholder="e.g., US, IN" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -141,7 +141,7 @@ export function ShodanDorkGenerator() {
                   <FormItem>
                     <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., 'Mountain View'" {...field} />
+                      <Input placeholder="e.g., 'Mountain View'" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}

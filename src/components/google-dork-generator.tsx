@@ -80,7 +80,7 @@ export function GoogleDorkGenerator() {
                 <FormItem>
                   <FormLabel>Keywords</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 'admin login'" {...field} />
+                    <Input placeholder="e.g., 'admin login'" {...field} value={field.value ?? ''} />
                   </FormControl>
                 </FormItem>
               )}
@@ -93,7 +93,7 @@ export function GoogleDorkGenerator() {
                   <FormItem>
                     <FormLabel>Site</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., example.gov.in" {...field} />
+                      <Input placeholder="e.g., example.gov.in" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -105,7 +105,7 @@ export function GoogleDorkGenerator() {
                   <FormItem>
                     <FormLabel>Filetype</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., pdf, xls" {...field} />
+                      <Input placeholder="e.g., pdf, xls" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -117,7 +117,7 @@ export function GoogleDorkGenerator() {
                   <FormItem>
                     <FormLabel>In URL (inurl:)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., /login.php" {...field} />
+                      <Input placeholder="e.g., /login.php" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -129,7 +129,7 @@ export function GoogleDorkGenerator() {
                   <FormItem>
                     <FormLabel>In Title (intitle:)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., 'index of'" {...field} />
+                      <Input placeholder="e.g., 'index of'" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -142,7 +142,7 @@ export function GoogleDorkGenerator() {
                   <FormItem>
                     <FormLabel>In Text (intext:)</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., 'password'" {...field} />
+                      <Input placeholder="e.g., 'password'" {...field} value={field.value ?? ''} />
                     </FormControl>
                   </FormItem>
                 )}
