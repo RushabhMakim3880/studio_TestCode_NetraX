@@ -12,6 +12,7 @@ import { extractIoCs, type IocExtractorOutput } from '@/ai/flows/ioc-extractor-f
 import { Loader2, AlertTriangle, ListCollapse, Sparkles, Network, Globe, Hash, FileCode, Copy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from './ui/label';
 
 const formSchema = z.object({
   rawText: z.string().min(20, { message: 'Please provide at least 20 characters of text to analyze.' }),
@@ -119,7 +120,7 @@ export function IocExtractor() {
             </Form>
 
              <div className="space-y-4">
-                <FormLabel>Extracted Indicators</FormLabel>
+                <Label>Extracted Indicators</Label>
                 <div className="h-full min-h-[300px] border rounded-md p-4 bg-primary/20 space-y-4 overflow-y-auto">
                     {isLoading && <div className="flex items-center justify-center h-full text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>}
                     {error && <div className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{error}</div>}
