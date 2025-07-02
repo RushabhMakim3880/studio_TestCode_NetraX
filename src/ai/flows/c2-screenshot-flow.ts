@@ -10,13 +10,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const C2ScreenshotInputSchema = z.object({
+const C2ScreenshotInputSchema = z.object({
   agentId: z.string().describe('The ID of the agent to take a screenshot from.'),
   os: z.string().describe('The operating system of the target agent (e.g., "Windows 11", "Ubuntu 22.04").'),
 });
 export type C2ScreenshotInput = z.infer<typeof C2ScreenshotInputSchema>;
 
-export const C2ScreenshotOutputSchema = z.object({
+const C2ScreenshotOutputSchema = z.object({
   screenshotDataUri: z.string().describe("The simulated screenshot image as a data URI."),
   statusMessage: z.string().describe("A status message about the screenshot capture."),
 });
