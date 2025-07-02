@@ -4,9 +4,77 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { APP_MODULES } from '@/lib/constants';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Briefcase } from 'lucide-react';
 import { ActivityFeed } from '@/components/activity-feed';
 import { ActiveCampaigns } from '@/components/active-campaigns';
+import { useEffect, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { ChartTooltip, ChartTooltipContent, ChartContainer } from '@/components/ui/chart';
+
+type Campaign = {
+  id: string;
+  name: string;
+  target: string;
+  status: 'Planning' | 'Active' | 'On Hold' | 'Completed';
+};
+
+function CampaignStatusChart() {
+  const [chartData, setChartData] = useState<{name: string; value: number}[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedCampaigns = localStorage.getItem('netra-campaigns');
+      if (storedCampaigns) {
+        const campaigns: Campaign[] = JSON.parse(storedCampaigns);
+        const statusCounts = campaigns.reduce((acc, campaign) => {
+          acc[campaign.status] = (acc[campaign.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        const data = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+        setChartData(data);
+      }
+    } catch (error) {
+      console.error('Failed to load campaign data for chart', error);
+      setChartData([]);
+    }
+  }, []);
+
+  const chartConfig = {
+    value: {
+      label: 'Campaigns',
+      color: 'hsl(var(--accent))',
+    },
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+            <Briefcase className="h-6 w-6" />
+            <CardTitle>Campaign Overview</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {chartData.length > 0 ? (
+          <ChartContainer config={chartConfig} className="h-[200px] w-full">
+            <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={80} />
+              <XAxis type="number" hide />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <Bar dataKey="value" fill="var(--color-value)" radius={4} layout="vertical" />
+            </BarChart>
+          </ChartContainer>
+        ) : (
+          <div className="text-center text-muted-foreground py-10">
+            <p>No campaign data to display.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -48,6 +116,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+          <CampaignStatusChart />
           <ActiveCampaigns />
         </div>
       </div>
