@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, UserIcon, KeyRound, Loader2, ClipboardCopy, MailPlus, Mail, Sparkles } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generateWordlistFromProfile } from '@/lib/wordlist';
 import { generatePhishingEmail, type PhishingOutput } from '@/ai/flows/phishing-flow';
 
