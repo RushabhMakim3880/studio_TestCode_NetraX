@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getC2Checkins, type C2CheckinOutput } from '@/ai/flows/c2-checkin-flow';
 import { runC2Command } from '@/ai/flows/c2-command-flow';
-import { Loader2, AlertTriangle, Server, Terminal, Radio, SendHorizontal, RefreshCw } from 'lucide-react';
+import { takeScreenshot } from '@/ai/flows/c2-screenshot-flow';
+import { Loader2, AlertTriangle, Server, Terminal, Radio, SendHorizontal, RefreshCw, Camera } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -26,6 +28,10 @@ export default function C2Page() {
     const [currentCommand, setCurrentCommand] = useState('');
     const [isCommandRunning, setIsCommandRunning] = useState(false);
     
+    const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
+    const [screenshotData, setScreenshotData] = useState<string | null>(null);
+    const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
+
     const terminalEndRef = useRef<HTMLDivElement>(null);
     
     const fetchAgents = async () => {
@@ -58,7 +64,7 @@ export default function C2Page() {
 
     const handleCommandSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentCommand || isCommandRunning || !selectedAgent) return;
+        if (!currentCommand || isCommandRunning || !selectedAgent || isTakingScreenshot) return;
 
         setIsCommandRunning(true);
         const commandToRun = currentCommand;
@@ -76,6 +82,28 @@ export default function C2Page() {
             console.error(err);
         } finally {
             setIsCommandRunning(false);
+        }
+    };
+
+    const handleTakeScreenshot = async () => {
+        if (!selectedAgent || isTakingScreenshot || isCommandRunning) return;
+
+        setIsTakingScreenshot(true);
+        setTerminalHistory(prev => [...prev, { type: 'command', content: 'task screenshot' }]);
+        
+        try {
+            const response = await takeScreenshot({
+                agentId: selectedAgent.agentId,
+                os: selectedAgent.os,
+            });
+            setTerminalHistory(prev => [...prev, { type: 'output', content: response.statusMessage }]);
+            setScreenshotData(response.screenshotDataUri);
+            setIsScreenshotModalOpen(true);
+        } catch (err) {
+            setTerminalHistory(prev => [...prev, { type: 'output', content: 'Error: Failed to capture screenshot.' }]);
+            console.error(err);
+        } finally {
+            setIsTakingScreenshot(false);
         }
     };
     
@@ -172,20 +200,58 @@ export default function C2Page() {
                         </ScrollArea>
                     </div>
                     <DialogFooter>
-                        <form onSubmit={handleCommandSubmit} className="w-full flex gap-2">
+                       <div className="w-full flex items-center gap-2">
+                         <form onSubmit={handleCommandSubmit} className="w-full flex gap-2">
                             <Input 
                                 placeholder="Enter command (e.g., whoami, ls, ps)..."
                                 className="font-mono"
                                 value={currentCommand}
                                 onChange={e => setCurrentCommand(e.target.value)}
-                                disabled={isCommandRunning}
+                                disabled={isCommandRunning || isTakingScreenshot}
                                 autoFocus
                             />
-                            <Button type="submit" disabled={isCommandRunning}>
+                            <Button type="submit" disabled={isCommandRunning || isTakingScreenshot}>
                                 {isCommandRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4"/>}
                                 <span className="sr-only">Send Command</span>
                             </Button>
                         </form>
+                         <Button 
+                            variant="outline"
+                            onClick={handleTakeScreenshot} 
+                            disabled={isCommandRunning || isTakingScreenshot}
+                            className="shrink-0"
+                        >
+                            {isTakingScreenshot ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4"/>}
+                            <span className="hidden sm:inline ml-2">Screenshot</span>
+                        </Button>
+                       </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isScreenshotModalOpen} onOpenChange={setIsScreenshotModalOpen}>
+                <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Screenshot from Agent: {selectedAgent?.agentId}</DialogTitle>
+                        <DialogDescription>
+                        Captured from {selectedAgent?.hostname} ({selectedAgent?.os})
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-grow bg-primary/10 rounded-md p-2 flex items-center justify-center overflow-auto">
+                        {screenshotData ? (
+                            <Image 
+                                src={screenshotData}
+                                alt={`Screenshot from ${selectedAgent?.hostname}`}
+                                width={1920}
+                                height={1080}
+                                className="object-contain max-w-full max-h-full"
+                            />
+                        ) : (
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsScreenshotModalOpen(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
