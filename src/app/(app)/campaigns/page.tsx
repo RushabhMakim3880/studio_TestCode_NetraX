@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CampaignPlanner } from '@/components/campaign-planner';
 
 type Campaign = {
   id: string;
@@ -287,15 +288,19 @@ export default function CampaignsPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-headline text-3xl font-semibold">Campaign Management</h1>
-            <p className="text-muted-foreground">Oversee and manage all active campaigns and associated tasks.</p>
-          </div>
-          <Button onClick={handleCreateCampaign}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Campaign
-          </Button>
+        <div>
+          <h1 className="font-headline text-3xl font-semibold">Campaign Management</h1>
+          <p className="text-muted-foreground">Plan, oversee, and manage all red team campaigns and associated tasks.</p>
+        </div>
+
+        <CampaignPlanner />
+
+        <div className="flex items-center justify-between mt-4">
+            <h2 className="font-headline text-2xl font-semibold">Active & Planned Campaigns</h2>
+            <Button onClick={handleCreateCampaign}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Campaign
+            </Button>
         </div>
 
         {campaigns.length > 0 ? (
