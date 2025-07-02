@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, UserIcon, KeyRound, Loader2, ClipboardCopy, MailPlus, Mail, Sparkles } from 'lucide-react';
-import { generateWordlist } from '@/ai/flows/wordlist-generator-flow';
+import { generateWordlistFromProfile } from '@/lib/wordlist';
 import { generatePhishingEmail, type PhishingOutput } from '@/ai/flows/phishing-flow';
 
 type Profile = {
@@ -156,31 +156,25 @@ export default function ProfilingPage() {
     setSelectedProfile(null);
   }
 
-  const handleGenerateWordlist = async (profile: Profile) => {
+  const handleGenerateWordlist = (profile: Profile) => {
     setWordlistTarget(profile);
     setIsGeneratingWordlist(true);
     setGeneratedWordlist([]);
     setIsWordlistDialogOpen(true);
-    
-    try {
-        const result = await generateWordlist({
-            fullName: profile.fullName,
-            role: profile.role,
-            company: profile.company,
-            notes: profile.notes || '',
-        });
-        setGeneratedWordlist(result.wordlist);
-    } catch (err) {
-        toast({
-            variant: "destructive",
-            title: "Error Generating Wordlist",
-            description: "Could not generate wordlist. Please try again.",
-        });
-        setIsWordlistDialogOpen(false); // Close dialog on error
-    } finally {
+
+    const result = generateWordlistFromProfile({
+      fullName: profile.fullName,
+      role: profile.role,
+      company: profile.company,
+      notes: profile.notes || '',
+    });
+
+    setGeneratedWordlist(result);
+    // Use a short timeout to make the loading state visible and feel responsive
+    setTimeout(() => {
         setIsGeneratingWordlist(false);
-    }
-  }
+    }, 300);
+  };
 
   const handleCopyWordlist = () => {
     if (generatedWordlist.length > 0) {
@@ -482,5 +476,3 @@ export default function ProfilingPage() {
     </>
   );
 }
-
-    
