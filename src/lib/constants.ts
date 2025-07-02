@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -59,6 +59,12 @@ export const APP_MODULES: Module[] = [
     name: 'Offensive Tools',
     path: '/offensive',
     icon: KeyRound,
+    roles: [ROLES.ADMIN, ROLES.OPERATOR],
+  },
+  {
+    name: 'C2 Panel',
+    path: '/c2',
+    icon: Server,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
   },
   {
