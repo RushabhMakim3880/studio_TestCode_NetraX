@@ -26,11 +26,15 @@ export function EncoderDecoder() {
     }
     
     if (mode === 'encode') {
-      setOutputs({
-        base64: btoa(unescape(encodeURIComponent(input))),
-        hex: Array.from(input).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(''),
-        url: encodeURIComponent(input),
-      });
+      try {
+        setOutputs({
+            base64: btoa(unescape(encodeURIComponent(input))),
+            hex: Array.from(input).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(''),
+            url: encodeURIComponent(input),
+        });
+      } catch (e) {
+        console.error("Encoding error:", e);
+      }
     } else { // decode
       let b64Decoded: string, hexDecoded: string, urlDecoded: string;
       
@@ -42,13 +46,13 @@ export function EncoderDecoder() {
 
       try {
         const hexResult = input.replace(/\s/g, '').match(/.{1,2}/g)?.map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
-        hexDecoded = hexResult ?? "Invalid Hex input";
+        hexDecoded = hexResult && !hexResult.includes('NaN') ? hexResult : "Invalid Hex input";
       } catch (e) {
         hexDecoded = "Invalid Hex input";
       }
       
       try {
-        urlDecoded = decodeURIComponent(input);
+        urlDecoded = decodeURIComponent(input.replace(/\+/g, ' '));
       } catch (e) {
         urlDecoded = "Invalid URL encoding";
       }
