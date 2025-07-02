@@ -30,3 +30,4 @@ import '@/ai/flows/c2-checkin-flow.ts';
 import '@/ai/flows/c2-command-flow.ts';
 import '@/ai/flows/custom-malware-generator-flow.ts';
 import '@/ai/flows/network-topology-flow.ts';
+import '@/ai/flows/yara-rule-generator-flow.ts';

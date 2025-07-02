@@ -15,6 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { VirusTotalScanner } from '@/components/virustotal-scanner';
 import { SteganographyAnalyzer } from '@/components/steganography-analyzer';
+import { YaraRuleGenerator } from '@/components/yara-rule-generator';
 
 const formSchema = z.object({
   file: z
@@ -202,6 +203,7 @@ export default function AnalysisPage() {
 
       <VirusTotalScanner />
       <SteganographyAnalyzer />
+      <YaraRuleGenerator />
     </div>
   );
 }
