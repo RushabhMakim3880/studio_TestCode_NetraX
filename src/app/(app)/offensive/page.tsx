@@ -16,6 +16,7 @@ import { PasswordCracker } from '@/components/password-cracker';
 import { HashCalculator } from '@/components/hash-calculator';
 import { ExploitSuggester } from '@/components/exploit-suggester';
 import { PayloadGenerator } from '@/components/payload-generator';
+import { CustomMalwareGenerator } from '@/components/custom-malware-generator';
 
 const formSchema = z.object({
   tool: z.string().min(1, { message: 'Please select a tool.' }),
@@ -147,6 +148,8 @@ export default function OffensivePage() {
       )}
 
       <PayloadGenerator />
+
+      <CustomMalwareGenerator />
 
       <ExploitSuggester />
 
