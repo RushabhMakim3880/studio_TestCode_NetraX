@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const LogAnalysisInputSchema = z.object({
+const LogAnalysisInputSchema = z.object({
   logContent: z.string().min(50).describe('The full content of the log file.'),
   logType: z.string().describe('The type of log (e.g., Apache Access, Syslog, Windows Event Log).'),
 });
@@ -24,7 +24,7 @@ const AnomalySchema = z.object({
     relatedLogLine: z.string().describe('The specific log line(s) that are evidence of this anomaly.'),
 });
 
-export const LogAnalysisOutputSchema = z.object({
+const LogAnalysisOutputSchema = z.object({
   summary: z.string().describe('A high-level executive summary of the findings from the log analysis.'),
   anomalies: z.array(AnomalySchema).describe('A list of security anomalies discovered in the logs.'),
 });
