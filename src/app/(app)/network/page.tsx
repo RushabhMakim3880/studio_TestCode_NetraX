@@ -14,6 +14,7 @@ import { Loader2, AlertTriangle, Network, ShieldX, ShieldAlert, ShieldQuestion, 
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { NetworkTopologyMapper } from '@/components/network-topology-mapper';
 
 const formSchema = z.object({
   file: z
@@ -212,6 +213,8 @@ export default function NetworkAnalysisPage() {
           </CardContent>
         </Card>
       )}
+
+      <NetworkTopologyMapper />
     </div>
   );
 }
