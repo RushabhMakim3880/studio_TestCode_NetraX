@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,8 +55,6 @@ export default function AnalysisPage() {
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('');
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -101,15 +99,16 @@ export default function AnalysisPage() {
               <FormField
                 control={form.control}
                 name="file"
-                render={({ field: { onChange, ...fieldProps } }) => (
+                render={({ field: { onChange, onBlur, name, ref } }) => (
                   <FormItem>
                     <FormLabel>File</FormLabel>
                     <FormControl>
                         <Input 
-                            {...fieldProps}
-                            ref={fileInputRef}
                             type="file" 
                             onChange={(e) => onChange(e.target.files)}
+                            onBlur={onBlur}
+                            name={name}
+                            ref={ref}
                         />
                     </FormControl>
                     <FormMessage />

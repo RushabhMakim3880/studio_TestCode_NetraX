@@ -95,15 +95,17 @@ export default function NetworkAnalysisPage() {
               <FormField
                 control={form.control}
                 name="file"
-                render={({ field: { onChange, ...fieldProps } }) => (
+                render={({ field: { onChange, onBlur, name, ref } }) => (
                   <FormItem>
                     <FormLabel>PCAP File</FormLabel>
                     <FormControl>
                         <Input 
-                            {...fieldProps}
                             type="file"
                             accept=".pcap,.cap"
                             onChange={(e) => onChange(e.target.files)}
+                            onBlur={onBlur}
+                            name={name}
+                            ref={ref}
                         />
                     </FormControl>
                     <FormMessage />
