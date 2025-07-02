@@ -152,13 +152,11 @@ function CvssMetricGroup<T extends CvssFormValues>({ form, name, label, options 
               defaultValue={field.value}
               className="flex flex-col space-y-1"
             >
-              {Object.entries(options).map(([value, label]) => (
-                <FormItem key={value} className="flex items-center space-x-3 space-y-0">
-                  <FormControl>
-                    <RadioGroupItem value={value} />
-                  </FormControl>
-                  <Label className="font-normal">{label}</Label>
-                </FormItem>
+              {Object.entries(options).map(([value, optionLabel]) => (
+                <div key={value} className="flex items-center space-x-3 space-y-0">
+                  <RadioGroupItem value={value} id={`${name.toString()}-${value}`} />
+                  <Label htmlFor={`${name.toString()}-${value}`} className="font-normal">{optionLabel}</Label>
+                </div>
               ))}
             </RadioGroup>
           </FormControl>
