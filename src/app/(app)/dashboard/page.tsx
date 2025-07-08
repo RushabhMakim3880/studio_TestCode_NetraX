@@ -2,9 +2,7 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { APP_MODULES } from '@/lib/constants';
-import Link from 'next/link';
-import { ArrowRight, Briefcase } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
 import { ActivityFeed } from '@/components/activity-feed';
 import { ActiveCampaigns } from '@/components/active-campaigns';
 import { useEffect, useState } from 'react';
@@ -83,11 +81,6 @@ export default function DashboardPage() {
     return null;
   }
 
-  const allLinkableModules = APP_MODULES.flatMap(m => m.subModules || (m.path ? [m] : []));
-  const accessibleModules = allLinkableModules.filter(
-    (module) => module.path && module.roles.includes(user.role) && module.name !== 'Dashboard' && module.name !== 'Settings'
-  );
-
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -119,28 +112,6 @@ export default function DashboardPage() {
           </Card>
           <CampaignStatusChart />
           <ActiveCampaigns />
-        </div>
-      </div>
-      
-      <div>
-        <h2 className="font-headline text-2xl font-semibold mb-4">Your Toolkit</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {accessibleModules.map((module) => (
-            <Link href={module.path!} key={module.path}>
-              <Card className="h-full hover:border-accent hover:bg-card/80 transition-all group">
-                <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-base font-medium">{module.name}</CardTitle>
-                  <module.icon className="h-5 w-5 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground mb-4">Access the {module.name} toolkit.</p>
-                  <div className="text-sm font-medium text-accent flex items-center gap-1">
-                    Open Module <ArrowRight className="h-4 w-4 transform transition-transform group-hover:translate-x-1" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
         </div>
       </div>
     </div>
