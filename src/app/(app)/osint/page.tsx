@@ -15,6 +15,7 @@ import { SocialMediaAnalyzer } from '@/components/social-media-analyzer';
 import { GoogleDorkGenerator } from '@/components/google-dork-generator';
 import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 import { BreachDataChecker } from '@/components/breach-data-checker';
+import { BrandAbuseMonitor } from '@/components/brand-abuse-monitor';
 
 const formSchema = z.object({
   domain: z.string().min(3, { message: 'Domain must be at least 3 characters.' }).includes('.', { message: 'Please enter a valid domain.' }),
@@ -132,6 +133,7 @@ export default function OsintPage() {
           </CardContent>
         </Card>
       )}
+      <BrandAbuseMonitor />
       <BreachDataChecker />
       <SocialMediaAnalyzer />
       <GoogleDorkGenerator />
