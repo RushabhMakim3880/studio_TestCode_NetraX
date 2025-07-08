@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Input } from '@/components/ui/input';
 import { Download, Upload } from 'lucide-react';
 import { CompanyProfileManager } from '@/components/company-profile-manager';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -104,6 +105,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your application preferences and modules.</p>
       </div>
 
+      <ThemeSwitcher />
       <CompanyProfileManager />
 
       <Card>
