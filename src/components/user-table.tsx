@@ -1,12 +1,15 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth, type User } from '@/hooks/use-auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit, UserPlus, Send, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -27,18 +30,37 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from './ui/label';
+import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ROLES, Role } from '@/lib/constants';
+import { ROLES, type Role } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { generateInviteEmail, type InviteUserOutput } from '@/ai/flows/invite-user-flow';
 
+
+const inviteSchema = z.object({
+    email: z.string().email('Please enter a valid email address.'),
+    role: z.nativeEnum(ROLES),
+});
 
 export function UserTable() {
     const { users, updateUser, deleteUser, user: currentUser } = useAuth();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const { toast } = useToast();
+    
+    // Invite state
+    const [inviteStep, setInviteStep] = useState<'form' | 'preview'>('form');
+    const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+    const [generatedInvite, setGeneratedInvite] = useState<InviteUserOutput | null>(null);
+
+    const inviteForm = useForm<z.infer<typeof inviteSchema>>({
+        resolver: zodResolver(inviteSchema),
+        defaultValues: { email: '', role: ROLES.OPERATOR },
+    });
+
 
     const handleEditClick = (user: User) => {
         setSelectedUser(user);
@@ -78,6 +100,36 @@ export function UserTable() {
         }
     }
     
+    const handleOpenInviteModal = () => {
+        setInviteStep('form');
+        inviteForm.reset();
+        setGeneratedInvite(null);
+        setIsInviteModalOpen(true);
+    };
+
+    const onInviteSubmit = async (values: z.infer<typeof inviteSchema>) => {
+        setIsGeneratingInvite(true);
+        try {
+            const response = await generateInviteEmail({
+                recipientEmail: values.email,
+                role: values.role,
+                inviterName: currentUser?.displayName || 'Admin',
+            });
+            setGeneratedInvite(response);
+            setInviteStep('preview');
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate invitation email.' });
+            console.error(e);
+        } finally {
+            setIsGeneratingInvite(false);
+        }
+    };
+    
+    const handleSendInvite = () => {
+        toast({ title: "Invite Sent (Simulated)", description: `An invitation has been sent to ${inviteForm.getValues('email')}.` });
+        setIsInviteModalOpen(false);
+    }
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -88,6 +140,12 @@ export function UserTable() {
 
   return (
     <>
+        <div className="flex justify-end mb-4">
+            <Button onClick={handleOpenInviteModal}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Invite User
+            </Button>
+        </div>
         <Table>
             <TableHeader>
             <TableRow>
@@ -157,6 +215,68 @@ export function UserTable() {
                     <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
                     <Button onClick={handleSaveChanges}>Save Changes</Button>
                 </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+                 {inviteStep === 'form' && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Invite New User</DialogTitle>
+                            <DialogDescription>Send an invitation email to a new user to join the platform.</DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={inviteForm.handleSubmit(onInviteSubmit)} className="py-4 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input id="email" {...inviteForm.register('email')} />
+                                {inviteForm.formState.errors.email && <p className="text-sm text-destructive">{inviteForm.formState.errors.email.message}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="invite-role">Role</Label>
+                                <Select onValueChange={(v: Role) => inviteForm.setValue('role', v)} defaultValue={inviteForm.getValues('role')}>
+                                    <SelectTrigger id="invite-role"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {Object.values(ROLES).map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setIsInviteModalOpen(false)}>Cancel</Button>
+                                <Button type="submit" disabled={isGeneratingInvite}>
+                                    {isGeneratingInvite && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                    Generate Invite
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </>
+                 )}
+                 {inviteStep === 'preview' && generatedInvite && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Review Invitation</DialogTitle>
+                            <DialogDescription>An email will be sent to <span className="font-semibold">{inviteForm.getValues('email')}</span>. This is a simulation.</DialogDescription>
+                        </DialogHeader>
+                        <div className="my-4 border rounded-md p-4 space-y-4">
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-semibold">Subject</h4>
+                                <p className="text-sm p-2 bg-primary/20 rounded-md">{generatedInvite.subject}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-semibold">Body Preview</h4>
+                                <div className="p-2 bg-primary/20 rounded-md max-h-60 overflow-y-auto">
+                                    <div className="prose prose-sm dark:prose-invert" dangerouslySetInnerHTML={{ __html: generatedInvite.body }} />
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setInviteStep('form')}>Back</Button>
+                            <Button onClick={handleSendInvite}>
+                                <Send className="mr-2 h-4 w-4" /> Send Invite
+                            </Button>
+                        </DialogFooter>
+                    </>
+                 )}
             </DialogContent>
         </Dialog>
 

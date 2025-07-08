@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { AppearanceSettings } from '@/components/appearance-settings';
 import { CompanyProfileManager } from '@/components/company-profile-manager';
 import { CustomThemeGenerator } from '@/components/custom-theme-generator';
+import { EmailSettings } from '@/components/email-settings';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ export default function SettingsPage() {
       <AppearanceSettings />
       <CustomThemeGenerator />
       <CompanyProfileManager />
+      <EmailSettings />
       
     </div>
   );

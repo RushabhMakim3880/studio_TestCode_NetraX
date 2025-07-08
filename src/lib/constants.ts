@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase, FileText } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase, FileText, Mail } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -111,7 +111,7 @@ export const APP_MODULES: Module[] = [
     name: 'User Management',
     path: '/user-management',
     icon: UserCog,
-    roles: ALL_ROLES,
+    roles: [ROLES.ADMIN],
   },
   {
     name: 'Settings',
