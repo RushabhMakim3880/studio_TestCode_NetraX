@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -78,6 +78,12 @@ export const APP_MODULES: Module[] = [
     path: '/anonymization',
     icon: Waypoints,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
+  },
+  {
+    name: 'Dark Web',
+    path: '/dark-web',
+    icon: Shell,
+    roles: [ROLES.ADMIN, ROLES.ANALYST],
   },
   {
     name: 'Campaigns',
