@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CampaignPlanner } from '@/components/campaign-planner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Project = {
   id: string;
@@ -294,106 +295,115 @@ export default function ProjectManagementPage() {
           <p className="text-muted-foreground">Plan, oversee, and manage all red team projects and associated tasks.</p>
         </div>
 
-        <CampaignPlanner />
+        <Tabs defaultValue="projects" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="planner">AI Project Planner</TabsTrigger>
+                <TabsTrigger value="projects">Projects & Tasks</TabsTrigger>
+            </TabsList>
+            <TabsContent value="planner" className="mt-4">
+                <CampaignPlanner />
+            </TabsContent>
+            <TabsContent value="projects" className="mt-4">
+                 <div className="flex items-center justify-between">
+                    <h2 className="font-headline text-2xl font-semibold">Active & Planned Projects</h2>
+                    <Button onClick={handleCreateProject}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        New Project
+                    </Button>
+                </div>
 
-        <div className="flex items-center justify-between mt-4">
-            <h2 className="font-headline text-2xl font-semibold">Active & Planned Projects</h2>
-            <Button onClick={handleCreateProject}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                New Project
-            </Button>
-        </div>
-
-        {projects.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {projects.map((project) => {
-              const projectTasks = tasks.filter(t => t.campaignId === project.id);
-              return (
-                <Card key={project.id} className="flex flex-col">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{project.name}</CardTitle>
-                        <CardDescription>Target: {project.target}</CardDescription>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEditProject(project)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/> Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-grow space-y-2">
-                    <Badge variant={statusVariant[project.status] || 'default'}>{project.status}</Badge>
-                    <p className="text-sm text-muted-foreground">Duration: {project.startDate} to {project.endDate}</p>
-                  </CardContent>
-                  <CardFooter>
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="tasks" className="border-b-0">
-                        <AccordionTrigger className="hover:no-underline">
-                          <div className="flex items-center gap-2">
-                            <ClipboardList className="h-4 w-4" />
-                            <span>Tasks ({projectTasks.length})</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-4">
-                          <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                            {projectTasks.length > 0 ? projectTasks.map(task => (
-                              <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
-                                <div className="flex-grow">
-                                    <div className="flex items-center gap-2">
-                                        {taskStatusIcons[task.status]}
-                                        <span className="font-medium">{task.description}</span>
-                                        <Badge variant="outline">{task.type}</Badge>
-                                    </div>
-                                    {task.type === 'Phishing' && (
-                                        <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
-                                            <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
-                                            <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
-                                        </div>
-                                    )}
+                {projects.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
+                    {projects.map((project) => {
+                    const projectTasks = tasks.filter(t => t.campaignId === project.id);
+                    return (
+                        <Card key={project.id} className="flex flex-col">
+                        <CardHeader>
+                            <div className="flex items-start justify-between">
+                            <div>
+                                <CardTitle>{project.name}</CardTitle>
+                                <CardDescription>Target: {project.target}</CardDescription>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleEditProject(project)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/> Delete</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-2">
+                            <Badge variant={statusVariant[project.status] || 'default'}>{project.status}</Badge>
+                            <p className="text-sm text-muted-foreground">Duration: {project.startDate} to {project.endDate}</p>
+                        </CardContent>
+                        <CardFooter>
+                            <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="tasks" className="border-b-0">
+                                <AccordionTrigger className="hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    <ClipboardList className="h-4 w-4" />
+                                    <span>Tasks ({projectTasks.length})</span>
                                 </div>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed')}>Completed</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
-                          </div>
-                          <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(project.id)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Task
-                          </Button>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </CardFooter>
+                                </AccordionTrigger>
+                                <AccordionContent className="space-y-4">
+                                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                    {projectTasks.length > 0 ? projectTasks.map(task => (
+                                    <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
+                                        <div className="flex-grow">
+                                            <div className="flex items-center gap-2">
+                                                {taskStatusIcons[task.status]}
+                                                <span className="font-medium">{task.description}</span>
+                                                <Badge variant="outline">{task.type}</Badge>
+                                            </div>
+                                            {task.type === 'Phishing' && (
+                                                <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
+                                                    <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
+                                                    <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
+                                            <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                                            <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed')}>Completed</DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                    )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
+                                </div>
+                                <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(project.id)}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+                                </Button>
+                                </AccordionContent>
+                            </AccordionItem>
+                            </Accordion>
+                        </CardFooter>
+                        </Card>
+                    )
+                    })}
+                </div>
+                ) : (
+                <Card className="flex flex-col items-center justify-center py-20 mt-4">
+                    <CardHeader><CardTitle>No Projects Yet</CardTitle><CardDescription>Click "New Project" to get started.</CardDescription></CardHeader>
                 </Card>
-              )
-            })}
-          </div>
-        ) : (
-          <Card className="flex flex-col items-center justify-center py-20">
-            <CardHeader><CardTitle>No Projects Yet</CardTitle><CardDescription>Click "New Project" to get started.</CardDescription></CardHeader>
-          </Card>
-        )}
+                )}
+            </TabsContent>
+        </Tabs>
       </div>
 
       {/* Project Form Dialog */}
