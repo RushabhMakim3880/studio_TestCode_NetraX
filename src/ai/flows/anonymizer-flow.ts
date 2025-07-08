@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const AnonymizerInputSchema = z.object({
+const AnonymizerInputSchema = z.object({
   vpnExitCountry: z.string().optional().describe('The selected country for the VPN exit node.'),
   proxyChain: z.array(z.object({
     country: z.string(),
@@ -19,7 +19,7 @@ export const AnonymizerInputSchema = z.object({
 });
 export type AnonymizerInput = z.infer<typeof AnonymizerInputSchema>;
 
-export const AnonymizerOutputSchema = z.object({
+const AnonymizerOutputSchema = z.object({
   connectionLog: z.string().describe('A realistic, step-by-step log of the connection process.'),
   newPublicIp: z.string().describe('The new, simulated public IP address of the final exit node.'),
   finalCountry: z.string().describe('The country of the final exit node.'),
