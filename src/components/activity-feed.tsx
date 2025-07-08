@@ -19,7 +19,11 @@ export function ActivityFeed() {
         const response = await getActivityFeed();
         setFeed(response.activities);
       } catch (err) {
-        setError('Failed to fetch activity feed.');
+        if (err instanceof Error && (err.message.includes('429') || err.message.toLowerCase().includes('quota'))) {
+            setError('API quota exceeded. The feed will be unavailable until the quota resets.');
+        } else {
+            setError('Failed to fetch activity feed.');
+        }
         console.error(err);
       } finally {
         setIsLoading(false);
