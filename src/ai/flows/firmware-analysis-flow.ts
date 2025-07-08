@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const FirmwareAnalysisInputSchema = z.object({
+const FirmwareAnalysisInputSchema = z.object({
   fileName: z.string().describe("The name of the firmware file."),
   deviceDescription: z.string().describe("A brief description of the IoT device."),
 });
@@ -23,7 +23,7 @@ const FindingSchema = z.object({
     recommendation: z.string().describe('A specific recommendation on how to remediate the issue.'),
 });
 
-export const FirmwareAnalysisOutputSchema = z.object({
+const FirmwareAnalysisOutputSchema = z.object({
   summary: z.string().describe('A high-level executive summary of the firmware analysis findings.'),
   findings: z.array(FindingSchema).describe('A list of security findings discovered in the firmware.'),
 });

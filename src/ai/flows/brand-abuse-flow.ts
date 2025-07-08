@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const BrandAbuseInputSchema = z.object({
+const BrandAbuseInputSchema = z.object({
   brandName: z.string().describe('The brand name to monitor (e.g., "Global-Corp").'),
   domain: z.string().describe('The primary domain of the brand (e.g., "global-corp.com").'),
 });
@@ -28,7 +28,7 @@ const CopyrightInfringementSchema = z.object({
     description: z.string().describe("A description of the infringement (e.g., 'Unauthorized use of official logo on landing page.')."),
 });
 
-export const BrandAbuseOutputSchema = z.object({
+const BrandAbuseOutputSchema = z.object({
   suspectedPhishingUrls: z.array(z.string().url()).describe('A list of 2-4 plausible but fake URLs that appear to be phishing sites targeting the brand.'),
   typosquattedDomains: z.array(z.string()).describe('A list of 3-5 plausible but fake typosquatted or look-alike domains.'),
   socialMediaMentions: z.array(SocialMentionSchema).describe('A list of 2-3 simulated social media mentions that could be relevant for brand protection.'),

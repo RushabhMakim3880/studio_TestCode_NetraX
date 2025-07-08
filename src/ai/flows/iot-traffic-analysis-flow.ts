@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const IotTrafficAnalysisInputSchema = z.object({
+const IotTrafficAnalysisInputSchema = z.object({
   fileName: z.string().describe("The name of the capture file."),
   protocol: z.enum(['Zigbee', 'BLE']).describe('The wireless protocol.'),
   context: z.string().describe("A brief description of the capture's context."),
@@ -25,7 +25,7 @@ const TrafficEventSchema = z.object({
     isSuspicious: z.boolean().describe('Whether this event is considered suspicious or anomalous.'),
 });
 
-export const IotTrafficAnalysisOutputSchema = z.object({
+const IotTrafficAnalysisOutputSchema = z.object({
   analysisSummary: z.string().describe('A high-level summary of the traffic analysis, noting any major security concerns.'),
   events: z.array(TrafficEventSchema).describe('A list of 5-7 notable traffic events observed in the capture.'),
 });

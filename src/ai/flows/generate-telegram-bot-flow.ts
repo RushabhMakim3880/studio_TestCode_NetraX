@@ -10,12 +10,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateTelegramBotInputSchema = z.object({
+const GenerateTelegramBotInputSchema = z.object({
   description: z.string().min(10).describe('A natural language description of the bot\'s desired functionality.'),
 });
 export type GenerateTelegramBotInput = z.infer<typeof GenerateTelegramBotInputSchema>;
 
-export const GenerateTelegramBotOutputSchema = z.object({
+const GenerateTelegramBotOutputSchema = z.object({
   pythonCode: z.string().describe('The complete Python code for the Telegram bot.'),
   usageInstructions: z.string().describe('Step-by-step instructions on how to set up and run the bot, including necessary pip installs.'),
 });
