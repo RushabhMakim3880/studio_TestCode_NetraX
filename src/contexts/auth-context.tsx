@@ -59,20 +59,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const storedUsers = localStorage.getItem('netra-users');
-      const allUsers = storedUsers ? JSON.parse(storedUsers) : seedUsers;
-      if (!storedUsers) {
-        localStorage.setItem('netra-users', JSON.stringify(seedUsers));
-      }
-      setUsers(allUsers);
+      const storedUsersJSON = localStorage.getItem('netra-users');
+      let allUsers: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : seedUsers;
 
-      const storedCurrentUser = localStorage.getItem('netra-currentUser');
-      if (storedCurrentUser) {
-        setUser(JSON.parse(storedCurrentUser));
+      // Data migration for users in localStorage that don't have enabledModules
+      const migratedUsers = allUsers.map((u: User) => {
+          if (!u.enabledModules) {
+              return { ...u, enabledModules: getAllModuleNamesForRole(u.role) };
+          }
+          return u;
+      });
+
+      setUsers(migratedUsers);
+
+      if (!storedUsersJSON || JSON.stringify(allUsers) !== JSON.stringify(migratedUsers)) {
+          localStorage.setItem('netra-users', JSON.stringify(migratedUsers));
+      }
+
+      const storedCurrentUserJSON = localStorage.getItem('netra-currentUser');
+      if (storedCurrentUserJSON) {
+        let currentUser: User = JSON.parse(storedCurrentUserJSON);
+        // Also migrate the current user object if needed
+        if (!currentUser.enabledModules) {
+            currentUser = { ...currentUser, enabledModules: getAllModuleNamesForRole(currentUser.role) };
+            localStorage.setItem('netra-currentUser', JSON.stringify(currentUser));
+        }
+        setUser(currentUser);
       }
     } catch (error) {
       console.error('Failed to parse data from localStorage', error);
       localStorage.clear();
+      setUsers(seedUsers);
     } finally {
       setIsLoading(false);
     }
