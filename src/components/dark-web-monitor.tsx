@@ -5,12 +5,13 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { monitorDarkWeb, type DarkWebMonitorOutput } from '@/ai/flows/dark-web-monitor-flow';
 import { Loader2, AlertTriangle, Monitor, Sparkles, X } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { Label } from './ui/label';
 
 const formSchema = z.object({
   keywords: z.array(z.string()).min(1, { message: 'Please enter at least one keyword.' }),
