@@ -8,18 +8,20 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { searchHibp, type HibpServiceResponse } from '@/services/hibp';
-import { Loader2, AlertTriangle, DatabaseZap, ShieldOff, ShieldCheck } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
+import { searchBreachCompilation, type BreachCompilationServiceResponse } from '@/services/hibp';
+import { Loader2, AlertTriangle, DatabaseZap, ShieldOff, ShieldCheck, Clipboard } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from './ui/scroll-area';
 
 const formSchema = z.object({
   emailOrUsername: z.string().min(3, { message: 'Please enter a valid email or username.' }),
 });
 
 export function BreachDataChecker() {
-  const [result, setResult] = useState<HibpServiceResponse | null>(null);
+  const [result, setResult] = useState<BreachCompilationServiceResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -32,7 +34,7 @@ export function BreachDataChecker() {
     setIsLoading(true);
     setResult(null);
     try {
-      const response = await searchHibp(values.emailOrUsername);
+      const response = await searchBreachCompilation(values.emailOrUsername);
       setResult(response);
     } catch (err) {
       setResult({ success: false, error: 'An unexpected error occurred.' });
@@ -42,14 +44,19 @@ export function BreachDataChecker() {
     }
   }
 
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied!' });
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
             <DatabaseZap className="h-6 w-6" />
-            <CardTitle>Breach Data Checker</CardTitle>
+            <CardTitle>Breach Compilation Checker</CardTitle>
         </div>
-        <CardDescription>Check an email or username against the Have I Been Pwned database.</CardDescription>
+        <CardDescription>Check an email or username against a public breach compilation database.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -82,44 +89,46 @@ export function BreachDataChecker() {
             
             {result && result.success && (
                 <div>
-                    {result.breaches && result.breaches.length > 0 ? (
+                    {result.results && result.results.count > 0 ? (
                         <>
                             <div className="flex items-center gap-2 p-4 rounded-md bg-destructive/10 text-destructive border border-destructive/20 mb-4">
                                 <ShieldOff className="h-8 w-8" />
                                 <div>
-                                    <h3 className="font-bold">Oh no — Pwned!</h3>
-                                    <p className="text-sm">This account was found in {result.breaches.length} known data breaches.</p>
+                                    <h3 className="font-bold">Credentials Found!</h3>
+                                    <p className="text-sm">Found {result.results.count} potential credential pairs in public compilations.</p>
                                 </div>
                             </div>
-                            <Accordion type="multiple" className="w-full" defaultValue={[result.breaches[0].Name]}>
-                                {result.breaches.map((breach) => (
-                                    <AccordionItem value={breach.Name} key={breach.Name}>
-                                    <AccordionTrigger>
-                                        <div className="flex items-center gap-3 flex-1 text-left">
-                                            <img src={breach.LogoPath} alt={`${breach.Title} logo`} className="h-6 w-6" />
-                                            <span className="font-semibold">{breach.Title}</span>
-                                            <span className="text-muted-foreground text-sm">({breach.BreachDate})</span>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="space-y-3 pl-2">
-                                        <div className="text-muted-foreground prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: breach.Description }} />
-                                        <div>
-                                            <p className="font-semibold">Compromised data:</p>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {breach.DataClasses.map((data, i) => <Badge key={i} variant="secondary">{data}</Badge>)}
-                                            </div>
-                                        </div>
-                                    </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
+                            <Card>
+                                <ScrollArea className="h-72">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Credential Pair</TableHead>
+                                            <TableHead className="text-right">Action</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {result.results.lines.map((line, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell className="font-mono">{line}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleCopy(line.split(':')[1] || '')}>
+                                                        <Clipboard className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                </ScrollArea>
+                            </Card>
                         </>
                     ) : (
                         <div className="flex items-center gap-3 p-4 rounded-md bg-green-500/10 text-green-400 border border-green-500/20">
                            <ShieldCheck className="h-8 w-8" />
                             <div>
-                               <h3 className="font-bold">Good news — no pwnage found!</h3>
-                               <p className="text-sm">This account was not found in any public breaches in the HIBP database.</p>
+                               <h3 className="font-bold">Good news — no results found!</h3>
+                               <p className="text-sm">This query did not return any results from the breach compilation.</p>
                             </div>
                         </div>
                     )}
