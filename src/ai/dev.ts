@@ -34,3 +34,4 @@ import '@/ai/flows/breach-data-flow.ts';
 import '@/ai/flows/campaign-planner-flow.ts';
 import '@/ai/flows/log-analysis-flow.ts';
 import '@/ai/flows/ioc-extractor-flow.ts';
+import '@/ai/flows/workflow-summary-flow.ts';

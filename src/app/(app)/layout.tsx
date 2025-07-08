@@ -11,6 +11,7 @@ import {
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppHeader } from '@/components/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { WorkflowGenerator } from '@/components/workflow-generator';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -50,6 +51,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <SidebarInset>
         <AppHeader />
         <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <WorkflowGenerator />
       </SidebarInset>
     </SidebarProvider>
   );
