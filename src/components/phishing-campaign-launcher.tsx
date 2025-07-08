@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -92,7 +93,11 @@ export function PhishingCampaignLauncher() {
             });
             setSimulationLog(response.events);
         } catch(err) {
-            setError("Failed to start simulation. The AI may have refused the request.");
+            if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+                setError("The simulation service is temporarily busy. Please try again later.");
+            } else {
+                setError("Failed to start simulation. The AI may have refused the request.");
+            }
             console.error(err);
         } finally {
             setIsLoading(false);
