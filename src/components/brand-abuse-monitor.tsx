@@ -38,7 +38,11 @@ export function BrandAbuseMonitor() {
       const response = await monitorBrandAbuse(values);
       setResult(response);
     } catch (err) {
-      setError('Failed to fetch brand abuse data. Please try again.');
+      if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+        setError('The monitoring service is temporarily busy. Please try again in a moment.');
+      } else {
+        setError('Failed to fetch brand abuse data. The AI may have refused the request.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
