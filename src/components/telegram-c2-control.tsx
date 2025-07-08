@@ -56,6 +56,7 @@ export function TelegramC2Control() {
   };
 
   const onConnect = async (values: z.infer<typeof connectSchema>) => {
+    connectForm.formState.isSubmitting = true;
     addLog(`Attempting to connect with token...`);
     try {
       const response = await connectTelegramBot(values);
@@ -70,21 +71,30 @@ export function TelegramC2Control() {
       const errorMessage = 'Failed to connect. The AI may have refused the request.';
       addLog(errorMessage, true);
       console.error(err);
+    } finally {
+        connectForm.formState.isSubmitting = false;
     }
   };
 
   const onSend = async (values: z.infer<typeof sendSchema>) => {
+    sendForm.formState.isSubmitting = true;
     addLog(`Sending message to chat ID: ${values.chatId}...`);
     try {
-      const response = await sendTelegramPayload(values);
+      const token = connectForm.getValues('token');
+      if (!token) {
+        throw new Error('Bot token not available.');
+      }
+      const response = await sendTelegramPayload({...values, token});
       addLog(response.message, !response.success);
       if(response.success) {
         sendForm.resetField('message');
       }
     } catch (err) {
-      const errorMessage = 'Failed to send message. The AI may have refused the request.';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message.';
       addLog(errorMessage, true);
       console.error(err);
+    } finally {
+        sendForm.formState.isSubmitting = false;
     }
   };
 
@@ -95,7 +105,7 @@ export function TelegramC2Control() {
             <Bot className="h-6 w-6" />
             <CardTitle>Telegram C2 Control</CardTitle>
         </div>
-        <CardDescription>Simulate using a Telegram bot for C2 communications and payload delivery.</CardDescription>
+        <CardDescription>Use a Telegram bot for C2 communications and payload delivery.</CardDescription>
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-8">
         <div className="space-y-6">
@@ -109,7 +119,7 @@ export function TelegramC2Control() {
                            Connected: @{botName}
                         </Badge>
                     )}
-                     {!botName && isConnected === false && logs.length > 0 &&(
+                     {!botName && isConnected === false && logs.some(l => l.isError) &&(
                         <Badge variant="destructive">
                            <XCircle className="mr-2 h-4 w-4"/> 
                            Connection Failed
@@ -122,7 +132,7 @@ export function TelegramC2Control() {
                 render={({ field }) => (
                     <FormItem>
                     <FormControl>
-                        <Input placeholder="Enter (fake) Telegram Bot API Token" {...field} />
+                        <Input placeholder="Enter Telegram Bot API Token" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
