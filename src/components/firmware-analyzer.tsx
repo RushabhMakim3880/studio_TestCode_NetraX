@@ -9,10 +9,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { analyzeFirmware, FirmwareAnalysisOutput, FirmwareAnalysisInputSchema } from '@/ai/flows/firmware-analysis-flow';
+import { analyzeFirmware, type FirmwareAnalysisOutput } from '@/ai/flows/firmware-analysis-flow';
 import { Loader2, AlertTriangle, Cpu, ShieldX, ShieldAlert, ShieldQuestion, Info, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+const FirmwareAnalysisInputSchema = z.object({
+  fileName: z.string().min(1, 'Please select a file.'),
+  deviceDescription: z.string().describe("A brief description of the IoT device."),
+});
 
 const getSeverityIcon = (severity: string) => {
     switch (severity) {

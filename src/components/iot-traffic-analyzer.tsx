@@ -10,9 +10,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { analyzeIotTraffic, IotTrafficAnalysisOutput, IotTrafficAnalysisInputSchema } from '@/ai/flows/iot-traffic-analysis-flow';
+import { analyzeIotTraffic, type IotTrafficAnalysisOutput } from '@/ai/flows/iot-traffic-analysis-flow';
 import { Loader2, AlertTriangle, Wifi, ShieldAlert } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+const IotTrafficAnalysisInputSchema = z.object({
+  fileName: z.string().min(1, 'Please select a file.'),
+  protocol: z.enum(['Zigbee', 'BLE']),
+  context: z.string().min(10, "Context must be at least 10 characters."),
+});
 
 export function IotTrafficAnalyzer() {
   const [result, setResult] = useState<IotTrafficAnalysisOutput | null>(null);

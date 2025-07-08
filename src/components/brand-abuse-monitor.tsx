@@ -8,9 +8,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { monitorBrandAbuse, type BrandAbuseOutput, BrandAbuseInputSchema } from '@/ai/flows/brand-abuse-flow';
+import { monitorBrandAbuse, type BrandAbuseOutput } from '@/ai/flows/brand-abuse-flow';
 import { Loader2, AlertTriangle, ShieldCheck, Fish, Copyright, AtSign, Globe } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+const BrandAbuseInputSchema = z.object({
+  brandName: z.string().describe('The brand name to monitor (e.g., "Global-Corp").'),
+  domain: z.string().describe('The primary domain of the brand (e.g., "global-corp.com").'),
+});
 
 export function BrandAbuseMonitor() {
   const [result, setResult] = useState<BrandAbuseOutput | null>(null);
