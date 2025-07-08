@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { generatePhishingEmail, type PhishingOutput } from '@/ai/flows/phishing-flow';
-import { cloneLoginPage, type PageClonerInput, type PageClonerOutput } from '@/ai/flows/page-cloner-flow';
+import { cloneLoginPage } from '@/ai/flows/page-cloner-flow';
+import type { PageClonerOutput } from '@/ai/flows/page-cloner-flow';
 import { Loader2, AlertTriangle, Mail, Download, Link as LinkIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
@@ -115,7 +117,11 @@ export default function PhishingPage() {
       const response = await generatePhishingEmail(values);
       setEmailResult(response);
     } catch (err) {
-      setEmailError('Failed to generate phishing email. The content may have been blocked by safety filters.');
+      if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+        setEmailError('The AI service is temporarily busy. Please try again.');
+      } else {
+        setEmailError('Failed to generate phishing email. The content may have been blocked by safety filters.');
+      }
       console.error(err);
     } finally {
       setIsEmailLoading(false);
@@ -130,7 +136,11 @@ export default function PhishingPage() {
       const response = await cloneLoginPage(values);
       setClonerResult(response);
     } catch (err) {
-      setClonerError('Failed to clone page. The request may have been blocked by safety filters.');
+      if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+        setClonerError('The AI service is temporarily busy. Please try again.');
+      } else {
+        setClonerError('Failed to clone page. The request may have been blocked by safety filters.');
+      }
       console.error(err);
     } finally {
       setIsClonerLoading(false);

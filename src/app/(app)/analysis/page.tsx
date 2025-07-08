@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -74,7 +75,11 @@ export default function AnalysisPage() {
       });
       setResult(response);
     } catch (err) {
-      setError('Failed to analyze file. The simulation may have been blocked.');
+      if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+        setError('The analysis service is temporarily busy. Please try again later.');
+      } else {
+        setError('Failed to analyze file. The simulation may have been blocked.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
