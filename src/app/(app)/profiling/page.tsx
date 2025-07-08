@@ -207,7 +207,11 @@ export default function ProfilingPage() {
       });
       setGeneratedEmail(result);
     } catch(err) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate email. The content may have been blocked.' });
+      if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+        toast({ variant: 'destructive', title: 'Service Unavailable', description: 'The AI service is busy. Please try again in a moment.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate email. The content may have been blocked.' });
+      }
       console.error(err);
     } finally {
       setIsGeneratingEmail(false);
