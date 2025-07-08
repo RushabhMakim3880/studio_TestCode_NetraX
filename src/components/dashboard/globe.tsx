@@ -58,9 +58,9 @@ export function GlobeComponent() {
           atmosphereAltitude={0.15}
           arcsData={arcsData}
           arcColor={() => 'hsl(var(--accent))'}
-          arcDashLength={() => Math.random() * 0.5 + 0.1}
-          arcDashGap={() => Math.random() * 0.5 + 0.1}
-          arcDashAnimateTime={() => Math.random() * 5000 + 2000}
+          arcDashLength={0.4}
+          arcDashGap={0.2}
+          arcDashAnimateTime={4000}
           arcStroke={0.25}
         />}
       </CardContent>
