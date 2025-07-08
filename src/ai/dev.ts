@@ -35,3 +35,6 @@ import '@/ai/flows/campaign-planner-flow.ts';
 import '@/ai/flows/log-analysis-flow.ts';
 import '@/ai/flows/ioc-extractor-flow.ts';
 import '@/ai/flows/workflow-summary-flow.ts';
+import '@/ai/flows/built-with-flow.ts';
+import '@/ai/flows/port-scanner-flow.ts';
+import '@/ai/flows/injection-scanner-flow.ts';
