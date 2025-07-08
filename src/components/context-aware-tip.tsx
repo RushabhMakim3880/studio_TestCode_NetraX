@@ -12,36 +12,55 @@ export function ContextAwareTip() {
   const pathname = usePathname();
   const [tip, setTip] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const currentModule = useMemo(() => {
-    const module = APP_MODULES.find((m) => pathname.startsWith(m.path));
-    return module ? module.name : 'Dashboard';
+    // Correctly find the current module, including sub-modules
+    for (const module of APP_MODULES) {
+      if (module.subModules) {
+        const subModule = module.subModules.find(sm => sm.path === pathname);
+        if (subModule) return subModule.name;
+      }
+      if (module.path && pathname.startsWith(module.path)) {
+        return module.name;
+      }
+    }
+    return 'Dashboard';
   }, [pathname]);
 
   useEffect(() => {
     if (user?.role && currentModule) {
       setIsLoading(true);
+      setError(false); // Reset error state on new fetch
       getContextAwareTip({ userRole: user.role, currentModule })
         .then((response) => {
           setTip(response.tip);
         })
-        .catch((error) => {
-          console.error('Failed to get context-aware tip:', error);
-          setTip('Always double-check your target scope before engagement.');
+        .catch((err) => {
+          // Log the error for debugging but don't show a broken UI
+          console.error('Failed to get context-aware tip:', err);
+          setError(true);
         })
         .finally(() => {
           setIsLoading(false);
         });
+    } else {
+        setIsLoading(false); // No user/module, so not loading
     }
   }, [user?.role, currentModule]);
 
-  if (!tip || isLoading) {
+  if (isLoading) {
     return (
         <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
             <Lightbulb className="h-4 w-4" />
             <span>Generating security tip...</span>
         </div>
     );
+  }
+
+  // If there's an error or no tip, render nothing
+  if (error || !tip) {
+    return null;
   }
 
   return (
