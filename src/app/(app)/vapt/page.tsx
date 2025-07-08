@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -55,7 +56,11 @@ export default function VaptPage() {
       const response = await generateComplianceChecklist({ standard: standardToGenerate });
       setResult(response);
     } catch (err) {
-      setError('Failed to generate checklist. Please try again.');
+      if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+        setError('The AI model is temporarily busy. Please wait a moment and try again.');
+      } else {
+        setError('Failed to generate checklist. An unexpected error occurred.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
