@@ -23,6 +23,7 @@ import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CampaignPlanner } from '@/components/campaign-planner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DocumentGenerator } from '@/components/document-generator';
 
 type Project = {
   id: string;
@@ -296,9 +297,10 @@ export default function ProjectManagementPage() {
         </div>
 
         <Tabs defaultValue="projects" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="planner">AI Project Planner</TabsTrigger>
                 <TabsTrigger value="projects">Projects & Tasks</TabsTrigger>
+                <TabsTrigger value="documents">Document Generator</TabsTrigger>
             </TabsList>
             <TabsContent value="planner" className="mt-4">
                 <CampaignPlanner />
@@ -402,6 +404,9 @@ export default function ProjectManagementPage() {
                     <CardHeader><CardTitle>No Projects Yet</CardTitle><CardDescription>Click "New Project" to get started.</CardDescription></CardHeader>
                 </Card>
                 )}
+            </TabsContent>
+            <TabsContent value="documents" className="mt-4">
+                <DocumentGenerator />
             </TabsContent>
         </Tabs>
       </div>

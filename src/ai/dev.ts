@@ -48,5 +48,6 @@ import '@/ai/flows/dark-web-page-flow.ts';
 import '@/ai/flows/dark-web-monitor-flow.ts';
 import '@/ai/flows/telegram-c2-flow.ts';
 import '@/ai/flows/generate-telegram-bot-flow.ts';
+import '@/ai/flows/document-generator-flow.ts';
 
     
