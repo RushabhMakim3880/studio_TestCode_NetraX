@@ -3,6 +3,10 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import dynamic from 'next/dynamic';
 
+// Use a direct color value instead of a CSS variable reference.
+// This is the hex code for the --accent color defined in globals.css
+const ACCENT_COLOR = '#79ffef';
+
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
 export function GlobeComponent() {
@@ -54,10 +58,10 @@ export function GlobeComponent() {
           height={size.height}
           backgroundColor="rgba(0,0,0,0)"
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          atmosphereColor="hsl(var(--accent))"
+          atmosphereColor={ACCENT_COLOR}
           atmosphereAltitude={0.15}
           arcsData={arcsData}
-          arcColor={() => 'hsl(var(--accent))'}
+          arcColor={() => ACCENT_COLOR}
           arcDashLength={0.4}
           arcDashGap={0.2}
           arcDashAnimateTime={4000}
