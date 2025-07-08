@@ -20,13 +20,13 @@ body {
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 222.2 47.4% 11.2%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 222.2 47.4% 11.2%;
     --radius: 0.1rem;
   }
 
@@ -52,40 +52,59 @@ body {
     --ring: 200 100% 70%;
   }
 
-  .theme-matrix {
-    --background: 220 12% 8%;
-    --card: 120 15% 5%;
-    --primary: 120 60% 15%;
-    --secondary: 120 60% 10%;
+  body.theme-matrix {
+    --primary: 120 60% 30%;
+    --primary-foreground: 120 20% 95%;
+    --secondary: 120 40% 20%;
+    --secondary-foreground: 120 20% 95%;
     --accent: 120 100% 50%;
-    --accent-foreground: 220 12% 10%;
-    --border: 120 80% 20%;
-    --input: 120 80% 15%;
+    --accent-foreground: 120 100% 10%;
+    --destructive: 0 70% 40%;
     --ring: 120 100% 50%;
   }
 
-  .theme-crimson {
-    --background: 0 15% 8%;
-    --card: 0 15% 10%;
-    --primary: 0 60% 20%;
-    --secondary: 0 60% 15%;
-    --accent: 0 80% 50%;
-    --accent-foreground: 0 10% 95%;
-    --border: 0 80% 25%;
-    --input: 0 80% 20%;
-    --ring: 0 80% 50%;
+  body.theme-crimson {
+    --primary: 0 60% 30%;
+    --primary-foreground: 0 20% 95%;
+    --secondary: 0 40% 20%;
+    --secondary-foreground: 0 20% 95%;
+    --accent: 0 80% 55%;
+    --accent-foreground: 0 100% 98%;
+    --destructive: 0 70% 40%;
+    --ring: 0 80% 55%;
   }
   
-  .theme-cyberpunk {
-    --background: 250 20% 8%;
-    --card: 250 20% 10%;
-    --primary: 320 50% 20%;
-    --secondary: 250 50% 20%;
+  body.theme-cyberpunk {
+    --primary: 320 50% 30%;
+    --primary-foreground: 320 10% 95%;
+    --secondary: 250 50% 25%;
+    --secondary-foreground: 250 10% 95%;
     --accent: 320 100% 60%;
-    --accent-foreground: 320 10% 95%;
-    --border: 250 40% 25%;
-    --input: 250 40% 20%;
+    --accent-foreground: 320 100% 10%;
+    --destructive: 340 80% 50%;
     --ring: 320 100% 60%;
+  }
+
+  body.theme-cobalt {
+    --primary: 210 70% 45%;
+    --primary-foreground: 210 20% 95%;
+    --secondary: 210 50% 30%;
+    --secondary-foreground: 210 20% 95%;
+    --accent: 200 100% 60%;
+    --accent-foreground: 200 100% 10%;
+    --destructive: 0 70% 50%;
+    --ring: 200 100% 60%;
+  }
+
+  body.theme-amber {
+    --primary: 35 80% 45%;
+    --primary-foreground: 35 20% 95%;
+    --secondary: 25 60% 35%;
+    --secondary-foreground: 25 20% 95%;
+    --accent: 45 100% 55%;
+    --accent-foreground: 45 100% 10%;
+    --destructive: 0 70% 50%;
+    --ring: 45 100% 55%;
   }
 }
 
