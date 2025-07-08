@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -71,6 +71,12 @@ export const APP_MODULES: Module[] = [
     name: 'C2 Panel',
     path: '/c2',
     icon: Server,
+    roles: [ROLES.ADMIN, ROLES.OPERATOR],
+  },
+  {
+    name: 'Anonymization',
+    path: '/anonymization',
+    icon: Waypoints,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
   },
   {
