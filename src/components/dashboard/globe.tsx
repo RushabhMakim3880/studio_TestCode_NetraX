@@ -3,8 +3,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import dynamic from 'next/dynamic';
 
-// Use a direct color value instead of a CSS variable reference.
-// This is the hex code for the --accent color defined in globals.css
 const ACCENT_COLOR = '#79ffef';
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
@@ -14,7 +12,6 @@ export function GlobeComponent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
-  // Memoize fake data to prevent regeneration on every render
   const arcsData = useMemo(() => {
     const N = 20;
     return [...Array(N).keys()].map(() => ({
@@ -22,6 +19,7 @@ export function GlobeComponent() {
         startLng: (Math.random() - 0.5) * 360,
         endLat: (Math.random() - 0.5) * 180,
         endLng: (Math.random() - 0.5) * 360,
+        color: ACCENT_COLOR,
     }));
   }, []);
 
@@ -37,7 +35,6 @@ export function GlobeComponent() {
     handleResize();
     window.addEventListener('resize', handleResize);
     
-    // Set initial camera view
     if (globeRef.current) {
       globeRef.current.controls().autoRotate = true;
       globeRef.current.controls().autoRotateSpeed = 0.6;
@@ -47,7 +44,6 @@ export function GlobeComponent() {
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
 
   return (
     <Card ref={containerRef} className="h-full w-full bg-transparent overflow-hidden">
@@ -61,7 +57,7 @@ export function GlobeComponent() {
           atmosphereColor={ACCENT_COLOR}
           atmosphereAltitude={0.15}
           arcsData={arcsData}
-          arcColor={() => ACCENT_COLOR}
+          arcColor="color"
           arcDashLength={0.4}
           arcDashGap={0.2}
           arcDashAnimateTime={4000}
@@ -72,5 +68,4 @@ export function GlobeComponent() {
   );
 }
 
-// Rename the default export to avoid conflicts
 export { GlobeComponent as Globe }
