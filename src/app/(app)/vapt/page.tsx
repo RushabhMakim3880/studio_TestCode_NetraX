@@ -30,7 +30,7 @@ const formSchema = z.object({
     path: ['customStandard'],
 });
 
-const complianceStandards = ['PCI-DSS v4.0', 'HIPAA', 'ISO 27001', 'SOC 2 Type II', 'Custom'];
+const complianceStandards = ['PCI-DSS v4.0', 'HIPAA', 'ISO 27001', 'SOC 2 Type II', 'FDA Penetration Testing', 'Custom'];
 
 export default function VaptPage() {
   const [result, setResult] = useState<VaptOutput | null>(null);
