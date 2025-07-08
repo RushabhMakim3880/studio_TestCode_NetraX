@@ -10,14 +10,14 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const InviteUserInputSchema = z.object({
+const InviteUserInputSchema = z.object({
   recipientEmail: z.string().email().describe('The email address of the person being invited.'),
   role: z.string().describe('The role assigned to the new user.'),
   inviterName: z.string().describe('The name of the person sending the invitation.'),
 });
 export type InviteUserInput = z.infer<typeof InviteUserInputSchema>;
 
-export const InviteUserOutputSchema = z.object({
+const InviteUserOutputSchema = z.object({
   subject: z.string().describe('The subject line of the invitation email.'),
   body: z.string().describe('The full HTML body of the invitation email.'),
 });

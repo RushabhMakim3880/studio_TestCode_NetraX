@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const TestEmailInputSchema = z.object({
+const TestEmailInputSchema = z.object({
   smtpHost: z.string().describe('The SMTP server hostname.'),
   smtpPort: z.string().describe('The SMTP server port.'),
   smtpUser: z.string().describe('The SMTP username.'),
@@ -18,7 +18,7 @@ export const TestEmailInputSchema = z.object({
 });
 export type TestEmailInput = z.infer<typeof TestEmailInputSchema>;
 
-export const TestEmailOutputSchema = z.object({
+const TestEmailOutputSchema = z.object({
   success: z.boolean().describe('Whether the test email was "sent" successfully.'),
   log: z.string().describe('A realistic, multi-line log of the SMTP connection and sending process.'),
 });
