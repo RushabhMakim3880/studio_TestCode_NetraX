@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { useAuth, type User } from '@/hooks/use-auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, Edit, UserPlus, Send, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit, UserPlus, Send, Loader2, Settings } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -32,11 +32,13 @@ import {
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ROLES, type Role } from '@/lib/constants';
+import { ROLES, type Role, APP_MODULES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { generateInviteEmail, type InviteUserOutput } from '@/ai/flows/invite-user-flow';
-
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Checkbox } from './ui/checkbox';
+import { ScrollArea } from './ui/scroll-area';
 
 const inviteSchema = z.object({
     email: z.string().email('Please enter a valid email address.'),
@@ -49,9 +51,10 @@ export function UserTable() {
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [editableModules, setEditableModules] = useState<string[]>([]);
+    
     const { toast } = useToast();
     
-    // Invite state
     const [inviteStep, setInviteStep] = useState<'form' | 'preview'>('form');
     const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
     const [generatedInvite, setGeneratedInvite] = useState<InviteUserOutput | null>(null);
@@ -61,9 +64,10 @@ export function UserTable() {
         defaultValues: { email: '', role: ROLES.OPERATOR },
     });
 
-
     const handleEditClick = (user: User) => {
         setSelectedUser(user);
+        // Ensure enabledModules is an array, falling back to an empty one if not set
+        setEditableModules(user.enabledModules || []);
         setIsEditModalOpen(true);
     }
     
@@ -76,15 +80,9 @@ export function UserTable() {
         setIsDeleteAlertOpen(true);
     }
 
-    const handleRoleChange = (role: Role) => {
-        if(selectedUser) {
-            setSelectedUser({...selectedUser, role});
-        }
-    }
-
     const handleSaveChanges = () => {
         if (selectedUser) {
-            updateUser(selectedUser.username, { role: selectedUser.role });
+            updateUser(selectedUser.username, { role: selectedUser.role, enabledModules: editableModules });
             toast({ title: "Success", description: `User ${selectedUser.username} updated.` });
             setIsEditModalOpen(false);
             setSelectedUser(null);
@@ -138,6 +136,12 @@ export function UserTable() {
       .join('')
       .toUpperCase();
   };
+  
+   const handleModuleToggle = (moduleName: string, isChecked: boolean) => {
+        setEditableModules(prev => 
+            isChecked ? [...prev, moduleName] : prev.filter(m => m !== moduleName)
+        );
+    };
 
   return (
     <>
@@ -152,6 +156,7 @@ export function UserTable() {
             <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Enabled Modules</TableHead>
                 <TableHead>Last Login</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
@@ -172,6 +177,7 @@ export function UserTable() {
                     </div>
                 </TableCell>
                 <TableCell><Badge variant="outline">{user.role}</Badge></TableCell>
+                <TableCell className="text-sm text-muted-foreground">{user.enabledModules?.length || 0} modules</TableCell>
                 <TableCell>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</TableCell>
                 <TableCell className="text-right">
                     <DropdownMenu>
@@ -180,7 +186,7 @@ export function UserTable() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditClick(user)}><Edit className="mr-2 h-4 w-4" /> Edit Role</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(user)}><Edit className="mr-2 h-4 w-4" /> Edit Role & Permissions</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(user)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete User
@@ -194,23 +200,73 @@ export function UserTable() {
         </Table>
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-            <DialogContent>
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Edit User: {selectedUser?.displayName}</DialogTitle>
-                    <DialogDescription>Change the role for this user.</DialogDescription>
+                    <DialogDescription>Change the role and fine-tune module access for this user.</DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={selectedUser?.role} onValueChange={(value: Role) => handleRoleChange(value)}>
-                        <SelectTrigger id="role">
-                            <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.values(ROLES).map(role => (
-                                <SelectItem key={role} value={role}>{role}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="py-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Role</Label>
+                            <Select 
+                                value={selectedUser?.role} 
+                                onValueChange={(value: Role) => setSelectedUser(prev => prev ? {...prev, role: value} : null)}
+                            >
+                                <SelectTrigger id="role">
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.values(ROLES).map(role => (
+                                        <SelectItem key={role} value={role}>{role}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <p className="text-sm text-muted-foreground">Changing the role will not automatically change module permissions. Please review them manually.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Module Permissions</Label>
+                        <Card className="max-h-80">
+                           <ScrollArea className="h-80">
+                               <CardContent className="p-4">
+                                <Accordion type="multiple" className="w-full" defaultValue={APP_MODULES.map(m => m.name)}>
+                                {APP_MODULES.filter(m => m.roles.includes(selectedUser?.role || ROLES.OPERATOR)).map(module => (
+                                    <AccordionItem value={module.name} key={module.name}>
+                                        <AccordionTrigger className="text-base py-2">
+                                            <div className="flex items-center gap-2">
+                                                <module.icon className="h-4 w-4" />
+                                                {module.name}
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pl-4 space-y-2">
+                                            {module.subModules ? module.subModules.map(sub => (
+                                                <div key={sub.name} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`${module.name}-${sub.name}`}
+                                                        checked={editableModules.includes(sub.name)}
+                                                        onCheckedChange={(checked) => handleModuleToggle(sub.name, !!checked)}
+                                                    />
+                                                    <label htmlFor={`${module.name}-${sub.name}`} className="text-sm font-normal">{sub.name}</label>
+                                                </div>
+                                            )) : (
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={module.name}
+                                                        checked={editableModules.includes(module.name)}
+                                                        onCheckedChange={(checked) => handleModuleToggle(module.name, !!checked)}
+                                                    />
+                                                    <label htmlFor={module.name} className="text-sm font-normal">Enable Base Module</label>
+                                                </div>
+                                            )}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                                </Accordion>
+                               </CardContent>
+                           </ScrollArea>
+                        </Card>
+                    </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>

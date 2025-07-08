@@ -60,7 +60,7 @@ export const APP_MODULES: Module[] = [
     icon: Bot,
     roles: ALL_ROLES,
     subModules: [
-      { name: 'Phishing', path: '/phishing', icon: Bot, roles: ALL_ROLES },
+      { name: 'Phishing', path: '/phishing', icon: Mail, roles: ALL_ROLES },
       { name: 'Templates', path: '/templates', icon: MessageSquarePlus, roles: ALL_ROLES },
     ]
   },
@@ -120,3 +120,19 @@ export const APP_MODULES: Module[] = [
     roles: ALL_ROLES,
   },
 ];
+
+export function getAllModuleNamesForRole(role: Role): string[] {
+  const modules: string[] = [];
+  APP_MODULES.forEach(module => {
+    if (module.subModules) {
+      module.subModules.forEach(subModule => {
+        if (subModule.roles.includes(role)) {
+          modules.push(subModule.name);
+        }
+      });
+    } else if (module.path && module.roles.includes(role)) {
+      modules.push(module.name);
+    }
+  });
+  return modules;
+}

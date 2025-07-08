@@ -3,7 +3,7 @@
 
 import { createContext, useState, useEffect, type ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ROLES, type Role } from '@/lib/constants';
+import { ROLES, type Role, getAllModuleNamesForRole } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 
 export type User = {
@@ -13,6 +13,7 @@ export type User = {
   role: Role;
   password?: string; // Should be hashed in a real app
   lastLogin?: string;
+  enabledModules?: string[];
 };
 
 type LoginCredentials = Pick<User, 'username' | 'password'>;
@@ -37,10 +38,10 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const seedUsers: User[] = [
-    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null },
-    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null },
-    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null },
-    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null },
+    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN) },
+    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST) },
+    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR) },
+    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR) },
 ];
 
 
@@ -106,7 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const newUser: User = { 
         ...credentials, 
         lastLogin: new Date().toISOString(),
-        avatarUrl: null
+        avatarUrl: null,
+        enabledModules: getAllModuleNamesForRole(credentials.role),
     };
     const updatedUsers = [...users, newUser];
     

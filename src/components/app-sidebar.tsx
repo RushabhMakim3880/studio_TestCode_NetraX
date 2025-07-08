@@ -24,25 +24,8 @@ import { ChevronRight } from 'lucide-react';
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [enabledModules, setEnabledModules] = useState<string[]>([]);
   const [openCollapsibles, setOpenCollapsibles] = useState<string[]>([]);
   
-  useEffect(() => {
-    const allModuleNames = APP_MODULES.flatMap(m => m.subModules ? m.subModules.map(sm => sm.name) : (m.path ? [m.name] : []));
-    const storedSettings = localStorage.getItem('netra-settings');
-    if (storedSettings) {
-      try {
-        const settings = JSON.parse(storedSettings);
-        setEnabledModules(Object.keys(settings).filter(key => settings[key]));
-      } catch (e) {
-        console.error("Failed to parse settings", e);
-        setEnabledModules(allModuleNames);
-      }
-    } else {
-      setEnabledModules(allModuleNames);
-    }
-  }, []);
-
   useEffect(() => {
     const activeParent = APP_MODULES.find(m => m.subModules?.some(sm => sm.path === pathname));
     if (activeParent) {
@@ -54,8 +37,10 @@ export function AppSidebar() {
 
   const getVisibleSubModules = (module: Module): Module[] => {
     if (!module.subModules) return [];
+    // A submodule is visible if the user has the role AND the module is in their enabled list.
+    // The `enabledModules` array is the source of truth for fine-grained access.
     return module.subModules.filter(
-      sm => sm.roles.includes(user.role) && enabledModules.includes(sm.name)
+      sm => sm.roles.includes(user.role) && (user.enabledModules || []).includes(sm.name)
     );
   };
 
@@ -121,7 +106,8 @@ export function AppSidebar() {
               );
             }
 
-            if (module.path && module.roles.includes(user.role) && enabledModules.includes(module.name)) {
+            // A top-level module is visible if user has role AND it's in their enabled list.
+            if (module.path && module.roles.includes(user.role) && (user.enabledModules || []).includes(module.name)) {
                 return (
                     <SidebarMenuItem key={module.path}>
                         <Link href={module.path}>
