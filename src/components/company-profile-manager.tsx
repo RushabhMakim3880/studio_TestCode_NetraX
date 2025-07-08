@@ -41,8 +41,8 @@ export function CompanyProfileManager() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit for logo
-        toast({ variant: 'destructive', title: 'Logo too large', description: 'Please select an image smaller than 1MB.' });
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit for logo
+        toast({ variant: 'destructive', title: 'Logo too large', description: 'Please select an image smaller than 5MB.' });
         return;
       }
       const reader = new FileReader();
@@ -90,7 +90,7 @@ export function CompanyProfileManager() {
           <div className="space-y-2">
             <Label htmlFor="companyLogo">Company Logo</Label>
             <Input id="companyLogo" type="file" accept="image/png, image/jpeg" onChange={handleLogoChange} />
-            <CardDescription>Recommended: PNG with transparent background, under 1MB.</CardDescription>
+            <CardDescription>Recommended: PNG with transparent background, under 5MB.</CardDescription>
             {profile.logoDataUrl && (
               <div className="mt-4 p-4 border rounded-md flex items-center justify-center bg-primary/10 h-40">
                 <Image src={profile.logoDataUrl} alt="Company Logo Preview" width={150} height={150} className="max-h-[120px] w-auto object-contain" />
