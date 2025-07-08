@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -25,6 +25,12 @@ export const APP_MODULES: Module[] = [
     icon: LayoutDashboard,
     roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR, ROLES.AUDITOR],
   },
+   {
+    name: 'Project Management',
+    path: '/project-management',
+    icon: Briefcase,
+    roles: [ROLES.ADMIN, ROLES.OPERATOR],
+  },
   {
     name: 'Intelligence',
     icon: BrainCircuit,
@@ -36,12 +42,11 @@ export const APP_MODULES: Module[] = [
       { name: 'Dark Web', path: '/dark-web', icon: Shell, roles: [ROLES.ADMIN, ROLES.ANALYST] },
     ]
   },
-  {
-    name: 'Engagement',
-    icon: Route,
+   {
+    name: 'Social Engineering',
+    icon: Bot,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
     subModules: [
-      { name: 'Campaigns', path: '/campaigns', icon: Route, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Phishing', path: '/phishing', icon: Bot, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Templates', path: '/templates', icon: MessageSquarePlus, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ]

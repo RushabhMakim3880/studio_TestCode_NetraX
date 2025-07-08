@@ -41,7 +41,7 @@ export function CampaignPlanner() {
       const response = await generateCampaignPlan(values);
       setResult(response);
     } catch (err) {
-      setError('Failed to generate campaign plan. The AI may have refused the request.');
+      setError('Failed to generate project plan. The AI may have refused the request.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -53,10 +53,10 @@ export function CampaignPlanner() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <Map className="h-6 w-6" />
-          <CardTitle>AI Campaign Planner</CardTitle>
+          <CardTitle>AI Project Planner</CardTitle>
         </div>
         <CardDescription>
-          Describe a high-level objective and let the AI strategist create a phased attack plan.
+          Describe a high-level objective and let the AI strategist create a phased project plan.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -68,7 +68,7 @@ export function CampaignPlanner() {
                 name="objective"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Campaign Objective</FormLabel>
+                    <FormLabel>Project Objective</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., Exfiltrate financial reports..." {...field} />
                     </FormControl>
@@ -104,7 +104,7 @@ export function CampaignPlanner() {
               {!isLoading && !result && (
                 <div className="text-muted-foreground text-center h-full flex flex-col items-center justify-center">
                   <Bot className="h-10 w-10 mb-2" />
-                  Your generated campaign plan will appear here.
+                  Your generated project plan will appear here.
                 </div>
               )}
 
@@ -139,5 +139,3 @@ export function CampaignPlanner() {
     </Card>
   );
 }
-
-    

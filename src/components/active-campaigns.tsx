@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Route, ArrowRight, FolderSearch } from 'lucide-react';
+import { Route, ArrowRight, FolderSearch, Briefcase } from 'lucide-react';
 
 type Campaign = {
   id: string;
@@ -49,11 +49,11 @@ export function ActiveCampaigns() {
       <CardHeader>
         <div className="flex items-center justify-between">
             <div className='flex items-center gap-3'>
-                <Route className="h-6 w-6" />
-                <CardTitle>Active Campaigns</CardTitle>
+                <Briefcase className="h-6 w-6" />
+                <CardTitle>Active Projects</CardTitle>
             </div>
             <Button variant="ghost" size="sm" asChild>
-                <Link href="/campaigns">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/project-management">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
         </div>
         <CardDescription>An overview of ongoing operations.</CardDescription>
@@ -78,8 +78,8 @@ export function ActiveCampaigns() {
         ) : (
           <div className="text-center text-muted-foreground py-10">
             <FolderSearch className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4"/>
-            <p>No active campaigns.</p>
-            <Button variant="link" asChild><Link href="/campaigns">Start a new campaign</Link></Button>
+            <p>No active projects.</p>
+            <Button variant="link" asChild><Link href="/project-management">Start a new project</Link></Button>
           </div>
         )}
       </CardContent>
