@@ -35,7 +35,7 @@ export function ActivityFeed() {
   }
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <div className="flex items-center gap-3">
             <History className="h-6 w-6" />
@@ -43,15 +43,15 @@ export function ActivityFeed() {
         </div>
         <CardDescription>A live feed of recent actions across the platform.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         {isLoading && (
-          <div className="flex items-center justify-center h-40 gap-2 text-muted-foreground">
+          <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Loading recent activity...</span>
           </div>
         )}
         {error && (
-          <div className="flex items-center justify-center h-40 gap-2 text-destructive">
+          <div className="flex items-center justify-center h-full gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
             <span>{error}</span>
           </div>
