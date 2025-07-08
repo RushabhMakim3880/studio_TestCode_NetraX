@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type FileSystemNode = {
+export type FileSystemNode = {
   id: string;
   name: string;
   type: 'folder' | 'file';
@@ -164,7 +164,7 @@ export function FileBrowser() {
     // For simplicity, we'll try to read most common types as text or data URL
     if (file.type.startsWith('image/') || file.type === 'application/pdf') {
         reader.readAsDataURL(file);
-    } else if (file.type.startsWith('text/') || file.type.endsWith('json') || file.type.endsWith('xml')) {
+    } else if (file.type.startsWith('text/') || file.type.endsWith('json') || file.type.endsWith('xml') || file.type.endsWith('md')) {
         reader.readAsText(file);
     } else {
         // For other files, just store metadata without content
@@ -263,7 +263,7 @@ export function FileBrowser() {
           <div className="py-4 flex-grow overflow-auto">
             {viewingFile?.mimeType?.startsWith('image/') && viewingFile.content ? (
               <Image src={viewingFile.content} alt={viewingFile.name || 'Image preview'} width={800} height={600} className="w-full h-auto object-contain"/>
-            ) : viewingFile?.mimeType?.startsWith('text/') && viewingFile.content ? (
+            ) : (viewingFile?.mimeType?.startsWith('text/') || viewingFile?.mimeType?.endsWith('md')) && viewingFile.content ? (
               <pre className="bg-primary/10 p-4 rounded-md text-sm whitespace-pre-wrap">{viewingFile.content}</pre>
             ) : viewingFile?.mimeType === 'application/pdf' && viewingFile.content ? (
               <iframe src={viewingFile.content} className="w-full h-full border-0" title={viewingFile.name}></iframe>

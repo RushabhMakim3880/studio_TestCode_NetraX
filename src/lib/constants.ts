@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase, FileText } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -79,7 +79,13 @@ export const APP_MODULES: Module[] = [
     name: 'File Manager',
     path: '/files',
     icon: Files,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
+    roles: [ROLES.ADMIN, ROLES.OPERATOR, ROLES.ANALYST],
+  },
+  {
+    name: 'Documents',
+    path: '/documents',
+    icon: FileText,
+    roles: [ROLES.ADMIN, ROLES.OPERATOR, ROLES.ANALYST],
   },
   {
     name: 'Reporting',

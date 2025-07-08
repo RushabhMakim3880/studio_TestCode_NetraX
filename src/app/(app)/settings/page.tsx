@@ -10,6 +10,7 @@ import { APP_MODULES } from '@/lib/constants';
 import { useAuth } from '@/hooks/use-auth';
 import { Input } from '@/components/ui/input';
 import { Download, Upload } from 'lucide-react';
+import { CompanyProfileManager } from '@/components/company-profile-manager';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -102,6 +103,8 @@ export default function SettingsPage() {
         <h1 className="font-headline text-3xl font-semibold">Settings</h1>
         <p className="text-muted-foreground">Manage your application preferences and modules.</p>
       </div>
+
+      <CompanyProfileManager />
 
       <Card>
         <CardHeader>

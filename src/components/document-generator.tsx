@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,8 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { generateDocument, type DocumentGeneratorOutput } from '@/ai/flows/document-generator-flow';
-import { Loader2, AlertTriangle, Sparkles, FileText, Bot, Clipboard } from 'lucide-react';
+import { Loader2, AlertTriangle, Sparkles, FileText, Bot, Clipboard, Save } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import type { CompanyProfile } from '@/components/company-profile-manager';
+import type { FileSystemNode } from '@/components/file-browser';
 
 const documentTypes = ['Statement of Work (SOW)', 'Letter of Reconnaissance (LOR)', 'Standard Operating Procedure (SOP)'] as const;
 
@@ -29,7 +32,17 @@ export function DocumentGenerator() {
   const [result, setResult] = useState<DocumentGeneratorOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const storedProfile = localStorage.getItem('netra-company-profile');
+      if (storedProfile) {
+        setCompanyProfile(JSON.parse(storedProfile));
+      }
+    } catch(e) { console.error(e); }
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,6 +73,36 @@ export function DocumentGenerator() {
     if (result?.documentContent) {
       navigator.clipboard.writeText(result.documentContent);
       toast({ title: "Copied!", description: "Document content copied to clipboard." });
+    }
+  };
+
+  const handleSaveToFileManager = () => {
+    if (!result) return;
+    
+    try {
+        const storedFs = localStorage.getItem('netra-fs') || '[]';
+        const fs: FileSystemNode[] = JSON.parse(storedFs);
+
+        const reportsFolder = fs.find(node => node.name === 'Reports' && node.parentId === 'root');
+        const parentId = reportsFolder ? reportsFolder.id : 'root';
+
+        const safeFilename = result.documentTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
+
+        const newFile: FileSystemNode = {
+            id: crypto.randomUUID(),
+            name: safeFilename,
+            type: 'file',
+            parentId: parentId,
+            content: `# ${result.documentTitle}\n\n${result.documentContent}`,
+            mimeType: 'text/markdown',
+        };
+
+        const newFs = [...fs, newFile];
+        localStorage.setItem('netra-fs', JSON.stringify(newFs));
+        toast({ title: 'Document Saved', description: `${safeFilename} was saved to the Reports folder.`});
+    } catch(e) {
+        console.error("Failed to save to File Manager", e);
+        toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the document.' });
     }
   };
 
@@ -104,9 +147,12 @@ export function DocumentGenerator() {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <Label>Generated Document</Label>
-                {result && <Button variant="outline" size="sm" onClick={handleCopy}><Clipboard className="mr-2 h-4 w-4"/> Copy</Button>}
+                <div className="flex gap-2">
+                    {result && <Button variant="outline" size="sm" onClick={handleCopy}><Clipboard className="mr-2 h-4 w-4"/> Copy Text</Button>}
+                    {result && <Button variant="outline" size="sm" onClick={handleSaveToFileManager}><Save className="mr-2 h-4 w-4"/> Save to Files</Button>}
+                </div>
             </div>
-            <div className="h-[60vh] border rounded-md p-4 bg-primary/20 space-y-4 overflow-y-auto">
+            <div className="h-[70vh] border rounded-md p-4 bg-primary/20 space-y-4 overflow-y-auto">
               {isLoading && <div className="flex items-center justify-center h-full text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>}
               {error && <div className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{error}</div>}
               {!isLoading && !result && (
@@ -117,9 +163,23 @@ export function DocumentGenerator() {
               )}
 
               {result && (
-                <div className="space-y-4 animate-in fade-in prose prose-sm dark:prose-invert max-w-none">
-                    <h2 className="text-accent">{result.documentTitle}</h2>
-                    <pre className="text-wrap font-sans">{result.documentContent}</pre>
+                <div className="bg-card p-6 rounded shadow-lg text-card-foreground">
+                    {companyProfile && (
+                        <header className="flex justify-between items-start pb-4 border-b mb-4">
+                            <div className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                <p className="font-bold text-lg text-foreground">{companyProfile.name}</p>
+                                <p>{companyProfile.address}</p>
+                                <p>{companyProfile.contact}</p>
+                            </div>
+                            {companyProfile.logoDataUrl && (
+                                <Image src={companyProfile.logoDataUrl} alt="Company Logo" width={100} height={100} className="max-h-16 w-auto object-contain" />
+                            )}
+                        </header>
+                    )}
+                    <div className="space-y-4 animate-in fade-in prose prose-sm dark:prose-invert max-w-none">
+                        <h2 className="text-accent !mb-4">{result.documentTitle}</h2>
+                        <div className="whitespace-pre-wrap font-sans">{result.documentContent}</div>
+                    </div>
                 </div>
               )}
             </div>
