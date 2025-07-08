@@ -1,64 +1,92 @@
 'use server';
 /**
- * @fileOverview An AI flow for simulating a VirusTotal hash scan.
+ * @fileOverview A flow for scanning a file hash using the real VirusTotal API.
+ * This replaces the previous simulation.
  *
- * - scanFileHash - Generates a simulated VirusTotal report for a file hash.
+ * - scanFileHash - Scans a file hash using the VirusTotal API.
  * - VirusTotalScanInput - The input type for the scanFileHash function.
  * - VirusTotalScanOutput - The return type for the scanFileHash function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { z } from 'zod';
 
 const VirusTotalScanInputSchema = z.object({
   hash: z.string().min(32).describe('The file hash (MD5, SHA1, or SHA256) to scan.'),
 });
 export type VirusTotalScanInput = z.infer<typeof VirusTotalScanInputSchema>;
 
-const ScanResultSchema = z.object({
-    engineName: z.string().describe("The name of the antivirus engine."),
-    category: z.enum(['malicious', 'suspicious', 'undetected', 'timeout']).describe("The detection category."),
-    result: z.string().nullable().describe("The name of the detected threat, if any."),
+// This schema is designed to be a subset of the actual VirusTotal API response
+// to make it easier to handle on the frontend.
+const ScanEngineResultSchema = z.object({
+  engine_name: z.string(),
+  category: z.string(),
+  result: z.string().nullable(),
+});
+
+const LastAnalysisStatsSchema = z.object({
+    harmless: z.number(),
+    malicious: z.number(),
+    suspicious: z.number(),
+    timeout: z.number(),
+    undetected: z.number(),
+});
+
+const VirusTotalApiDataSchema = z.object({
+    id: z.string(),
+    type: z.string(),
+    links: z.object({ self: z.string() }),
+    attributes: z.object({
+      last_analysis_stats: LastAnalysisStatsSchema,
+      last_analysis_date: z.number().optional(),
+      last_analysis_results: z.record(ScanEngineResultSchema),
+      meaningful_name: z.string().optional(),
+      type_description: z.string().optional(),
+    }),
 });
 
 const VirusTotalScanOutputSchema = z.object({
-  scanDate: z.string().describe("The simulated date of the scan in ISO 8601 format."),
-  positives: z.number().int().describe("The number of engines that detected the hash as malicious."),
-  total: z.number().int().describe("The total number of engines that scanned the hash."),
-  results: z.array(ScanResultSchema).describe("A list of simulated scan results from various engines."),
+  success: z.boolean(),
+  data: VirusTotalApiDataSchema.optional(),
+  error: z.string().optional(),
 });
 export type VirusTotalScanOutput = z.infer<typeof VirusTotalScanOutputSchema>;
 
+
 export async function scanFileHash(input: VirusTotalScanInput): Promise<VirusTotalScanOutput> {
-  return virusTotalScanFlow(input);
-}
+  const apiKey = process.env.VIRUSTOTAL_API_KEY;
 
-const prompt = ai.definePrompt({
-  name: 'virusTotalScanPrompt',
-  input: {schema: VirusTotalScanInputSchema},
-  output: {schema: VirusTotalScanOutputSchema},
-  prompt: `You are a VirusTotal API simulator. Your task is to generate a realistic-looking, simulated scan report for a given file hash.
-
-  File Hash: {{{hash}}}
-
-  - Based on the hash (even though it's just a string), decide if it should be detected as malicious, suspicious, or clean. Generate a plausible number of positive detections.
-  - The total number of engines should be between 60 and 75.
-  - Generate a list of 10-15 scan results from well-known antivirus engines (e.g., BitDefender, Kaspersky, McAfee, Symantec, Malwarebytes, Microsoft).
-  - For positive results, provide a realistic-looking threat name (e.g., "Gen:Variant.Adware.Gael," "Trojan.Win32.Generic!BT").
-  - For other results, the category should be 'undetected' and the result field should be null.
-  - Generate a recent scan date.
-  - The output should be purely for simulation. Do not use real data. Do not add conversational text.
-  `,
-});
-
-const virusTotalScanFlow = ai.defineFlow(
-  {
-    name: 'virusTotalScanFlow',
-    inputSchema: VirusTotalScanInputSchema,
-    outputSchema: VirusTotalScanOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  if (!apiKey) {
+    return {
+      success: false,
+      error: 'VirusTotal API key is not configured on the server. Please set VIRUSTOTAL_API_KEY in your .env file.',
+    };
   }
-);
+
+  const url = `https://www.virustotal.com/api/v3/files/${input.hash}`;
+  const options = {
+    method: 'GET',
+    headers: {
+      'x-apikey': apiKey,
+      'Accept': 'application/json',
+    },
+  };
+
+  try {
+    const response = await fetch(url, options);
+
+    if (response.status === 404) {
+      return { success: false, error: 'This file hash was not found in the VirusTotal database.' };
+    }
+    if (!response.ok) {
+      const errorBody = await response.json();
+      const errorMessage = errorBody.error?.message || `API request failed with status ${response.status}`;
+      return { success: false, error: errorMessage };
+    }
+
+    const responseData = await response.json();
+    return { success: true, data: responseData.data };
+  } catch (e: any) {
+    console.error('VirusTotal API call failed:', e);
+    return { success: false, error: e.message || 'Failed to communicate with the VirusTotal API.' };
+  }
+}

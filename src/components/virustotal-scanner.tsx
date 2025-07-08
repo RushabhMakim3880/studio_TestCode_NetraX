@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/button';
 import { scanFileHash, type VirusTotalScanOutput } from '@/ai/flows/virustotal-scan-flow';
 import { Loader2, AlertTriangle, Search, CheckCircle, ShieldAlert, ShieldX } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Link from 'next/link';
 
 const formSchema = z.object({
   hash: z.string().min(32, { message: 'Please enter a valid file hash (MD5, SHA1, or SHA256).' }),
@@ -29,8 +29,7 @@ const getDetectionIcon = (category: string) => {
 export function VirusTotalScanner() {
   const [result, setResult] = useState<VirusTotalScanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,23 +40,30 @@ export function VirusTotalScanner() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setResult(null);
-    setError(null);
     try {
       const response = await scanFileHash(values);
       setResult(response);
     } catch (err) {
-      setError('Failed to fetch scan results. Please try again.');
+      // This catch block is for network errors or unexpected exceptions
+      setResult({ success: false, error: 'An unexpected error occurred while contacting the service.' });
       console.error(err);
     } finally {
       setIsLoading(false);
     }
   }
 
+  const analysisStats = result?.data?.attributes.last_analysis_stats;
+  const analysisResults = result?.data?.attributes.last_analysis_results;
+  
+  const positiveEngines = analysisStats ? analysisStats.malicious + analysisStats.suspicious : 0;
+  // A more accurate total that sums up all categories from the stats object.
+  const totalEngines = analysisStats ? (analysisStats.harmless ?? 0) + (analysisStats.malicious ?? 0) + (analysisStats.suspicious ?? 0) + (analysisStats.timeout ?? 0) + (analysisStats.undetected ?? 0) : 0;
+  
   return (
     <Card>
       <CardHeader>
         <CardTitle>VirusTotal Hash Scanner</CardTitle>
-        <CardDescription>Check a file hash against the simulated VirusTotal database.</CardDescription>
+        <CardDescription>Check a file hash against the VirusTotal database using their public API.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <Form {...form}>
@@ -82,21 +88,31 @@ export function VirusTotalScanner() {
           </form>
         </Form>
         
-        {error && <div className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{error}</div>}
+        {result?.success === false && result.error && (
+            <div className="text-destructive flex items-center gap-2 pt-4">
+                <AlertTriangle className="h-4 w-4" />
+                <p>{result.error}</p>
+            </div>
+        )}
 
         {isLoading && <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
 
-        {result && (
+        {result?.success && result.data && analysisStats && analysisResults && (
             <div className="space-y-4 pt-4">
                 <div>
                     <div className="flex justify-between items-center mb-1">
                         <span className="text-sm font-medium">Detection Ratio</span>
-                        <span className={`font-bold text-lg ${result.positives > 0 ? 'text-destructive' : 'text-green-400'}`}>
-                            {result.positives} / {result.total}
+                        <span className={`font-bold text-lg ${positiveEngines > 0 ? 'text-destructive' : 'text-green-400'}`}>
+                            {positiveEngines} / {totalEngines}
                         </span>
                     </div>
-                    <Progress value={(result.positives / result.total) * 100} className="h-3" />
-                    <p className="text-xs text-muted-foreground mt-1">Scan Date: {new Date(result.scanDate).toLocaleString()}</p>
+                    <Progress value={(positiveEngines / totalEngines) * 100} className="h-3" />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        {result.data.attributes.last_analysis_date && <span>Last analysis: {new Date(result.data.attributes.last_analysis_date * 1000).toLocaleString()}</span>}
+                         <Link href={`https://www.virustotal.com/gui/file/${result.data.id}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            View full report on VirusTotal.com
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto border rounded-md">
@@ -108,9 +124,9 @@ export function VirusTotalScanner() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {result.results.map((res, i) => (
-                                <TableRow key={i}>
-                                    <TableCell>{res.engineName}</TableCell>
+                            {Object.entries(analysisResults).map(([engineName, res]) => (
+                                <TableRow key={engineName}>
+                                    <TableCell>{engineName}</TableCell>
                                     <TableCell className="flex items-center gap-2">
                                         {getDetectionIcon(res.category)}
                                         <span className={res.result ? 'text-destructive font-mono' : 'text-muted-foreground'}>
