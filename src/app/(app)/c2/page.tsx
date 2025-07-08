@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TelegramC2Control } from '@/components/telegram-c2-control';
+import { TelegramBotGenerator } from '@/components/telegram-bot-generator';
 
 type Agent = C2CheckinOutput['agents'][0];
 type TerminalHistoryItem = { type: 'command' | 'output'; content: string };
@@ -176,6 +177,7 @@ export default function C2Page() {
                 </Card>
 
                 <TelegramC2Control />
+                <TelegramBotGenerator />
             </div>
 
             <Dialog open={isTerminalOpen} onOpenChange={setIsTerminalOpen}>
