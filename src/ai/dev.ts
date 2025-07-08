@@ -38,3 +38,4 @@ import '@/ai/flows/workflow-summary-flow.ts';
 import '@/ai/flows/built-with-flow.ts';
 import '@/ai/flows/port-scanner-flow.ts';
 import '@/ai/flows/injection-scanner-flow.ts';
+import '@/ai/flows/exploit-chain-assistant-flow.ts';
