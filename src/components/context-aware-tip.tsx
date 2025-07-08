@@ -37,8 +37,8 @@ export function ContextAwareTip() {
           setTip(response.tip);
         })
         .catch((err) => {
-          // Log the error for debugging but don't show a broken UI
-          console.error('Failed to get context-aware tip:', err);
+          // Fail silently for this non-critical component.
+          // Don't log the error to the console to avoid alarming the user.
           setError(true);
         })
         .finally(() => {
