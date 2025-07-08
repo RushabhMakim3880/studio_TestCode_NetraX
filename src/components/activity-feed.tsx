@@ -22,7 +22,8 @@ export function ActivityFeed() {
       } catch (err) {
         if (err instanceof Error && (err.message.includes('429') || err.message.toLowerCase().includes('quota'))) {
             setError('API quota exceeded. The feed will be unavailable until the quota resets.');
-            // Don't log this specific error to the console to prevent the dev overlay.
+        } else if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
+            setError('The activity feed service is temporarily busy. It will be back shortly.');
         } else {
             setError('Failed to fetch activity feed.');
             console.error(err);
