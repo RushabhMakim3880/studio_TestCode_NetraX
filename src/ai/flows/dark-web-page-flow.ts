@@ -10,12 +10,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const OnionPageInputSchema = z.object({
+const OnionPageInputSchema = z.object({
   onionAddress: z.string().min(10).describe('The full .onion address to simulate.'),
 });
 export type OnionPageInput = z.infer<typeof OnionPageInputSchema>;
 
-export const OnionPageOutputSchema = z.object({
+const OnionPageOutputSchema = z.object({
   htmlContent: z.string().describe('The full HTML content of the generated .onion page, styled with inline Tailwind CSS classes.'),
   pageTitle: z.string().describe('A plausible title for the web page.'),
 });
