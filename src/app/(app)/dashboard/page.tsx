@@ -5,19 +5,10 @@ import { ActivityFeed } from '@/components/activity-feed';
 import { ActiveProjects } from '@/components/active-projects';
 import { SystemInfo } from '@/components/dashboard/system-info';
 import { NetworkInfo } from '@/components/dashboard/network-info';
+import { Globe } from '@/components/dashboard/globe';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
-
-const Globe = dynamic(() => import('@/components/dashboard/globe').then(m => m.Globe), {
-    ssr: false,
-    loading: () => (
-      <Card className="h-full flex items-center justify-center bg-card/50">
-          <Skeleton className="w-48 h-48 rounded-full" />
-      </Card>
-    ),
-});
-
 
 export default function DashboardPage() {
   const { user } = useAuth();

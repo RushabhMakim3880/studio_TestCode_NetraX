@@ -1,71 +1,19 @@
-'use client'
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+'use client';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
-import dynamic from 'next/dynamic';
 
-const ACCENT_COLOR = '#79ffef';
-
-const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
-
-export function GlobeComponent() {
-  const globeRef = useRef<any>();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  const arcsData = useMemo(() => {
-    const N = 20;
-    return [...Array(N).keys()].map(() => ({
-        startLat: (Math.random() - 0.5) * 180,
-        startLng: (Math.random() - 0.5) * 360,
-        endLat: (Math.random() - 0.5) * 180,
-        endLng: (Math.random() - 0.5) * 360,
-        color: ACCENT_COLOR,
-    }));
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        setSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    
-    if (globeRef.current) {
-      globeRef.current.controls().autoRotate = true;
-      globeRef.current.controls().autoRotateSpeed = 0.6;
-      globeRef.current.controls().enableZoom = false;
-      globeRef.current.pointOfView({ altitude: 2.5 });
-    }
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+export function Globe() {
   return (
-    <Card ref={containerRef} className="h-full w-full bg-transparent overflow-hidden">
-      <CardContent className="p-0 h-full w-full">
-        {size.width > 0 && <Globe
-          ref={globeRef}
-          width={size.width}
-          height={size.height}
-          backgroundColor="rgba(0,0,0,0)"
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          atmosphereColor={ACCENT_COLOR}
-          atmosphereAltitude={0.15}
-          arcsData={arcsData}
-          arcColor="color"
-          arcDashLength={0.4}
-          arcDashGap={0.2}
-          arcDashAnimateTime={4000}
-          arcStroke={0.25}
-        />}
+    <Card className="h-full w-full bg-transparent overflow-hidden flex items-center justify-center">
+      <CardContent className="p-0 h-full w-full relative">
+        <Image
+          src="https://placehold.co/800x800.png"
+          alt="Futuristic globe with network connections"
+          layout="fill"
+          objectFit="contain"
+          data-ai-hint="futuristic globe network"
+        />
       </CardContent>
     </Card>
   );
 }
-
-export { GlobeComponent as Globe }
