@@ -14,12 +14,22 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { CvssCalculator } from '@/components/cvss-calculator';
 import { ConfigAnalyzer } from '@/components/config-analyzer';
 import { ExploitChainAssistant } from '@/components/exploit-chain-assistant';
+import { Input } from '@/components/ui/input';
 
 const formSchema = z.object({
   standard: z.string().min(1, { message: 'Please select a standard.' }),
+  customStandard: z.string().optional(),
+}).refine(data => {
+    if (data.standard === 'Custom') {
+        return data.customStandard && data.customStandard.trim().length > 0;
+    }
+    return true;
+}, {
+    message: 'Custom standard name cannot be empty.',
+    path: ['customStandard'],
 });
 
-const complianceStandards = ['PCI-DSS v4.0', 'HIPAA', 'ISO 27001', 'SOC 2 Type II'];
+const complianceStandards = ['PCI-DSS v4.0', 'HIPAA', 'ISO 27001', 'SOC 2 Type II', 'Custom'];
 
 export default function VaptPage() {
   const [result, setResult] = useState<VaptOutput | null>(null);
@@ -30,15 +40,19 @@ export default function VaptPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       standard: 'PCI-DSS v4.0',
+      customStandard: '',
     },
   });
+
+  const watchedStandard = form.watch('standard');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setResult(null);
     setError(null);
     try {
-      const response = await generateComplianceChecklist(values);
+      const standardToGenerate = values.standard === 'Custom' && values.customStandard ? values.customStandard : values.standard;
+      const response = await generateComplianceChecklist({ standard: standardToGenerate });
       setResult(response);
     } catch (err) {
       setError('Failed to generate checklist. Please try again.');
@@ -47,6 +61,11 @@ export default function VaptPage() {
       setIsLoading(false);
     }
   }
+
+  const getStandardDisplayName = () => {
+    const values = form.getValues();
+    return values.standard === 'Custom' ? values.customStandard : values.standard;
+  };
 
   const groupedChecklist = result?.checklist.reduce((acc, item) => {
     (acc[item.category] = acc[item.category] || []).push(item);
@@ -71,26 +90,43 @@ export default function VaptPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col md:flex-row gap-4 items-start">
-              <FormField
-                control={form.control}
-                name="standard"
-                render={({ field }) => (
-                  <FormItem className="flex-grow w-full">
-                    <FormLabel>Compliance Standard</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select a standard" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {complianceStandards.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4 items-start">
+                <FormField
+                  control={form.control}
+                  name="standard"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Compliance Standard</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select a standard" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {complianceStandards.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {watchedStandard === 'Custom' && (
+                  <FormField
+                    control={form.control}
+                    name="customStandard"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custom Standard Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., NIST 800-53" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
-              <Button type="submit" disabled={isLoading} className="w-full md:w-auto mt-2 md:mt-8">
+              </div>
+              <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Generate Checklist
               </Button>
@@ -106,7 +142,7 @@ export default function VaptPage() {
       {groupedChecklist && (
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-3"><ListChecks className="h-6 w-6" /><CardTitle>Checklist for {form.getValues('standard')}</CardTitle></div>
+            <div className="flex items-center gap-3"><ListChecks className="h-6 w-6" /><CardTitle>Checklist for {getStandardDisplayName()}</CardTitle></div>
             <CardDescription>High-level controls and requirements.</CardDescription>
           </CardHeader>
           <CardContent>
