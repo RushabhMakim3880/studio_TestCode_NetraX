@@ -12,7 +12,7 @@ import {z} from 'genkit';
 
 const IotTrafficAnalysisInputSchema = z.object({
   fileName: z.string().describe("The name of the capture file."),
-  protocol: z.enum(['Zigbee', 'BLE']).describe('The wireless protocol.'),
+  protocol: z.enum(['Zigbee', 'BLE', 'WiFi', 'RF']).describe('The wireless protocol.'),
   context: z.string().describe("A brief description of the capture's context."),
 });
 export type IotTrafficAnalysisInput = z.infer<typeof IotTrafficAnalysisInputSchema>;
@@ -39,7 +39,7 @@ const prompt = ai.definePrompt({
   name: 'iotTrafficAnalysisPrompt',
   input: {schema: IotTrafficAnalysisInputSchema},
   output: {schema: IotTrafficAnalysisOutputSchema},
-  prompt: `You are an expert in IoT wireless security, specializing in analyzing protocols like Zigbee and BLE.
+  prompt: `You are an expert in IoT wireless security, specializing in analyzing protocols like Zigbee, BLE, WiFi, and general RF traffic.
 Your task is to generate a realistic-looking, simulated analysis report for a wireless traffic capture.
 
 Protocol: {{{protocol}}}
@@ -53,8 +53,12 @@ Based on the protocol and context, generate a plausible analysis.
 - Flag some events as suspicious, for example:
     - (BLE) Unencrypted transmission of sensitive data.
     - (Zigbee) Device joining network with a default, well-known key.
+    - (WiFi) Deauthentication flood attack detected.
+    - (RF) Replay attack detected on 433MHz frequency.
+    - (WiFi) Rogue AP or "Evil Twin" detected with a similar SSID.
     - (BLE) Repeated connection requests indicating a potential denial-of-service attempt.
     - (Zigbee) Replay of an older command.
+    - (RF) Unexplained high-power signal suggesting jamming.
 
 Make the analysis sound technical and professional. The output should be purely for simulation.
 `,

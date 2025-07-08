@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const IotTrafficAnalysisInputSchema = z.object({
   fileName: z.string().min(1, 'Please select a file.'),
-  protocol: z.enum(['Zigbee', 'BLE']),
+  protocol: z.enum(['Zigbee', 'BLE', 'WiFi', 'RF']),
   context: z.string().min(10, "Context must be at least 10 characters."),
 });
 
@@ -68,7 +68,7 @@ export function IotTrafficAnalyzer() {
           <Wifi className="h-6 w-6" />
           <CardTitle>IoT Wireless Traffic Analyzer</CardTitle>
         </div>
-        <CardDescription>Simulate analyzing a wireless traffic capture (e.g., Zigbee, BLE). The file is not uploaded.</CardDescription>
+        <CardDescription>Simulate analyzing a wireless traffic capture (e.g., Zigbee, BLE, WiFi, RF). The file is not uploaded.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -104,6 +104,8 @@ export function IotTrafficAnalyzer() {
                             <SelectContent>
                                 <SelectItem value="Zigbee">Zigbee</SelectItem>
                                 <SelectItem value="BLE">Bluetooth Low Energy (BLE)</SelectItem>
+                                <SelectItem value="WiFi">WiFi</SelectItem>
+                                <SelectItem value="RF">Generic RF</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
