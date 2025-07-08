@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { connectTelegramBot, sendTelegramPayload } from '@/ai/flows/telegram-c2-flow';
 import { Loader2, AlertTriangle, Bot, Send, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 
 const connectSchema = z.object({
   token: z.string().min(20, 'Token must be at least 20 characters long.'),
@@ -101,7 +102,7 @@ export function TelegramC2Control() {
             <Form {...connectForm}>
             <form onSubmit={connectForm.handleSubmit(onConnect)} className="space-y-4 p-4 border rounded-lg">
                 <div className="flex justify-between items-center">
-                    <FormLabel>1. Connect Bot</FormLabel>
+                    <Label>1. Connect Bot</Label>
                     {botName && (
                         <Badge variant="secondary">
                            <CheckCircle className="mr-2 h-4 w-4 text-green-400"/> 
@@ -136,7 +137,7 @@ export function TelegramC2Control() {
 
             <Form {...sendForm}>
             <form onSubmit={sendForm.handleSubmit(onSend)} className="space-y-4 p-4 border rounded-lg">
-                <FormLabel>2. Send Payload / Message</FormLabel>
+                <Label>2. Send Payload / Message</Label>
                 <FormField control={sendForm.control} name="chatId" render={({ field }) => (<FormItem><FormControl><Input placeholder="Target Chat ID" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={sendForm.control} name="message" render={({ field }) => (<FormItem><FormControl><Textarea placeholder="Type your message or payload here..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <Button type="submit" className="w-full" disabled={sendForm.formState.isSubmitting || !isConnected}>
@@ -149,7 +150,7 @@ export function TelegramC2Control() {
         </div>
         
         <div className="space-y-2">
-            <FormLabel>Activity Log</FormLabel>
+            <Label>Activity Log</Label>
             <div className="h-96 bg-primary/20 p-3 rounded-md font-mono text-xs overflow-y-auto flex flex-col-reverse">
                 {logs.length === 0 && <p className="m-auto text-muted-foreground">Awaiting commands...</p>}
                 <div className="space-y-2">
