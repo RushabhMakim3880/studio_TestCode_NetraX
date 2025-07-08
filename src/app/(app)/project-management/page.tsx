@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -296,7 +297,7 @@ export default function ProjectManagementPage() {
           <p className="text-muted-foreground">Plan, oversee, and manage all red team projects and associated tasks.</p>
         </div>
 
-        <Tabs defaultValue="projects" className="w-full">
+        <Tabs defaultValue="planner" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="planner">AI Project Planner</TabsTrigger>
                 <TabsTrigger value="projects">Projects & Tasks</TabsTrigger>
