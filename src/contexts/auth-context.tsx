@@ -14,6 +14,10 @@ export type User = {
 
 type LoginCredentials = Pick<User, 'username' | 'password'>;
 type RegisterCredentials = Required<Pick<User, 'username' | 'password' | 'role'>>;
+type PasswordChangeCredentials = {
+    currentPassword: any;
+    newPassword: any;
+};
 
 type AuthContextType = {
   user: User | null;
@@ -23,6 +27,7 @@ type AuthContextType = {
   register: (credentials: RegisterCredentials) => Promise<void>;
   updateUser: (username: string, data: Partial<User>) => void;
   deleteUser: (username: string) => void;
+  changePassword: (credentials: PasswordChangeCredentials) => Promise<void>;
   isLoading: boolean;
 };
 
@@ -124,6 +129,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('netra-currentUser', JSON.stringify(updatedCurrentUser));
     }
   };
+  
+  const changePassword = async (credentials: PasswordChangeCredentials) => {
+      if (!user) {
+          throw new Error("No user is currently logged in.");
+      }
+      
+      const foundUser = users.find(u => u.username === user.username);
+      if (!foundUser || foundUser.password !== credentials.currentPassword) {
+          throw new Error("Your current password is not correct.");
+      }
+
+      updateUser(user.username, { password: credentials.newPassword });
+  };
 
   const deleteUser = (username: string) => {
     if(user && user.username === username) {
@@ -134,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     syncUsers(updatedUsers);
   };
 
-  const value = { user, users, login, logout, register, updateUser, deleteUser, isLoading };
+  const value = { user, users, login, logout, register, updateUser, deleteUser, changePassword, isLoading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
