@@ -11,11 +11,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { generateDocument, DocumentGeneratorInputSchema, type DocumentGeneratorOutput } from '@/ai/flows/document-generator-flow';
+import { generateDocument, type DocumentGeneratorOutput } from '@/ai/flows/document-generator-flow';
 import { Loader2, AlertTriangle, Sparkles, FileText, Bot, Clipboard } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
-const documentTypes = ['Statement of Work (SOW)', 'Letter of Reconnaissance (LOR)', 'Standard Operating Procedure (SOP)'];
+const documentTypes = ['Statement of Work (SOW)', 'Letter of Reconnaissance (LOR)', 'Standard Operating Procedure (SOP)'] as const;
+
+const formSchema = z.object({
+  documentType: z.enum(documentTypes),
+  projectName: z.string().min(1, 'Project name is required.'),
+  projectTarget: z.string().min(1, 'Project target is required.'),
+  projectObjective: z.string().min(10, 'Project objective must be at least 10 characters.'),
+});
+
 
 export function DocumentGenerator() {
   const [result, setResult] = useState<DocumentGeneratorOutput | null>(null);
@@ -23,8 +31,8 @@ export function DocumentGenerator() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof DocumentGeneratorInputSchema>>({
-    resolver: zodResolver(DocumentGeneratorInputSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       documentType: 'Statement of Work (SOW)',
       projectName: 'Project Chimera',
@@ -33,7 +41,7 @@ export function DocumentGenerator() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof DocumentGeneratorInputSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setResult(null);
     setError(null);

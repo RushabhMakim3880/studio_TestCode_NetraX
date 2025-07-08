@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const DocumentGeneratorInputSchema = z.object({
+const DocumentGeneratorInputSchema = z.object({
   documentType: z.enum(['Statement of Work (SOW)', 'Letter of Reconnaissance (LOR)', 'Standard Operating Procedure (SOP)']),
   projectName: z.string().describe("The name of the project or campaign."),
   projectTarget: z.string().describe("The target of the project."),
@@ -18,7 +18,7 @@ export const DocumentGeneratorInputSchema = z.object({
 });
 export type DocumentGeneratorInput = z.infer<typeof DocumentGeneratorInputSchema>;
 
-export const DocumentGeneratorOutputSchema = z.object({
+const DocumentGeneratorOutputSchema = z.object({
   documentTitle: z.string().describe('A suitable title for the generated document.'),
   documentContent: z.string().describe('The full, professionally formatted text content of the document.'),
 });
