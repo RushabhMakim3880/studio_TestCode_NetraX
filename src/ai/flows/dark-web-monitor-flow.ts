@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const DarkWebMonitorInputSchema = z.object({
+const DarkWebMonitorInputSchema = z.object({
   keywords: z.array(z.string()).min(1).describe('An array of keywords to monitor on the dark web.'),
 });
 export type DarkWebMonitorInput = z.infer<typeof DarkWebMonitorInputSchema>;
@@ -22,7 +22,7 @@ const FindingSchema = z.object({
   keyword: z.string().describe('The specific keyword that was matched.'),
 });
 
-export const DarkWebMonitorOutputSchema = z.object({
+const DarkWebMonitorOutputSchema = z.object({
   findings: z.array(FindingSchema).describe('A list of 5-7 plausible but fake dark web findings related to the keywords.'),
 });
 export type DarkWebMonitorOutput = z.infer<typeof DarkWebMonitorOutputSchema>;
