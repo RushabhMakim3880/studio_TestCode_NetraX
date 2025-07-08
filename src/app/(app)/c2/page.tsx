@@ -13,6 +13,7 @@ import { Loader2, AlertTriangle, Server, Terminal, Radio, SendHorizontal, Refres
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TelegramC2Control } from '@/components/telegram-c2-control';
 
 type Agent = C2CheckinOutput['agents'][0];
 type TerminalHistoryItem = { type: 'command' | 'output'; content: string };
@@ -173,6 +174,8 @@ export default function C2Page() {
                         {!isLoading && agents.length === 0 && <p className="text-center text-muted-foreground py-10">No active agents found.</p>}
                     </CardContent>
                 </Card>
+
+                <TelegramC2Control />
             </div>
 
             <Dialog open={isTerminalOpen} onOpenChange={setIsTerminalOpen}>
