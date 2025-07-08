@@ -83,8 +83,9 @@ export default function DashboardPage() {
     return null;
   }
 
-  const accessibleModules = APP_MODULES.filter(
-    (module) => module.roles.includes(user.role) && module.name !== 'Dashboard' && module.name !== 'Settings'
+  const allLinkableModules = APP_MODULES.flatMap(m => m.subModules || (m.path ? [m] : []));
+  const accessibleModules = allLinkableModules.filter(
+    (module) => module.path && module.roles.includes(user.role) && module.name !== 'Dashboard' && module.name !== 'Settings'
   );
 
   return (
@@ -125,7 +126,7 @@ export default function DashboardPage() {
         <h2 className="font-headline text-2xl font-semibold mb-4">Your Toolkit</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {accessibleModules.map((module) => (
-            <Link href={module.path} key={module.path}>
+            <Link href={module.path!} key={module.path}>
               <Card className="h-full hover:border-accent hover:bg-card/80 transition-all group">
                 <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-base font-medium">{module.name}</CardTitle>
