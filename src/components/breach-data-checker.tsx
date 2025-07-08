@@ -8,8 +8,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { searchBreachData, type BreachDataOutput } from '@/ai/flows/breach-data-flow';
-import { Loader2, AlertTriangle, DatabaseZap, ShieldOff, CheckCircle, ShieldCheck } from 'lucide-react';
+import { searchHibp, type HibpServiceResponse } from '@/services/hibp';
+import { Loader2, AlertTriangle, DatabaseZap, ShieldOff, ShieldCheck } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 
@@ -18,9 +18,8 @@ const formSchema = z.object({
 });
 
 export function BreachDataChecker() {
-  const [result, setResult] = useState<BreachDataOutput | null>(null);
+  const [result, setResult] = useState<HibpServiceResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -32,12 +31,11 @@ export function BreachDataChecker() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setResult(null);
-    setError(null);
     try {
-      const response = await searchBreachData(values);
+      const response = await searchHibp(values.emailOrUsername);
       setResult(response);
     } catch (err) {
-      setError('Failed to search breach data. Please try again.');
+      setResult({ success: false, error: 'An unexpected error occurred.' });
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -51,7 +49,7 @@ export function BreachDataChecker() {
             <DatabaseZap className="h-6 w-6" />
             <CardTitle>Breach Data Checker</CardTitle>
         </div>
-        <CardDescription>Simulate searching for an email or username in a database of known data breaches.</CardDescription>
+        <CardDescription>Check an email or username against the Have I Been Pwned database.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -77,34 +75,38 @@ export function BreachDataChecker() {
         </Form>
         <div className="mt-6">
             {isLoading && <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
-            {error && <div className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{error}</div>}
             
-            {result && (
+            {result && !result.success && (
+                 <div className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{result.error}</div>
+            )}
+            
+            {result && result.success && (
                 <div>
-                    {result.breaches.length > 0 ? (
+                    {result.breaches && result.breaches.length > 0 ? (
                         <>
                             <div className="flex items-center gap-2 p-4 rounded-md bg-destructive/10 text-destructive border border-destructive/20 mb-4">
                                 <ShieldOff className="h-8 w-8" />
                                 <div>
                                     <h3 className="font-bold">Oh no — Pwned!</h3>
-                                    <p className="text-sm">This target was found in {result.breaches.length} simulated data breaches.</p>
+                                    <p className="text-sm">This account was found in {result.breaches.length} known data breaches.</p>
                                 </div>
                             </div>
-                            <Accordion type="multiple" className="w-full">
-                                {result.breaches.map((breach, index) => (
-                                    <AccordionItem value={`item-${index}`} key={index}>
+                            <Accordion type="multiple" className="w-full" defaultValue={[result.breaches[0].Name]}>
+                                {result.breaches.map((breach) => (
+                                    <AccordionItem value={breach.Name} key={breach.Name}>
                                     <AccordionTrigger>
                                         <div className="flex items-center gap-3 flex-1 text-left">
-                                            <span className="font-semibold">{breach.breachName}</span>
-                                            <span className="text-muted-foreground text-sm">({breach.breachDate})</span>
+                                            <img src={breach.LogoPath} alt={`${breach.Title} logo`} className="h-6 w-6" />
+                                            <span className="font-semibold">{breach.Title}</span>
+                                            <span className="text-muted-foreground text-sm">({breach.BreachDate})</span>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="space-y-3 pl-2">
-                                        <p className="text-muted-foreground">{breach.description}</p>
+                                        <div className="text-muted-foreground prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: breach.Description }} />
                                         <div>
                                             <p className="font-semibold">Compromised data:</p>
                                             <div className="flex flex-wrap gap-2 mt-2">
-                                                {breach.compromisedData.map((data, i) => <Badge key={i} variant="secondary">{data}</Badge>)}
+                                                {breach.DataClasses.map((data, i) => <Badge key={i} variant="secondary">{data}</Badge>)}
                                             </div>
                                         </div>
                                     </AccordionContent>
@@ -117,7 +119,7 @@ export function BreachDataChecker() {
                            <ShieldCheck className="h-8 w-8" />
                             <div>
                                <h3 className="font-bold">Good news — no pwnage found!</h3>
-                               <p className="text-sm">No simulated breach entries were found for this target.</p>
+                               <p className="text-sm">This account was not found in any public breaches in the HIBP database.</p>
                             </div>
                         </div>
                     )}
