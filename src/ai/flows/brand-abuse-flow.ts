@@ -20,16 +20,16 @@ const SocialMentionSchema = z.object({
     platform: z.string().describe("The platform where the mention was found (e.g., 'Twitter/X', 'Reddit')."),
     author: z.string().describe("The author of the mention."),
     snippet: z.string().describe("A short snippet of the mention."),
-    url: z.string().url().describe("A fake URL to the mention."),
+    url: z.string().describe("A fake URL to the mention."),
 });
 
 const CopyrightInfringementSchema = z.object({
-    site: z.string().url().describe("The URL of the infringing site."),
+    site: z.string().describe("The URL of the infringing site."),
     description: z.string().describe("A description of the infringement (e.g., 'Unauthorized use of official logo on landing page.')."),
 });
 
 const BrandAbuseOutputSchema = z.object({
-  suspectedPhishingUrls: z.array(z.string().url()).describe('A list of 2-4 plausible but fake URLs that appear to be phishing sites targeting the brand.'),
+  suspectedPhishingUrls: z.array(z.string()).describe('A list of 2-4 plausible but fake URLs that appear to be phishing sites targeting the brand.'),
   typosquattedDomains: z.array(z.string()).describe('A list of 3-5 plausible but fake typosquatted or look-alike domains.'),
   socialMediaMentions: z.array(SocialMentionSchema).describe('A list of 2-3 simulated social media mentions that could be relevant for brand protection.'),
   copyrightInfringements: z.array(CopyrightInfringementSchema).describe('A list of 1-2 simulated copyright infringements.'),
