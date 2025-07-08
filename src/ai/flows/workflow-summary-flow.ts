@@ -10,12 +10,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const WorkflowSummaryInputSchema = z.object({
+const WorkflowSummaryInputSchema = z.object({
   stepDescriptions: z.array(z.string()).describe('An ordered list of descriptions for each step in a workflow.'),
 });
 export type WorkflowSummaryInput = z.infer<typeof WorkflowSummaryInputSchema>;
 
-export const WorkflowSummaryOutputSchema = z.object({
+const WorkflowSummaryOutputSchema = z.object({
   title: z.string().describe('A concise and descriptive title for the entire workflow guide.'),
   summary: z.string().describe('A one-paragraph summary that explains the purpose and flow of the steps taken.'),
 });
