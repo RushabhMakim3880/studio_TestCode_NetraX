@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,6 +42,9 @@ const loginSchema = z.object(formSchemaBase);
 
 const registerSchema = z.object({
   ...formSchemaBase,
+  displayName: z.string().min(2, {
+    message: 'Display name must be at least 2 characters.',
+  }),
   role: z.nativeEnum(ROLES, {
     errorMap: () => ({ message: 'Please select a valid role.' }),
   }),
@@ -62,7 +66,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     defaultValues: {
       username: '',
       password: '',
-      ...(isLogin ? {} : { role: ROLES.OPERATOR }),
+      ...(isLogin ? {} : { displayName: '', role: ROLES.OPERATOR }),
     },
   });
 
@@ -71,7 +75,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       if (isLogin) {
         await login(values);
       } else {
-        await register(values as { username: string; password: any; role: Role });
+        await register(values as { username: string; password: any; role: Role, displayName: string });
       }
     } catch (error) {
       toast({
@@ -93,12 +97,27 @@ export function AuthForm({ mode }: AuthFormProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+             {!isLogin && 'displayName' in form.control.getValues() && (
+               <FormField
+                control={form.control}
+                name="displayName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Display Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>Username (for login)</FormLabel>
                   <FormControl>
                     <Input placeholder="operator_id" {...field} />
                   </FormControl>

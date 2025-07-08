@@ -1,3 +1,4 @@
+
 'use client';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +43,7 @@ export function SystemInfo() {
         </div>
         <div>
           <p className="text-xs text-muted-foreground">User</p>
-          <p className="font-mono text-base">{user?.username}</p>
+          <p className="font-mono text-base">{user?.displayName}</p>
         </div>
          <div>
           <p className="text-xs text-muted-foreground">Role</p>

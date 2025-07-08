@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -29,6 +30,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ROLES, Role } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 
 export function UserTable() {
@@ -75,13 +77,21 @@ export function UserTable() {
             setSelectedUser(null);
         }
     }
+    
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  };
 
   return (
     <>
         <Table>
             <TableHeader>
             <TableRow>
-                <TableHead>Username</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Last Login</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -90,9 +100,20 @@ export function UserTable() {
             <TableBody>
             {users.map((user) => (
                 <TableRow key={user.username}>
-                <TableCell className="font-medium">{user.username}</TableCell>
+                <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                            {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.displayName} />}
+                            <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p>{user.displayName}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{user.username}</p>
+                        </div>
+                    </div>
+                </TableCell>
                 <TableCell><Badge variant="outline">{user.role}</Badge></TableCell>
-                <TableCell>{user.lastLogin || 'N/A'}</TableCell>
+                <TableCell>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</TableCell>
                 <TableCell className="text-right">
                     <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -116,7 +137,7 @@ export function UserTable() {
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Edit User: {selectedUser?.username}</DialogTitle>
+                    <DialogTitle>Edit User: {selectedUser?.displayName}</DialogTitle>
                     <DialogDescription>Change the role for this user.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
@@ -145,7 +166,7 @@ export function UserTable() {
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
                         This action cannot be undone. This will permanently delete the user account
-                        for <span className="font-bold">{selectedUser?.username}</span>.
+                        for <span className="font-bold">{selectedUser?.displayName}</span>.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

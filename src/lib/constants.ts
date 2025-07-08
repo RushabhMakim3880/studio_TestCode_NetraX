@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase, FileText } from 'lucide-react';
 
@@ -19,6 +20,16 @@ export type Module = {
   roles: Role[];
   subModules?: Module[];
 };
+
+export const PREMADE_AVATARS = [
+    'https://placehold.co/128x128/222/79ffef/png?text=A1',
+    'https://placehold.co/128x128/444/ff6b6b/png?text=B2',
+    'https://placehold.co/128x128/333/4d96ff/png?text=C3',
+    'https://placehold.co/128x128/555/feca57/png?text=D4',
+    'https://placehold.co/128x128/2a2a2a/ff9f43/png?text=E5',
+    'https://placehold.co/128x128/4b4b4b/1dd1a1/png?text=F6'
+];
+
 
 export const APP_MODULES: Module[] = [
   {

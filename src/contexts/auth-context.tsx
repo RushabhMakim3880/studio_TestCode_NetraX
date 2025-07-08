@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useState, useEffect, type ReactNode, useCallback } from 'react';
@@ -7,13 +8,15 @@ import { useToast } from '@/hooks/use-toast';
 
 export type User = {
   username: string;
+  displayName: string;
+  avatarUrl: string | null;
   role: Role;
   password?: string; // Should be hashed in a real app
   lastLogin?: string;
 };
 
 type LoginCredentials = Pick<User, 'username' | 'password'>;
-type RegisterCredentials = Required<Pick<User, 'username' | 'password' | 'role'>>;
+type RegisterCredentials = Required<Pick<User, 'username' | 'password' | 'role' | 'displayName'>>;
 type PasswordChangeCredentials = {
     currentPassword: any;
     newPassword: any;
@@ -34,10 +37,10 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const seedUsers: User[] = [
-    { username: 'admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString() },
-    { username: 'analyst', password: 'password123', role: ROLES.ANALYST },
-    { username: 'operator', password: 'password123', role: ROLES.OPERATOR },
-    { username: 'auditor', password: 'password123', role: ROLES.AUDITOR },
+    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null },
+    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null },
+    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null },
+    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null },
 ];
 
 
@@ -88,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       toast({
         title: `Login Successful`,
-        description: `Welcome back, ${loggedInUser.username}.`,
+        description: `Welcome back, ${loggedInUser.displayName}.`,
       });
       router.push('/dashboard');
     } else {
@@ -100,7 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (users.some(u => u.username === credentials.username)) {
       throw new Error('Username already exists.');
     }
-    const newUser = { ...credentials, lastLogin: new Date().toISOString() };
+    const newUser: User = { 
+        ...credentials, 
+        lastLogin: new Date().toISOString(),
+        avatarUrl: null
+    };
     const updatedUsers = [...users, newUser];
     
     syncUsers(updatedUsers);
@@ -109,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     toast({
         title: `Successfully registered!`,
-        description: `Welcome to NETRA-X, ${credentials.username}.`,
+        description: `Welcome to NETRA-X, ${credentials.displayName}.`,
     });
     router.push('/dashboard');
   };

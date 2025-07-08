@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
@@ -5,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeInitializer } from '@/components/theme-initializer';
 
 const fontBody = Inter({
   subsets: ['latin'],
@@ -37,6 +39,7 @@ export default function RootLayout({
           defaultTheme="dark"
           disableTransitionOnChange
         >
+          <ThemeInitializer />
           <AuthProvider>
             {children}
             <Toaster />
