@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,10 +22,11 @@ export function ActivityFeed() {
       } catch (err) {
         if (err instanceof Error && (err.message.includes('429') || err.message.toLowerCase().includes('quota'))) {
             setError('API quota exceeded. The feed will be unavailable until the quota resets.');
+            // Don't log this specific error to the console to prevent the dev overlay.
         } else {
             setError('Failed to fetch activity feed.');
+            console.error(err);
         }
-        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -60,7 +62,7 @@ export function ActivityFeed() {
             <span>{error}</span>
           </div>
         )}
-        {feed && (
+        {feed && !error && (
           <div className="space-y-6">
             {feed.map((item, index) => (
               <div key={index} className="relative pl-8">
