@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Route, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -12,7 +12,7 @@ export type Role = typeof ROLES[keyof typeof ROLES];
 
 export type Module = {
   name: string;
-  path: string;
+  path?: string; // Path is optional for parent modules
   icon: LucideIcon;
   roles: Role[];
   subModules?: Module[];
@@ -26,112 +26,49 @@ export const APP_MODULES: Module[] = [
     roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR, ROLES.AUDITOR],
   },
   {
-    name: 'Cyber Intel',
-    path: '/cyber-intel',
-    icon: Shield,
-    roles: [ROLES.ADMIN, ROLES.ANALYST],
-  },
-  {
-    name: 'OSINT',
-    path: '/osint',
-    icon: Fingerprint,
+    name: 'Intelligence',
+    icon: BrainCircuit,
     roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR],
+    subModules: [
+      { name: 'Cyber Intel', path: '/cyber-intel', icon: Shield, roles: [ROLES.ADMIN, ROLES.ANALYST] },
+      { name: 'OSINT', path: '/osint', icon: Fingerprint, roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR] },
+      { name: 'Profiling', path: '/profiling', icon: Target, roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR] },
+      { name: 'Dark Web', path: '/dark-web', icon: Shell, roles: [ROLES.ADMIN, ROLES.ANALYST] },
+    ]
   },
   {
-    name: 'Profiling',
-    path: '/profiling',
-    icon: Target,
-    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR],
-  },
-  {
-    name: 'Phishing',
-    path: '/phishing',
-    icon: Bot,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
-  },
-  {
-    name: 'Templates',
-    path: '/templates',
-    icon: MessageSquarePlus,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
-  },
-  {
-    name: 'Offensive Tools',
-    path: '/offensive',
-    icon: KeyRound,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
-  },
-   {
-    name: 'Developer Tools',
-    path: '/dev-tools',
-    icon: Wrench,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
-  },
-  {
-    name: 'C2 Panel',
-    path: '/c2',
-    icon: Server,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
-  },
-  {
-    name: 'Anonymization',
-    path: '/anonymization',
-    icon: Waypoints,
-    roles: [ROLES.ADMIN, ROLES.OPERATOR],
-  },
-  {
-    name: 'Dark Web',
-    path: '/dark-web',
-    icon: Shell,
-    roles: [ROLES.ADMIN, ROLES.ANALYST],
-  },
-  {
-    name: 'Campaigns',
-    path: '/campaigns',
+    name: 'Engagement',
     icon: Route,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
+    subModules: [
+      { name: 'Campaigns', path: '/campaigns', icon: Route, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Phishing', path: '/phishing', icon: Bot, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Templates', path: '/templates', icon: MessageSquarePlus, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+    ]
   },
-  {
-    name: 'VAPT & Compliance',
-    path: '/vapt',
-    icon: ShieldCheck,
-    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.AUDITOR],
-  },
-  {
-    name: 'Malware Analysis',
-    path: '/analysis',
-    icon: FileScan,
-    roles: [ROLES.ADMIN, ROLES.ANALYST],
-  },
-  {
-    name: 'Network Analysis',
-    path: '/network',
-    icon: Network,
-    roles: [ROLES.ADMIN, ROLES.ANALYST],
-  },
-   {
-    name: 'IoT Security',
-    path: '/iot',
-    icon: Router,
+    {
+    name: 'Operations',
+    icon: KeyRound,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
+    subModules: [
+      { name: 'C2 Panel', path: '/c2', icon: Server, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Offensive Tools', path: '/offensive', icon: KeyRound, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Developer Tools', path: '/dev-tools', icon: Wrench, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Anonymization', path: '/anonymization', icon: Waypoints, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+    ]
   },
   {
-    name: 'Log Analysis',
-    path: '/log-analysis',
-    icon: GanttChartSquare,
-    roles: [ROLES.ADMIN, ROLES.ANALYST],
-  },
-  {
-    name: 'Reporting',
-    path: '/reporting',
-    icon: Presentation,
-    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.AUDITOR],
-  },
-  {
-    name: 'IoC Management',
-    path: '/ioc-management',
-    icon: ListCollapse,
-    roles: [ROLES.ADMIN, ROLES.ANALYST],
+    name: 'Analysis & Forensics',
+    icon: Dna,
+    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR, ROLES.AUDITOR],
+    subModules: [
+      { name: 'VAPT & Compliance', path: '/vapt', icon: ShieldCheck, roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.AUDITOR] },
+      { name: 'Malware Analysis', path: '/analysis', icon: FileScan, roles: [ROLES.ADMIN, ROLES.ANALYST] },
+      { name: 'Network Analysis', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.ANALYST] },
+      { name: 'IoT Security', path: '/iot', icon: Router, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Log Analysis', path: '/log-analysis', icon: GanttChartSquare, roles: [ROLES.ADMIN, ROLES.ANALYST] },
+      { name: 'IoC Management', path: '/ioc-management', icon: ListCollapse, roles: [ROLES.ADMIN, ROLES.ANALYST] },
+    ]
   },
   {
     name: 'File Manager',
@@ -139,6 +76,13 @@ export const APP_MODULES: Module[] = [
     icon: Files,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
   },
+  {
+    name: 'Reporting',
+    path: '/reporting',
+    icon: Presentation,
+    roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.AUDITOR],
+  },
+  // Keep system stuff at the end and top-level
   {
     name: 'User Management',
     path: '/user-management',

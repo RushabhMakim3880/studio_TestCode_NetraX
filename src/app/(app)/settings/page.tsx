@@ -17,6 +17,8 @@ export default function SettingsPage() {
   const [moduleSettings, setModuleSettings] = useState<Record<string, boolean>>({});
   const importFileRef = useRef<HTMLInputElement>(null);
 
+  const allModules = APP_MODULES.flatMap(m => m.subModules ? m.subModules : (m.path ? m : []));
+
   useEffect(() => {
     const storedSettings = localStorage.getItem('netra-settings');
     if (storedSettings) {
@@ -24,8 +26,8 @@ export default function SettingsPage() {
     } else {
       // Default to all enabled
       const defaultSettings: Record<string, boolean> = {};
-      APP_MODULES.forEach(module => {
-        defaultSettings[module.name] = true;
+      allModules.forEach(module => {
+        if(module.path) defaultSettings[module.name] = true;
       });
       setModuleSettings(defaultSettings);
     }
@@ -66,10 +68,8 @@ export default function SettingsPage() {
     reader.onload = (event) => {
         try {
             const importedSettings = JSON.parse(event.target?.result as string);
-            // Basic validation: check if it's an object
             if (typeof importedSettings === 'object' && importedSettings !== null) {
-                // Further validation: check if keys are valid module names
-                const validKeys = APP_MODULES.map(m => m.name);
+                const validKeys = allModules.map(m => m.name);
                 const importedKeys = Object.keys(importedSettings);
                 const areKeysValid = importedKeys.every(key => validKeys.includes(key));
                 
@@ -80,7 +80,6 @@ export default function SettingsPage() {
                 } else {
                      toast({ variant: 'destructive', title: 'Import Error', description: 'Invalid keys found in settings file.' });
                 }
-
             } else {
                 throw new Error("Invalid format");
             }
@@ -90,11 +89,12 @@ export default function SettingsPage() {
     };
     reader.readAsText(file);
 
-    // Reset file input
     if (e.target) e.target.value = '';
   }
   
-  const accessibleModules = user ? APP_MODULES.filter(m => m.roles.includes(user.role)) : [];
+  if (!user) return null;
+
+  const accessibleModules = APP_MODULES.filter(m => m.roles.some(role => user.role.includes(role)));
 
   return (
     <div className="flex flex-col gap-6">
@@ -109,22 +109,50 @@ export default function SettingsPage() {
           <CardDescription>Enable or disable modules to customize your sidebar and workflow.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accessibleModules.map((module) => (
-                // Dont allow disabling Dashboard or Settings
-                (module.name !== 'Dashboard' && module.name !== 'Settings') && (
-                <div key={module.name} className="flex items-center justify-between rounded-lg border p-4">
-                    <Label htmlFor={`module-${module.name}`} className="flex flex-col gap-1">
-                    <span className="font-semibold">{module.name}</span>
-                    <span className="text-xs text-muted-foreground">Toggle module visibility</span>
-                    </Label>
-                    <Switch
-                    id={`module-${module.name}`}
-                    checked={moduleSettings[module.name] ?? false}
-                    onCheckedChange={(checked) => handleToggle(module.name, checked)}
-                    />
-                </div>
-            )))}
+          <div className="space-y-6">
+            {accessibleModules.map((module) => {
+              const subModulesToShow = module.subModules?.filter(sm => sm.roles.includes(user.role)) ?? [];
+
+              if (module.path && module.name !== 'Dashboard' && module.name !== 'Settings') {
+                return (
+                  <div key={module.name} className="flex items-center justify-between rounded-lg border p-4 max-w-sm">
+                      <Label htmlFor={`module-${module.name}`} className="flex flex-col gap-1">
+                      <span className="font-semibold">{module.name}</span>
+                      <span className="text-xs text-muted-foreground">Toggle module visibility</span>
+                      </Label>
+                      <Switch
+                      id={`module-${module.name}`}
+                      checked={moduleSettings[module.name] ?? false}
+                      onCheckedChange={(checked) => handleToggle(module.name, checked)}
+                      />
+                  </div>
+                );
+              }
+
+              if (subModulesToShow.length > 0) {
+                return (
+                  <div key={module.name} className="space-y-4">
+                      <h3 className="text-lg font-semibold border-b pb-2">{module.name}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {subModulesToShow.map(subModule => (
+                              <div key={subModule.name} className="flex items-center justify-between rounded-lg border p-4">
+                                  <Label htmlFor={`module-${subModule.name}`} className="flex flex-col gap-1">
+                                  <span className="font-semibold">{subModule.name}</span>
+                                  <span className="text-xs text-muted-foreground">Toggle module visibility</span>
+                                  </Label>
+                                  <Switch
+                                  id={`module-${subModule.name}`}
+                                  checked={moduleSettings[subModule.name] ?? false}
+                                  onCheckedChange={(checked) => handleToggle(subModule.name, checked)}
+                                  />
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+                );
+              }
+              return null;
+            })}
           </div>
           <div className="flex justify-between items-center pt-4 border-t mt-4">
              <div>
