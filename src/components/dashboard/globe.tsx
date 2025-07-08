@@ -48,7 +48,7 @@ export function GlobeComponent() {
   return (
     <Card ref={containerRef} className="h-full w-full bg-transparent overflow-hidden">
       <CardContent className="p-0 h-full w-full">
-        <Globe
+        {size.width > 0 && <Globe
           ref={globeRef}
           width={size.width}
           height={size.height}
@@ -62,7 +62,7 @@ export function GlobeComponent() {
           arcDashGap={() => Math.random() * 0.5 + 0.1}
           arcDashAnimateTime={() => Math.random() * 5000 + 2000}
           arcStroke={0.25}
-        />
+        />}
       </CardContent>
     </Card>
   );
