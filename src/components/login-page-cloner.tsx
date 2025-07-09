@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot } from 'lucide-react';
+import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot, Globe } from 'lucide-react';
 import { cloneLoginPage, type PageClonerOutput } from '@/ai/flows/page-cloner-flow';
+import { hostClonedPage, type HostClonedPageOutput } from '@/ai/flows/host-cloned-page-flow';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from './qr-code-generator';
 
@@ -20,8 +21,12 @@ const pageClonerSchema = z.object({
 
 export function LoginPageCloner() {
   const { toast } = useToast();
-  const [clonerResult, setClonerResult] = useState<PageClonerOutput | null>(null);
-  const [isClonerLoading, setIsClonerLoading] = useState(false);
+  const [clonedHtml, setClonedHtml] = useState<string | null>(null);
+  const [hostedPage, setHostedPage] = useState<HostClonedPageOutput | null>(null);
+  
+  const [isCloning, setIsCloning] = useState(false);
+  const [isHosting, setIsHosting] = useState(false);
+  
   const [clonerError, setClonerError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof pageClonerSchema>>({
@@ -33,25 +38,44 @@ export function LoginPageCloner() {
   });
 
   async function onClonerSubmit(values: z.infer<typeof pageClonerSchema>) {
-    setIsClonerLoading(true);
-    setClonerResult(null);
+    setIsCloning(true);
+    setClonedHtml(null);
+    setHostedPage(null);
     setClonerError(null);
     try {
       const response = await cloneLoginPage(values);
-      setClonerResult(response);
+      setClonedHtml(response.htmlContent);
       toast({ title: "Page Cloned Successfully", description: "A static copy of the page has been created." });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
       setClonerError(errorMessage);
       console.error(err);
     } finally {
-      setIsClonerLoading(false);
+      setIsCloning(false);
     }
   }
 
+  const handleHostPage = async () => {
+    if (!clonedHtml) return;
+    setIsHosting(true);
+    setHostedPage(null);
+    setClonerError(null);
+    try {
+      const response = await hostClonedPage({ htmlContent: clonedHtml });
+      setHostedPage(response);
+      toast({ title: "Page is Live (Simulated)", description: "Your page is now accessible at the public URL." });
+    } catch (err) {
+       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+       setClonerError(errorMessage);
+       console.error(err);
+    } finally {
+      setIsHosting(false);
+    }
+  };
+
   const handleDownloadHtml = () => {
-    if (clonerResult?.htmlContent) {
-      const blob = new Blob([clonerResult.htmlContent], { type: 'text/html' });
+    if (clonedHtml) {
+      const blob = new Blob([clonedHtml], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -69,44 +93,78 @@ export function LoginPageCloner() {
       <div className="lg:col-span-2 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Page Cloner</CardTitle>
-            <CardDescription>Create a functional, static clone of any login page.</CardDescription>
+            <CardTitle>Page Cloner & Host</CardTitle>
+            <CardDescription>Create a static clone of a login page and host it on a public (simulated) URL.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onClonerSubmit)} className="space-y-4">
-                <FormField control={form.control} name="targetUrl" render={({ field }) => ( <FormItem> <FormLabel>Target URL to Clone</FormLabel> <FormControl><Input placeholder="https://example.com/login" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                <FormField control={form.control} name="redirectUrl" render={({ field }) => ( <FormItem> <FormLabel>Redirect URL (after capture)</FormLabel> <FormControl><Input placeholder="https://example.com/login_failed" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                <Button type="submit" disabled={isClonerLoading} className="w-full">
-                  {isClonerLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Clone Page
+                <FormField control={form.control} name="targetUrl" render={({ field }) => ( <FormItem> <FormLabel>1. Target URL to Clone</FormLabel> <FormControl><Input placeholder="https://example.com/login" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                <FormField control={form.control} name="redirectUrl" render={({ field }) => ( <FormItem> <FormLabel>2. Redirect URL (after capture)</FormLabel> <FormControl><Input placeholder="https://example.com/login_failed" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                <Button type="submit" disabled={isCloning} className="w-full">
+                  {isCloning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  Clone Page Content
                 </Button>
               </form>
             </Form>
           </CardContent>
-        </Card>
-        {clonerResult && <QrCodeGenerator />}
-      </div>
-      <div className="lg:col-span-3">
-        {clonerError && <Card className="border-destructive/50 mb-4"><CardHeader><div className="flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-destructive" /><CardTitle className="text-destructive">Cloning Failed</CardTitle></div></CardHeader><CardContent><p>{clonerError}</p></CardContent></Card>}
-        <Card className={`min-h-[400px] ${!clonerResult && 'flex items-center justify-center'}`}>
-          <CardHeader className="w-full flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3"><LinkIcon className="h-6 w-6" /><CardTitle>Cloned Page Preview</CardTitle></div>
-            {clonerResult && (
-              <Button variant="outline" size="sm" onClick={handleDownloadHtml}>
-                <Download className="mr-2 h-4 w-4"/> Download HTML
+          {clonedHtml && (
+            <CardFooter className="flex-col gap-4">
+              <Button onClick={handleHostPage} disabled={isHosting} className="w-full">
+                  {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+                  3. Host Page
               </Button>
-            )}
+              <Button onClick={handleDownloadHtml} variant="outline" className="w-full">
+                  <Download className="mr-2 h-4 w-4"/> Download HTML
+              </Button>
+            </CardFooter>
+          )}
+        </Card>
+        {clonerError && <Card className="border-destructive/50"><CardHeader><div className="flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-destructive" /><CardTitle className="text-destructive">Action Failed</CardTitle></div></CardHeader><CardContent><p>{clonerError}</p></CardContent></Card>}
+        
+        {hostedPage && (
+          <QrCodeGenerator url={hostedPage.publicUrl} />
+        )}
+      </div>
+
+      <div className="lg:col-span-3">
+        <Card className="min-h-[400px]">
+          <CardHeader>
+            <CardTitle>Hosted Page Information</CardTitle>
+            <CardDescription>Use the public URL for your phishing campaign. Open it in a new tab to test.</CardDescription>
           </CardHeader>
           <CardContent className="w-full">
-            {isClonerLoading && <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
-            {!clonerResult && !isClonerLoading && (
+            {(isCloning || isHosting) && <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
+            
+            {!clonedHtml && !isCloning && (
                 <div className="h-96 flex flex-col items-center justify-center text-muted-foreground">
                     <Bot className="h-12 w-12 mb-4" />
-                    <p>Cloned page preview will appear here.</p>
+                    <p>Clone a page to get started.</p>
                 </div>
             )}
-            {clonerResult && (<div className="border rounded-md w-full h-[70vh] bg-background"><iframe srcDoc={clonerResult.htmlContent} className="w-full h-full" title="Cloned Page Preview" sandbox="allow-forms allow-scripts allow-same-origin"/></div>)}
+            
+            {clonedHtml && !hostedPage && !isHosting && (
+                <div className="h-96 flex flex-col items-center justify-center text-muted-foreground">
+                    <Globe className="h-12 w-12 mb-4" />
+                    <p>Page cloned successfully.</p>
+                    <p className="font-semibold">Click "Host Page" to get a shareable link.</p>
+                </div>
+            )}
+
+            {hostedPage && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="public-url">Public URL (Simulated)</Label>
+                  <Input id="public-url" readOnly value={hostedPage.publicUrl} className="font-mono"/>
+                  <FormDescription>This is a shareable link to your phishing page.</FormDescription>
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="local-url">Local URL</Label>
+                  <Input id="local-url" readOnly value={hostedPage.localUrl} className="font-mono" />
+                   <FormDescription>The endpoint on this server that serves the content.</FormDescription>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
