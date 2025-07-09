@@ -95,7 +95,7 @@ export function LoginPageCloner() {
             setShortUrl(response.shortUrl);
             toast({ title: "URL Shortened", description: "Masked link created with TinyURL." });
         } else {
-            throw new Error(response.error || 'Failed to shorten URL.');
+            setClonerError(response.error || 'Failed to shorten URL.');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
