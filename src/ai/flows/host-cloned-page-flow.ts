@@ -22,16 +22,11 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
   try {
     const { htmlContent } = HostClonedPageInputSchema.parse(input);
 
-    const formData = new URLSearchParams();
-    formData.append('content', htmlContent);
-    formData.append('syntax', 'html'); // Tell the service it's HTML
-    formData.append('expiry_days', '1'); // Expire after 1 day for security
-
-    const postResponse = await fetch('https://dpaste.com/api/', {
+    const postResponse = await fetch('https://paste.rs/', {
         method: 'POST',
-        body: formData,
+        body: htmlContent,
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'text/plain',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         },
     });
