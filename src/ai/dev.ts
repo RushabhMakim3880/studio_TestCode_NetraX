@@ -15,7 +15,6 @@ import '@/ai/flows/page-cloner-flow.ts';
 import '@/ai/flows/malware-analysis-flow.ts';
 import '@/ai/flows/steganography-flow.ts';
 import '@/ai/flows/social-media-analysis-flow.ts';
-import '@/ai/flows/activity-feed-flow.ts';
 import '@/ai/flows/config-analyzer-flow.ts';
 import '@/ai/flows/duckyscript-generator-flow.ts';
 import '@/ai/flows/exploit-suggester-flow.ts';

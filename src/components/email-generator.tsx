@@ -12,6 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, Mail } from 'lucide-react';
 import { generatePhishingEmail, type PhishingOutput } from '@/ai/flows/phishing-flow';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/services/activity-log-service';
 
 const emailSchema = z.object({
   company: z.string().min(2, { message: 'Company name is required.' }),
@@ -23,6 +25,7 @@ export function EmailGenerator() {
   const [emailResult, setEmailResult] = useState<PhishingOutput | null>(null);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -40,6 +43,11 @@ export function EmailGenerator() {
     try {
       const response = await generatePhishingEmail(values);
       setEmailResult(response);
+      logActivity({
+          user: user?.displayName || 'Operator',
+          action: 'Generated Phishing Email',
+          details: `Scenario: ${values.scenario}`
+      });
     } catch (err) {
       if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
         setEmailError('The AI service is temporarily busy. Please try again.');

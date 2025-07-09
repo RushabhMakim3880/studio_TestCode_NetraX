@@ -24,6 +24,8 @@ import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CampaignPlanner } from '@/components/campaign-planner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/services/activity-log-service';
 
 type Project = {
   id: string;
@@ -109,6 +111,7 @@ export default function ProjectManagementPage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const projectForm = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -201,6 +204,12 @@ export default function ProjectManagementPage() {
     }
     updateProjects([...projects, newProject]);
     toast({ title: 'Project Created', description: `New project "${values.name}" has been added.` });
+    logActivity({
+        user: user?.displayName || 'Admin',
+        action: 'Created Project',
+        details: `Project Name: ${newProject.name}`
+    });
+
 
     if (values.generateAiTasks) {
         setIsAiLoading(true);

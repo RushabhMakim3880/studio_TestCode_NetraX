@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -18,6 +19,8 @@ import { ExploitSuggester } from '@/components/exploit-suggester';
 import { PayloadGenerator } from '@/components/payload-generator';
 import { CustomMalwareGenerator } from '@/components/custom-malware-generator';
 import { EncoderDecoder } from '@/components/encoder-decoder';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/services/activity-log-service';
 
 const formSchema = z.object({
   tool: z.string().min(1, { message: 'Please select a tool.' }),
@@ -30,6 +33,7 @@ export default function OffensivePage() {
   const [result, setResult] = useState<OffensiveToolOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,6 +50,11 @@ export default function OffensivePage() {
     try {
       const response = await runOffensiveTool(values);
       setResult(response);
+      logActivity({
+          user: user?.displayName || 'Operator',
+          action: 'Ran Offensive Tool',
+          details: `Tool: ${values.tool}, Target: ${values.target}`
+      });
     } catch (err) {
       setError('Failed to run the tool. The simulation may have been blocked.');
       console.error(err);

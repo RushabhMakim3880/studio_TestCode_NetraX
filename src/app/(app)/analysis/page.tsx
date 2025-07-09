@@ -17,6 +17,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { VirusTotalScanner } from '@/components/virustotal-scanner';
 import { SteganographyAnalyzer } from '@/components/steganography-analyzer';
 import { YaraRuleGenerator } from '@/components/yara-rule-generator';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/services/activity-log-service';
 
 const formSchema = z.object({
   file: z
@@ -55,6 +57,7 @@ export default function AnalysisPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('');
+  const { user } = useAuth();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,6 +77,11 @@ export default function AnalysisPage() {
         fileSize: file.size,
       });
       setResult(response);
+      logActivity({
+          user: user?.displayName || 'Analyst',
+          action: 'Analyzed File',
+          details: `File: ${file.name}, Verdict: ${response.verdict}`
+      });
     } catch (err) {
       if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
         setError('The analysis service is temporarily busy. Please try again later.');

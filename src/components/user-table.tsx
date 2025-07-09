@@ -40,6 +40,7 @@ import { generateInviteEmail, type InviteUserOutput } from '@/ai/flows/invite-us
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { logActivity } from '@/services/activity-log-service';
 
 const inviteSchema = z.object({
     email: z.string().email('Please enter a valid email address.'),
@@ -125,7 +126,13 @@ export function UserTable() {
     };
     
     const handleSendInvite = () => {
-        toast({ title: "Invite Sent (Simulated)", description: `An invitation has been sent to ${inviteForm.getValues('email')}.` });
+        const values = inviteForm.getValues();
+        logActivity({
+            user: currentUser?.displayName || 'Admin',
+            action: 'Sent User Invite',
+            details: `Invited: ${values.email}, Role: ${values.role}`
+        });
+        toast({ title: "Invite Sent (Simulated)", description: `An invitation has been sent to ${values.email}.` });
         setIsInviteModalOpen(false);
     }
 

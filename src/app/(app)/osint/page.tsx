@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -16,6 +17,8 @@ import { GoogleDorkGenerator } from '@/components/google-dork-generator';
 import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 import { BreachDataChecker } from '@/components/breach-data-checker';
 import { BrandAbuseMonitor } from '@/components/brand-abuse-monitor';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/services/activity-log-service';
 
 const formSchema = z.object({
   domain: z.string().min(3, { message: 'Domain must be at least 3 characters.' }).includes('.', { message: 'Please enter a valid domain.' }),
@@ -25,6 +28,7 @@ export default function OsintPage() {
   const [result, setResult] = useState<OsintOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,6 +44,11 @@ export default function OsintPage() {
     try {
       const response = await gatherOsint(values);
       setResult(response);
+      logActivity({
+          user: user?.displayName || 'Analyst',
+          action: 'Performed OSINT Scan',
+          details: `Domain: ${values.domain}`
+      });
     } catch (err) {
       setError('Failed to gather OSINT data. Please try again.');
       console.error(err);

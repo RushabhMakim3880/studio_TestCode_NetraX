@@ -3,73 +3,86 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { getActivityFeed, type ActivityFeedOutput } from '@/ai/flows/activity-feed-flow';
-import { Loader2, AlertTriangle, History } from 'lucide-react';
+import { Loader2, History, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { formatDistanceToNow } from 'date-fns';
+import { getActivities, clearActivities, type ActivityLog } from '@/services/activity-log-service';
+import { Button } from './ui/button';
+import { useAuth } from '@/hooks/use-auth';
 
 export function ActivityFeed() {
-  const [feed, setFeed] = useState<ActivityFeedOutput['activities'] | null>(null);
+  const [feed, setFeed] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const fetchFeed = () => {
+    setIsLoading(true);
+    // Simulate a short delay to feel like a fetch
+    setTimeout(() => {
+      const activities = getActivities();
+      setFeed(activities);
+      setIsLoading(false);
+    }, 200);
+  };
 
   useEffect(() => {
-    async function fetchFeed() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await getActivityFeed();
-        setFeed(response.activities);
-      } catch (err) {
-        if (err instanceof Error && (err.message.includes('429') || err.message.toLowerCase().includes('quota'))) {
-            setError('API quota exceeded. The feed will be unavailable until the quota resets.');
-        } else if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
-            setError('The activity feed service is temporarily busy. It will be back shortly.');
-        } else {
-            setError('Failed to fetch activity feed.');
-            console.error(err);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
     fetchFeed();
+    
+    // Listen for the custom event to refresh the feed
+    const handleActivityLogUpdate = () => fetchFeed();
+    window.addEventListener('activityLogUpdated', handleActivityLogUpdate);
+
+    return () => {
+        window.removeEventListener('activityLogUpdated', handleActivityLogUpdate);
+    };
   }, []);
 
-  const getBadgeVariant = (user: string) => {
-    if (user.toLowerCase().includes('admin')) return 'destructive';
-    if (user.toLowerCase().includes('analyst')) return 'secondary';
+  const handleClearLog = () => {
+    clearActivities();
+  };
+
+  const getBadgeVariant = (userRole: string) => {
+    if (userRole.toLowerCase().includes('admin')) return 'destructive';
+    if (userRole.toLowerCase().includes('analyst')) return 'secondary';
     return 'default';
   }
 
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <div className="flex items-center gap-3">
-            <History className="h-6 w-6" />
-            <CardTitle>Recent Activity</CardTitle>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <History className="h-6 w-6" />
+                <CardTitle>Recent Activity</CardTitle>
+            </div>
+             {user?.role === 'Admin' && feed.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleClearLog}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear Log
+                </Button>
+            )}
         </div>
         <CardDescription>A live feed of recent actions across the platform.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow overflow-y-auto">
         {isLoading && (
           <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Loading recent activity...</span>
           </div>
         )}
-        {error && (
-          <div className="flex items-center justify-center h-full gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            <span>{error}</span>
-          </div>
+        {!isLoading && feed.length === 0 && (
+            <div className="text-center text-muted-foreground h-full flex items-center justify-center">
+                <p>No activities yet.</p>
+            </div>
         )}
-        {feed && !error && (
+        {!isLoading && feed.length > 0 && (
           <div className="space-y-6">
-            {feed.map((item, index) => (
-              <div key={index} className="relative pl-8">
+            {feed.map((item) => (
+              <div key={item.id} className="relative pl-8">
                  <div className="absolute left-0 top-1 h-full">
                     <span className="absolute left-[7px] top-[5px] h-2 w-2 rounded-full bg-accent ring-2 ring-background"></span>
-                    {index !== feed.length - 1 && <div className="absolute left-[10px] top-[14px] h-full w-px bg-border"></div>}
+                    {item.id !== feed[feed.length - 1].id && <div className="absolute left-[10px] top-[14px] h-full w-px bg-border"></div>}
                 </div>
                 <div className="flex items-start justify-between">
                     <div>
@@ -79,7 +92,7 @@ export function ActivityFeed() {
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">{item.details}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground whitespace-nowrap">{item.timestamp}</p>
+                    <p className="text-xs text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}</p>
                 </div>
               </div>
             ))}
