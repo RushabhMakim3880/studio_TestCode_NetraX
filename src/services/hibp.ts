@@ -4,7 +4,6 @@
  * This has been updated to use the proxynova API instead of HIBP.
  *
  * - searchBreachCompilation - Searches for an account in a public combo list database.
- * - BreachCompilationServiceResponse - The return type for the service.
  */
 import { z } from 'zod';
 
@@ -15,12 +14,12 @@ const BreachCompilationResultSchema = z.object({
 });
 
 // Wrapper for our function's return value to include success/error status
-export const BreachCompilationServiceResponseSchema = z.object({
+const BreachCompilationServiceResponseSchema = z.object({
   success: z.boolean(),
   results: BreachCompilationResultSchema.optional(),
   error: z.string().optional(),
 });
-export type BreachCompilationServiceResponse = z.infer<typeof BreachCompilationServiceResponseSchema>;
+type BreachCompilationServiceResponse = z.infer<typeof BreachCompilationServiceResponseSchema>;
 
 export async function searchBreachCompilation(query: string): Promise<BreachCompilationServiceResponse> {
   // Use the free API as requested by the user

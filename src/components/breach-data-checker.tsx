@@ -8,11 +8,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { searchBreachCompilation, type BreachCompilationServiceResponse } from '@/services/hibp';
+import { searchBreachCompilation } from '@/services/hibp';
 import { Loader2, AlertTriangle, DatabaseZap, ShieldOff, ShieldCheck, Clipboard } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
+
+// Infer the response type from the server action to avoid importing non-functions
+type BreachCompilationServiceResponse = Awaited<ReturnType<typeof searchBreachCompilation>>;
 
 const formSchema = z.object({
   emailOrUsername: z.string().min(3, { message: 'Please enter a valid email or username.' }),
