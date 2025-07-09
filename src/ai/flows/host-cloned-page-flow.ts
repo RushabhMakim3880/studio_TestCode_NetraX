@@ -1,12 +1,11 @@
 'use server';
 /**
  * @fileOverview A flow for "hosting" a cloned page.
- * This will add the page's HTML to a server-side cache and return
- * a relative URL that can be used to serve the content via an API route.
+ * This will upload the page's HTML to a public paste service and return
+ * the raw URL that can be used to serve the content.
  */
 
 import { z } from 'zod';
-import { pageCache } from '@/lib/server-cache';
 
 const HostClonedPageInputSchema = z.object({
   htmlContent: z.string().min(1, 'HTML content cannot be empty.'),
@@ -14,27 +13,43 @@ const HostClonedPageInputSchema = z.object({
 export type HostClonedPageInput = z.infer<typeof HostClonedPageInputSchema>;
 
 const HostClonedPageOutputSchema = z.object({
-  relativeUrl: z.string(),
+  publicUrl: z.string().url(),
 });
 export type HostClonedPageOutput = z.infer<typeof HostClonedPageOutputSchema>;
+
 
 export async function hostClonedPage(input: HostClonedPageInput): Promise<HostClonedPageOutput> {
   try {
     const { htmlContent } = HostClonedPageInputSchema.parse(input);
-    const pageId = crypto.randomUUID();
 
-    // Store the HTML content in the server-side cache
-    pageCache.set(pageId, htmlContent);
+    // Using FormData is required for this service to correctly handle the content.
+    const formData = new FormData();
+    formData.append('content', htmlContent);
 
-    // Set a timeout to clear the cache entry after a reasonable time (e.g., 1 hour)
-    setTimeout(() => {
-        pageCache.delete(pageId);
-    }, 60 * 60 * 1000);
+    const postResponse = await fetch('https://paste.rs', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+    });
+    
+    if (!postResponse.ok) {
+        const body = await postResponse.text();
+        throw new Error(`Failed to post to hosting service. Status: ${postResponse.status}. Body: ${body}`);
+    }
 
-    const relativeUrl = `/api/phishing/serve/${pageId}`;
+    const publicUrl = await postResponse.text();
+
+    if (!publicUrl || !publicUrl.startsWith('http')) {
+        throw new Error(`Hosting service returned an invalid URL: ${publicUrl}`);
+    }
+    
+    // The service returns the view URL. We need to append '/raw' for the raw HTML content.
+    const rawUrl = `${publicUrl}/raw`;
 
     return {
-      relativeUrl: relativeUrl,
+      publicUrl: rawUrl,
     };
 
   } catch (error) {

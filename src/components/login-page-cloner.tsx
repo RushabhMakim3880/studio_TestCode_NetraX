@@ -73,9 +73,7 @@ export function LoginPageCloner() {
     setClonerError(null);
     try {
       const response = await hostClonedPage({ htmlContent: clonedHtml });
-      // Construct the full, absolute URL on the client-side
-      const absoluteUrl = window.location.origin + response.relativeUrl;
-      setFullHostedUrl(absoluteUrl);
+      setFullHostedUrl(response.publicUrl);
       toast({ title: "Page is Live", description: "Your page is now accessible at the public URL." });
     } catch (err) {
        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
