@@ -80,18 +80,16 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                     </div>
                 )}
             </CardContent>
-            {credentials.length > 0 && (
-                <CardFooter className="border-t pt-6 justify-between">
-                    <Button variant="outline" onClick={onRefresh}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Refresh Log
-                    </Button>
-                    <Button variant="destructive" onClick={handleClear}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Clear Log
-                    </Button>
-                </CardFooter>
-            )}
+            <CardFooter className="border-t pt-6 justify-between">
+                <Button variant="outline" onClick={onRefresh}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh Log
+                </Button>
+                <Button variant="destructive" onClick={handleClear} disabled={credentials.length === 0}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear Log
+                </Button>
+            </CardFooter>
         </Card>
     );
 }
