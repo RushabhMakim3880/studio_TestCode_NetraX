@@ -1,8 +1,8 @@
 'use server';
 /**
  * @fileOverview A flow for "hosting" a cloned page.
- * This will upload the page's HTML to a public paste service and return
- * the raw URL that can be used to serve the content.
+ * This will upload the page's HTML to a public paste service and return an ID
+ * that can be used to serve the content via a proxy API route.
  */
 
 import { z } from 'zod';
@@ -13,7 +13,7 @@ const HostClonedPageInputSchema = z.object({
 export type HostClonedPageInput = z.infer<typeof HostClonedPageInputSchema>;
 
 const HostClonedPageOutputSchema = z.object({
-  publicUrl: z.string().url(),
+  pasteId: z.string().min(1),
 });
 export type HostClonedPageOutput = z.infer<typeof HostClonedPageOutputSchema>;
 
@@ -41,15 +41,20 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
         throw new Error(`Failed to post to hosting service. Status: ${postResponse.status}. Body: ${body}`);
     }
 
-    const rawUrl = await postResponse.text();
+    const pasteUrl = (await postResponse.text()).trim();
 
-    if (!rawUrl || !rawUrl.startsWith('http')) {
-        throw new Error(`Hosting service returned an invalid response: ${rawUrl}`);
+    if (!pasteUrl || !pasteUrl.startsWith('http')) {
+        throw new Error(`Hosting service returned an invalid response: ${pasteUrl}`);
     }
     
-    // dpaste.com API returns the raw URL directly.
+    const pasteId = pasteUrl.substring(pasteUrl.lastIndexOf('/') + 1);
+
+    if (!pasteId) {
+        throw new Error('Could not extract ID from the paste URL.');
+    }
+    
     return {
-      publicUrl: rawUrl.trim(),
+      pasteId: pasteId,
     };
 
   } catch (error) {
