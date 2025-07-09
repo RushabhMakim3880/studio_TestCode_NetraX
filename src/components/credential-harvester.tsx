@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Trash2, ShieldAlert, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
+import { ScrollArea } from './ui/scroll-area';
 
 export type CapturedCredential = {
-    timestamp: number;
+    timestamp: string; // ISO String
     [key: string]: any; // Allows for arbitrary keys from form fields
 };
 
@@ -45,7 +46,7 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-                {credentials.length > 0 ? (
+                 <ScrollArea className="h-72">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -54,31 +55,35 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {credentials.slice().reverse().map((cred, index) => (
-                                <TableRow key={cred.timestamp + index}>
-                                    <TableCell>{new Date(cred.timestamp).toLocaleString()}</TableCell>
-                                    <TableCell colSpan={2}>
-                                        <div className="font-mono text-xs space-y-1">
-                                            {Object.entries(cred).map(([key, value]) => {
-                                                if (key === 'timestamp') return null;
-                                                return (
-                                                    <div key={key} className="truncate">
-                                                        <span className="text-muted-foreground">{key}: </span>
-                                                        <span className="text-foreground">{String(value)}</span>
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
+                             {credentials.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="h-24 text-center">
+                                         No credentials captured yet.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                credentials.slice().reverse().map((cred, index) => (
+                                    <TableRow key={cred.timestamp + index}>
+                                        <TableCell>{new Date(cred.timestamp).toLocaleString()}</TableCell>
+                                        <TableCell colSpan={2}>
+                                            <div className="font-mono text-xs space-y-1">
+                                                {Object.entries(cred).map(([key, value]) => {
+                                                    if (key === 'timestamp') return null;
+                                                    return (
+                                                        <div key={key} className="truncate">
+                                                            <span className="text-muted-foreground">{key}: </span>
+                                                            <span className="text-foreground">{String(value)}</span>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
-                ) : (
-                    <div className="text-center text-muted-foreground py-10 h-full flex items-center justify-center">
-                        <p>No credentials captured yet.</p>
-                    </div>
-                )}
+                </ScrollArea>
             </CardContent>
             <CardFooter className="border-t pt-6 justify-between">
                 <Button variant="outline" onClick={onRefresh}>

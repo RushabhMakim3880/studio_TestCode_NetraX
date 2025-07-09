@@ -12,15 +12,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function PhishingPage() {
   const { toast } = useToast();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
+  const storageKey = 'netra-captured-credentials';
 
   const loadCredentialsFromStorage = () => {
     try {
-        const storedCreds = localStorage.getItem('netra-credentials');
+        const storedCreds = localStorage.getItem(storageKey);
         if (storedCreds) {
             setCapturedCredentials(JSON.parse(storedCreds));
+        } else {
+            setCapturedCredentials([]);
         }
     } catch (error) {
         console.error('Failed to load credentials from localStorage', error);
+        setCapturedCredentials([]);
     }
   };
 
@@ -32,18 +36,20 @@ export default function PhishingPage() {
   // Effect for real-time updates from other tabs
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'netra-credentials') {
+      if (event.key === storageKey) {
         const newCredsRaw = event.newValue;
         if (newCredsRaw) {
           try {
             const newCreds = JSON.parse(newCredsRaw);
-            // Use functional update to get the latest state
-            setCapturedCredentials(currentCreds => {
-              if (newCreds.length > currentCreds.length) {
+            const currentLength = capturedCredentials.length;
+
+            setCapturedCredentials(newCreds); // Update state with the new full list
+
+            if (newCreds.length > currentLength) {
                 const newCredential = newCreds[newCreds.length - 1];
                 const summary = Object.entries(newCredential)
-                    .filter(([key]) => key !== 'timestamp')
-                    .map(([key, value]) => `${key}: ${value}`)
+                    .filter(([key]) => key !== 'timestamp' && key !== 'source')
+                    .map(([key, value]) => `${key}: ${String(value).substring(0,20)}`) // Truncate long values
                     .join(', ');
 
                 toast({
@@ -51,9 +57,7 @@ export default function PhishingPage() {
                   title: "Credentials Captured!",
                   description: summary || "A form was submitted.",
                 });
-              }
-              return newCreds;
-            });
+            }
           } catch (e) {
             console.error('Failed to parse updated credentials', e);
           }
@@ -68,11 +72,11 @@ export default function PhishingPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [toast]);
+  }, [toast, capturedCredentials.length]); // Depend on length to get fresh comparison value
 
   const handleClearCredentials = () => {
     setCapturedCredentials([]);
-    localStorage.removeItem('netra-credentials');
+    localStorage.removeItem(storageKey);
   };
 
   const handleRefreshCredentials = () => {
