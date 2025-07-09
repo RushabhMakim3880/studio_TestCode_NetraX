@@ -69,7 +69,7 @@ export default function VaptPage() {
 
   const getStandardDisplayName = () => {
     const values = form.getValues();
-    return values.standard === 'Custom' ? values.customStandard : values.standard;
+    return values.standard === 'Custom' && values.customStandard ? values.customStandard : values.standard;
   };
 
   const groupedChecklist = result?.checklist.reduce((acc, item) => {

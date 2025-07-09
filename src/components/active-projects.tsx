@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,6 +27,7 @@ export function ActiveProjects() {
 
   useEffect(() => {
     try {
+      // Using 'netra-campaigns' for backward compatibility
       const storedProjects = localStorage.getItem('netra-campaigns');
       const allProjects = storedProjects ? JSON.parse(storedProjects) : [];
       setActiveProjects(allProjects.filter((c: Project) => c.status === 'Active'));

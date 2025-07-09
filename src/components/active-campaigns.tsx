@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, FolderSearch, Briefcase } from 'lucide-react';
@@ -26,6 +27,7 @@ export function ActiveProjects() {
 
   useEffect(() => {
     try {
+      // Using 'netra-campaigns' for backward compatibility
       const storedProjects = localStorage.getItem('netra-campaigns');
       const allProjects = storedProjects ? JSON.parse(storedProjects) : [];
       setActiveProjects(allProjects.filter((c: Project) => c.status === 'Active'));
