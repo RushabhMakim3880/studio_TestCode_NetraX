@@ -32,28 +32,30 @@ const hostClonedPageFlow = ai.defineFlow(
   async (input) => {
     try {
       // Use a public, anonymous paste service to host the raw HTML.
-      const response = await fetch('https://paste.bingner.com/documents', {
+      const response = await fetch('https://pastes.dev/api/v2/pastes', {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/plain',
+          'Content-Type': 'application/json',
         },
-        body: input.htmlContent,
+        body: JSON.stringify({
+            content: input.htmlContent,
+            expires: "1h", // Expire after 1 hour for security
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to post to hosting service. Status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to post to hosting service. Status: ${response.status}. Body: ${errorText}`);
       }
 
-      const { key } = await response.json();
+      const { raw_url } = await response.json();
       
-      if (!key) {
-        throw new Error('Hosting service did not return a key.');
+      if (!raw_url) {
+        throw new Error('Hosting service did not return a raw_url.');
       }
       
-      const publicUrl = `https://paste.bingner.com/raw/${key}`;
-
       return {
-        publicUrl,
+        publicUrl: raw_url,
       };
 
     } catch (error) {
