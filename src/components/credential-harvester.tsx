@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Trash2, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from './ui/badge';
 
 export type CapturedCredential = {
     username: string;
@@ -30,17 +31,20 @@ export function CredentialHarvester({ credentials, onClear }: CredentialHarveste
     }
 
     return (
-        <Card>
+        <Card className="flex flex-col h-full">
             <CardHeader>
-                <div className="flex items-center gap-3">
-                    <ShieldAlert className="h-6 w-6 text-destructive" />
-                    <CardTitle>Simulated Credential Harvester</CardTitle>
+                 <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                      <ShieldAlert className="h-6 w-6 text-destructive" />
+                      <CardTitle>Credential Harvester</CardTitle>
+                  </div>
+                  {credentials.length > 0 && <Badge variant="destructive">{credentials.length} Captured</Badge>}
                 </div>
                 <CardDescription>
-                    Credentials captured from the cloned login page are displayed here. This is for simulation only.
+                    Credentials captured from the cloned login page are displayed here in real-time.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow">
                 {credentials.length > 0 ? (
                     <Table>
                         <TableHeader>
@@ -51,7 +55,7 @@ export function CredentialHarvester({ credentials, onClear }: CredentialHarveste
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {credentials.map((cred) => (
+                            {credentials.slice().reverse().map((cred) => (
                                 <TableRow key={cred.timestamp}>
                                     <TableCell>{new Date(cred.timestamp).toLocaleString()}</TableCell>
                                     <TableCell className="font-mono">{cred.username}</TableCell>
@@ -61,8 +65,8 @@ export function CredentialHarvester({ credentials, onClear }: CredentialHarveste
                         </TableBody>
                     </Table>
                 ) : (
-                    <div className="text-center text-muted-foreground py-10">
-                        No credentials captured yet.
+                    <div className="text-center text-muted-foreground py-10 h-full flex items-center justify-center">
+                        <p>No credentials captured yet.</p>
                     </div>
                 )}
             </CardContent>

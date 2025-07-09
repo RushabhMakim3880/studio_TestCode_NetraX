@@ -2,12 +2,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester, type CapturedCredential } from '@/components/credential-harvester';
 import { PhishingCampaignLauncher } from '@/components/phishing-campaign-launcher';
 import { EmailGenerator } from '@/components/email-generator';
 import { LoginPageCloner } from '@/components/login-page-cloner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PhishingPage() {
   const { toast } = useToast();
@@ -62,26 +62,25 @@ export default function PhishingPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-headline text-3xl font-semibold">Phishing Campaign Simulator</h1>
-        <p className="text-muted-foreground">Craft custom emails and clone login pages.</p>
+        <p className="text-muted-foreground">Craft landing pages, generate emails, and manage campaigns.</p>
       </div>
+      
+      <div className="grid lg:grid-cols-2 gap-6 items-start">
+        <div className="flex flex-col gap-6">
+          <LoginPageCloner />
+        </div>
+        <div className="flex flex-col gap-6">
+          <CredentialHarvester credentials={capturedCredentials} onClear={handleClearCredentials} />
+        </div>
+      </div>
+
       <Tabs defaultValue="email-generator" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="email-generator">Email Generator</TabsTrigger>
-          <TabsTrigger value="page-cloner">Login Page Cloner</TabsTrigger>
-          <TabsTrigger value="harvester">
-            Credential Harvester
-            {capturedCredentials.length > 0 && <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs">{capturedCredentials.length}</span>}
-          </TabsTrigger>
-           <TabsTrigger value="campaign-launcher">Campaign Launcher</TabsTrigger>
+          <TabsTrigger value="campaign-launcher">Campaign Launcher</TabsTrigger>
         </TabsList>
         <TabsContent value="email-generator" className="mt-4">
           <EmailGenerator />
-        </TabsContent>
-        <TabsContent value="page-cloner" className="mt-4">
-          <LoginPageCloner />
-        </TabsContent>
-        <TabsContent value="harvester" className="mt-4">
-            <CredentialHarvester credentials={capturedCredentials} onClear={handleClearCredentials} />
         </TabsContent>
          <TabsContent value="campaign-launcher" className="mt-4">
             <PhishingCampaignLauncher />
