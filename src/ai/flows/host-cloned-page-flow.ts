@@ -22,14 +22,16 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
   try {
     const { htmlContent } = HostClonedPageInputSchema.parse(input);
 
-    // Using FormData is required for this service to correctly handle the content.
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append('content', htmlContent);
+    formData.append('syntax', 'html'); // Tell the service it's HTML
+    formData.append('expiry_days', '1'); // Expire after 1 day for security
 
-    const postResponse = await fetch('https://paste.rs', {
+    const postResponse = await fetch('https://dpaste.com/api/', {
         method: 'POST',
         body: formData,
         headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         },
     });
@@ -39,17 +41,15 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
         throw new Error(`Failed to post to hosting service. Status: ${postResponse.status}. Body: ${body}`);
     }
 
-    const publicUrl = await postResponse.text();
+    const rawUrl = await postResponse.text();
 
-    if (!publicUrl || !publicUrl.startsWith('http')) {
-        throw new Error(`Hosting service returned an invalid URL: ${publicUrl}`);
+    if (!rawUrl || !rawUrl.startsWith('http')) {
+        throw new Error(`Hosting service returned an invalid response: ${rawUrl}`);
     }
     
-    // The service returns the view URL. We need to append '/raw' for the raw HTML content.
-    const rawUrl = `${publicUrl}/raw`;
-
+    // dpaste.com API returns the raw URL directly.
     return {
-      publicUrl: rawUrl,
+      publicUrl: rawUrl.trim(),
     };
 
   } catch (error) {
