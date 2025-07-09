@@ -20,14 +20,18 @@ export async function shortenUrl(longUrl: string): Promise<ShortUrlResponse> {
   const apiKey = process.env.TINYURL_API_KEY;
   const apiUrl = 'https://api.tinyurl.com/create';
 
+  if (!apiKey) {
+    const helpfulError = 'TinyURL API key is not configured. Please add TINYURL_API_KEY to your .env file.';
+    console.error(helpfulError);
+    return { success: false, error: helpfulError };
+  }
+
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // The API works without a token but is heavily rate-limited.
-        // A token is recommended for real use.
-        ...(apiKey && { 'Authorization': `Bearer ${apiKey}` }),
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         url: longUrl,
