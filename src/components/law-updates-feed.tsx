@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,7 +19,8 @@ export function LawUpdatesFeed() {
         const response = await getLawUpdates();
         setFeed(response.updates);
       } catch (err) {
-        setError('Failed to fetch law updates feed.');
+        // Set a user-friendly message when the AI feed is unavailable for any reason
+        setError('The AI legal update feed is currently unavailable. Please try again later.');
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -44,12 +46,12 @@ export function LawUpdatesFeed() {
           </div>
         )}
         {error && (
-          <div className="flex items-center justify-center h-40 gap-2 text-destructive">
+          <div className="flex items-center justify-center h-40 gap-2 text-muted-foreground">
             <AlertTriangle className="h-5 w-5" />
             <span>{error}</span>
           </div>
         )}
-        {feed && (
+        {!isLoading && !error && feed && (
           <ul className="space-y-4">
             {feed.map((item, index) => (
                 <li key={index} className="border-l-4 border-accent pl-4">
