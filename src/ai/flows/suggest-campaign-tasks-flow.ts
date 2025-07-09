@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow for suggesting tasks for a new red team campaign.
@@ -11,8 +12,8 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const CampaignTasksSuggesterInputSchema = z.object({
-  campaignName: z.string().describe('The name of the red team campaign.'),
-  campaignTarget: z.string().describe('The target of the campaign (e.g., a company, sector).'),
+  campaignName: z.string().describe('The name of the red team project.'),
+  campaignTarget: z.string().describe('The target of the project (e.g., a company, sector).'),
 });
 export type CampaignTasksSuggesterInput = z.infer<typeof CampaignTasksSuggesterInputSchema>;
 
@@ -22,7 +23,7 @@ const TaskSchema = z.object({
 });
 
 const CampaignTasksSuggesterOutputSchema = z.object({
-  tasks: z.array(TaskSchema).describe('A list of 5-8 suggested tasks for the campaign, covering different phases.'),
+  tasks: z.array(TaskSchema).describe('A list of 5-8 suggested tasks for the project, covering different phases.'),
 });
 export type CampaignTasksSuggesterOutput = z.infer<typeof CampaignTasksSuggesterOutputSchema>;
 
@@ -35,15 +36,15 @@ const prompt = ai.definePrompt({
   input: {schema: CampaignTasksSuggesterInputSchema},
   output: {schema: CampaignTasksSuggesterOutputSchema},
   prompt: `You are a senior red team operations planner.
-  Your task is to create a list of initial tasks for a new campaign based on its name and target.
+  Your task is to create a list of initial tasks for a new project based on its name and target.
 
-  Campaign Name: {{{campaignName}}}
+  Project Name: {{{campaignName}}}
   Target: {{{campaignTarget}}}
 
-  Generate a list of 5 to 8 plausible and logical tasks for the initial phase of this campaign.
+  Generate a list of 5 to 8 plausible and logical tasks for the initial phase of this project.
   The tasks should cover different types: Reconnaissance, Phishing, Payload development, etc.
   Make the descriptions clear and actionable.
-  For example, for a campaign against a bank, a 'Recon' task could be "Identify public-facing web applications and employee profiles on LinkedIn."
+  For example, for a project against a bank, a 'Recon' task could be "Identify public-facing web applications and employee profiles on LinkedIn."
   A 'Phishing' task could be "Develop a phishing lure based on internal IT support notifications."
   `,
 });

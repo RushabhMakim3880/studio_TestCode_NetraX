@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { useAuth, type User } from '@/hooks/use-auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, Edit, UserPlus, Send, Loader2, Settings } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit, UserPlus, Send, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -68,7 +68,6 @@ export function UserTable() {
 
     const handleEditClick = (user: User) => {
         setSelectedUser(user);
-        // Ensure enabledModules is an array, falling back to an empty one if not set
         setEditableModules(user.enabledModules || []);
         setIsEditModalOpen(true);
     }

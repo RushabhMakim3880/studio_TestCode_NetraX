@@ -40,7 +40,7 @@ type TaskType = 'Recon' | 'Phishing' | 'Payload' | 'Post-Exploitation' | 'Genera
 
 type Task = {
   id: string;
-  campaignId: string;
+  projectId: string;
   description: string;
   status: 'To Do' | 'In Progress' | 'Completed';
   type: TaskType;
@@ -52,18 +52,18 @@ type Profile = { id: string; fullName: string; };
 type Template = { id: string; name: string; };
 
 const initialProjects: Project[] = [
-  { id: 'CAM-001', name: 'Project Chimera', target: 'Global-Corp Inc.', status: 'Active', startDate: '2023-10-01', endDate: '2023-12-31' },
-  { id: 'CAM-002', name: 'Operation Viper', target: 'Finance Sector', status: 'Active', startDate: '2023-11-15', endDate: '2024-01-15' },
-  { id: 'CAM-003', name: 'Ghost Protocol', target: 'Tech Conglomerate', status: 'Planning', startDate: '2024-01-10', endDate: '2024-03-10' },
-  { id: 'CAM-004', name: 'Red Dawn', target: 'Energy Grid', status: 'Completed', startDate: '2023-08-20', endDate: '2023-09-30' },
+  { id: 'PROJ-001', name: 'Project Chimera', target: 'Global-Corp Inc.', status: 'Active', startDate: '2023-10-01', endDate: '2023-12-31' },
+  { id: 'PROJ-002', name: 'Operation Viper', target: 'Finance Sector', status: 'Active', startDate: '2023-11-15', endDate: '2024-01-15' },
+  { id: 'PROJ-003', name: 'Ghost Protocol', target: 'Tech Conglomerate', status: 'Planning', startDate: '2024-01-10', endDate: '2024-03-10' },
+  { id: 'PROJ-004', name: 'Red Dawn', target: 'Energy Grid', status: 'Completed', startDate: '2023-08-20', endDate: '2023-09-30' },
 ];
 
 const initialTasks: Task[] = [
-  { id: 'TSK-001', campaignId: 'CAM-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon' },
-  { id: 'TSK-002', campaignId: 'CAM-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001' },
-  { id: 'TSK-003', campaignId: 'CAM-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload' },
-  { id: 'TSK-004', campaignId: 'CAM-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon' },
-  { id: 'TSK-005', campaignId: 'CAM-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload' },
+  { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon' },
+  { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001' },
+  { id: 'TSK-003', projectId: 'PROJ-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload' },
+  { id: 'TSK-004', projectId: 'PROJ-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon' },
+  { id: 'TSK-005', projectId: 'PROJ-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload' },
 ];
 
 const projectSchema = z.object({
@@ -125,8 +125,7 @@ export default function ProjectManagementPage() {
   useEffect(() => {
     const loadData = () => {
         try {
-          // Note: Using 'netra-campaigns' key for backward compatibility to avoid data loss.
-          const storedProjects = localStorage.getItem('netra-campaigns');
+          const storedProjects = localStorage.getItem('netra-projects');
           setProjects(storedProjects ? JSON.parse(storedProjects) : initialProjects);
 
           const storedTasks = localStorage.getItem('netra-tasks');
@@ -146,7 +145,7 @@ export default function ProjectManagementPage() {
 
   const updateProjects = (newProjects: Project[]) => {
     setProjects(newProjects);
-    localStorage.setItem('netra-campaigns', JSON.stringify(newProjects));
+    localStorage.setItem('netra-projects', JSON.stringify(newProjects));
   }
   
   const updateTasks = (newTasks: Task[]) => {
@@ -175,7 +174,7 @@ export default function ProjectManagementPage() {
   const confirmDeleteProject = () => {
     if (selectedProject) {
       const newProjects = projects.filter(c => c.id !== selectedProject.id);
-      const newTasks = tasks.filter(t => t.campaignId !== selectedProject.id);
+      const newTasks = tasks.filter(t => t.projectId !== selectedProject.id);
       updateProjects(newProjects);
       updateTasks(newTasks);
       toast({ title: 'Project Deleted', description: `Project "${selectedProject.name}" and its tasks have been removed.` });
@@ -195,7 +194,7 @@ export default function ProjectManagementPage() {
     } 
 
     const newProject: Project = { 
-        id: `CAM-${crypto.randomUUID()}`, 
+        id: `PROJ-${crypto.randomUUID()}`, 
         name: values.name,
         target: values.target,
         startDate: values.startDate,
@@ -222,7 +221,7 @@ export default function ProjectManagementPage() {
 
             const newAiTasks: Task[] = result.tasks.map(task => ({
                 id: `TSK-${crypto.randomUUID()}`,
-                campaignId: newProject.id,
+                projectId: newProject.id,
                 description: task.description,
                 type: task.type as TaskType,
                 status: 'To Do',
@@ -257,7 +256,7 @@ export default function ProjectManagementPage() {
 
   const handleEditTaskClick = (task: Task) => {
     setEditingTask(task);
-    setCurrentProjectIdForTask(task.campaignId);
+    setCurrentProjectIdForTask(task.projectId);
     taskForm.reset(task);
     setIsTaskFormOpen(true);
   }
@@ -270,7 +269,7 @@ export default function ProjectManagementPage() {
       } else if (currentProjectIdForTask) {
         const newTask: Task = {
             id: `TSK-${crypto.randomUUID()}`,
-            campaignId: currentProjectIdForTask,
+            projectId: currentProjectIdForTask,
             status: 'To Do',
             ...values,
             type: values.type as TaskType,
@@ -325,7 +324,7 @@ export default function ProjectManagementPage() {
                 {projects.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
                     {projects.map((project) => {
-                    const projectTasks = tasks.filter(t => t.campaignId === project.id);
+                    const projectTasks = tasks.filter(t => t.projectId === project.id);
                     return (
                         <Card key={project.id} className="flex flex-col">
                         <CardHeader>

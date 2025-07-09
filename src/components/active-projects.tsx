@@ -17,7 +17,7 @@ type Project = {
 
 type Task = {
   id: string;
-  campaignId: string;
+  projectId: string;
   status: 'To Do' | 'In Progress' | 'Completed';
 };
 
@@ -27,8 +27,7 @@ export function ActiveProjects() {
 
   useEffect(() => {
     try {
-      // Using 'netra-campaigns' for backward compatibility
-      const storedProjects = localStorage.getItem('netra-campaigns');
+      const storedProjects = localStorage.getItem('netra-projects');
       const allProjects = storedProjects ? JSON.parse(storedProjects) : [];
       setActiveProjects(allProjects.filter((c: Project) => c.status === 'Active'));
 
@@ -40,7 +39,7 @@ export function ActiveProjects() {
   }, []);
 
   const getProjectProgress = (projectId: string) => {
-    const projectTasks = tasks.filter(t => t.campaignId === projectId);
+    const projectTasks = tasks.filter(t => t.projectId === projectId);
     if (projectTasks.length === 0) return 0;
     const completedTasks = projectTasks.filter(t => t.status === 'Completed').length;
     return (completedTasks / projectTasks.length) * 100;

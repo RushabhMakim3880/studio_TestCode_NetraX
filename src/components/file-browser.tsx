@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -15,7 +16,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -37,7 +37,7 @@ export type FileSystemNode = {
 
 const initialFileSystem: FileSystemNode[] = [
   { id: 'root', name: 'root', type: 'folder', parentId: null },
-  { id: '1', name: 'Campaigns', type: 'folder', parentId: 'root' },
+  { id: '1', name: 'Projects', type: 'folder', parentId: 'root' },
   { id: '2', name: 'Reports', type: 'folder', parentId: 'root' },
   { id: '3', name: 'Evidence', type: 'folder', parentId: 'root' },
   { id: '1-1', name: 'Project Chimera', type: 'folder', parentId: '1' },
