@@ -31,43 +31,30 @@ const hostClonedPageFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // Use a public, anonymous paste service to host the raw HTML.
-      const response = await fetch('https://pastes.dev/api/v2/pastes', {
+      // Use Hastebin to host the raw HTML.
+      const response = await fetch('https://hastebin.com/documents', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'text/plain',
         },
-        body: JSON.stringify({
-            content: input.htmlContent,
-            expires: "1h", // Expire after 1 hour for security
-        }),
+        body: input.htmlContent,
       });
-      
-      const responseText = await response.text();
 
       if (!response.ok) {
+        const responseText = await response.text();
         throw new Error(`Failed to post to hosting service. Status: ${response.status}. Body: ${responseText}`);
       }
-
-      if (!responseText) {
-        throw new Error('Hosting service returned an empty response.');
+      
+      const responseData = await response.json();
+      
+      if (!responseData.key) {
+        throw new Error('Hosting service did not return a key in its response.');
       }
 
-      let responseData;
-      try {
-        responseData = JSON.parse(responseText);
-      } catch (e) {
-        throw new Error(`Failed to parse JSON from hosting service. Response: ${responseText}`);
-      }
-      
-      const { raw_url } = responseData;
-      
-      if (!raw_url) {
-        throw new Error('Hosting service did not return a raw_url in its response.');
-      }
-      
+      const publicUrl = `https://hastebin.com/raw/${responseData.key}`;
+
       return {
-        publicUrl: raw_url,
+        publicUrl: publicUrl,
       };
 
     } catch (error) {
