@@ -11,9 +11,9 @@ export function generateWordlistFromProfile(input: WordlistGeneratorInput): stri
     const wordlist = new Set<string>();
 
     const nameParts = fullName.toLowerCase().split(' ').filter(p => p);
-    const companyParts = company.toLowerCase().split(' ').filter(p => p);
+    const companyParts = company.toLowerCase().replace(/[^a-z0-9\s]/gi, '').split(' ').filter(p => p);
     const roleParts = role.toLowerCase().split(' ').filter(p => p);
-    const noteParts = notes?.toLowerCase().split(/[\s,.;]+/).filter(p => p.length > 2) || [];
+    const noteParts = notes?.toLowerCase().replace(/[^a-z0-9\s]/gi, '').split(/[\s,.;]+/).filter(p => p.length > 2) || [];
 
     const baseWords = [...new Set([...nameParts, ...companyParts, ...roleParts, ...noteParts])];
     
