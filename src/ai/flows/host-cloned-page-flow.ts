@@ -1,15 +1,13 @@
 'use server';
 /**
  * @fileOverview A flow for "hosting" a cloned page.
- * In a real local dev environment, this would start an ngrok tunnel.
- * Here, it simulates the process and returns a realistic-looking URL.
+ * This will store the page's HTML in a server-side cache and return
+ * a real, publicly accessible URL that serves the content via an API endpoint.
  */
 
 import { pageCache } from '@/lib/server-cache';
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-// In a real local server, you'd use the ngrok package like this:
-// import ngrok from 'ngrok';
 
 const HostClonedPageInputSchema = z.object({
   htmlContent: z.string().min(1, 'HTML content cannot be empty.'),
@@ -18,7 +16,6 @@ export type HostClonedPageInput = z.infer<typeof HostClonedPageInputSchema>;
 
 const HostClonedPageOutputSchema = z.object({
   publicUrl: z.string().url(),
-  localUrl: z.string().url(),
 });
 export type HostClonedPageOutput = z.infer<typeof HostClonedPageOutputSchema>;
 
@@ -40,31 +37,15 @@ const hostClonedPageFlow = ai.defineFlow(
     // 2. Store the HTML content in our server-side cache
     pageCache.set(pageId, input.htmlContent);
 
-    // 3. Define the local URL where our app will serve the page
-    const localUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/phishing/serve/${pageId}`;
+    // 3. Define the public URL where our app will serve the page.
+    // In this sandboxed environment, this URL is publicly accessible.
+    const publicUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/phishing/serve/${pageId}`;
     
-    // --- NGROK SIMULATION ---
-    // In a real local development server, you would uncomment and use the following:
-    /*
-    if (!process.env.NGROK_AUTHTOKEN) {
-        throw new Error('NGROK_AUTHTOKEN is not set in the environment variables.');
-    }
-    await ngrok.authtoken(process.env.NGROK_AUTHTOKEN);
-    const publicUrl = await ngrok.connect(3000); // Or the port your Next.js app is on
-    const tunneledUrl = `${publicUrl}/api/phishing/serve/${pageId}`;
-    */
-
-    // For this sandboxed environment, we'll generate a realistic but FAKE ngrok URL.
-    const randomSubdomain = Math.random().toString(36).substring(2, 10);
-    const publicUrl = `https://${randomSubdomain}.ngrok-free.app/api/phishing/serve/${pageId}`;
-    // --- END SIMULATION ---
-
     // Clean up the cache after a reasonable time (e.g., 1 hour)
     setTimeout(() => pageCache.delete(pageId), 3600 * 1000);
 
     return {
       publicUrl,
-      localUrl,
     };
   }
 );

