@@ -4,7 +4,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Trash2, ShieldAlert } from 'lucide-react';
+import { Trash2, ShieldAlert, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
 
@@ -16,9 +16,10 @@ export type CapturedCredential = {
 type CredentialHarvesterProps = {
     credentials: CapturedCredential[];
     onClear: () => void;
+    onRefresh: () => void;
 };
 
-export function CredentialHarvester({ credentials, onClear }: CredentialHarvesterProps) {
+export function CredentialHarvester({ credentials, onClear, onRefresh }: CredentialHarvesterProps) {
     const { toast } = useToast();
 
     const handleClear = () => {
@@ -80,7 +81,11 @@ export function CredentialHarvester({ credentials, onClear }: CredentialHarveste
                 )}
             </CardContent>
             {credentials.length > 0 && (
-                <CardFooter className="border-t pt-6">
+                <CardFooter className="border-t pt-6 justify-between">
+                    <Button variant="outline" onClick={onRefresh}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Refresh Log
+                    </Button>
                     <Button variant="destructive" onClick={handleClear}>
                         <Trash2 className="mr-2 h-4 w-4" />
                         Clear Log

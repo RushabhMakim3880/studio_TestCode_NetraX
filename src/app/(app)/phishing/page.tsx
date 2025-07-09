@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,8 +12,7 @@ export default function PhishingPage() {
   const { toast } = useToast();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
 
-  // Effect for initial load from localStorage
-  useEffect(() => {
+  const loadCredentialsFromStorage = () => {
     try {
         const storedCreds = localStorage.getItem('netra-credentials');
         if (storedCreds) {
@@ -23,6 +21,11 @@ export default function PhishingPage() {
     } catch (error) {
         console.error('Failed to load credentials from localStorage', error);
     }
+  };
+
+  // Effect for initial load from localStorage
+  useEffect(() => {
+    loadCredentialsFromStorage();
   }, []);
 
   // Effect for real-time updates from other tabs
@@ -71,6 +74,11 @@ export default function PhishingPage() {
     localStorage.removeItem('netra-credentials');
   };
 
+  const handleRefreshCredentials = () => {
+    loadCredentialsFromStorage();
+    toast({ title: "Log Refreshed" });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -83,7 +91,11 @@ export default function PhishingPage() {
           <LoginPageCloner />
         </div>
         <div className="flex flex-col gap-6">
-          <CredentialHarvester credentials={capturedCredentials} onClear={handleClearCredentials} />
+          <CredentialHarvester 
+            credentials={capturedCredentials} 
+            onClear={handleClearCredentials} 
+            onRefresh={handleRefreshCredentials} 
+          />
         </div>
       </div>
 
