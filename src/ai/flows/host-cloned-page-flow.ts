@@ -42,16 +42,28 @@ const hostClonedPageFlow = ai.defineFlow(
             expires: "1h", // Expire after 1 hour for security
         }),
       });
+      
+      const responseText = await response.text();
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to post to hosting service. Status: ${response.status}. Body: ${errorText}`);
+        throw new Error(`Failed to post to hosting service. Status: ${response.status}. Body: ${responseText}`);
       }
 
-      const { raw_url } = await response.json();
+      if (!responseText) {
+        throw new Error('Hosting service returned an empty response.');
+      }
+
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Failed to parse JSON from hosting service. Response: ${responseText}`);
+      }
+      
+      const { raw_url } = responseData;
       
       if (!raw_url) {
-        throw new Error('Hosting service did not return a raw_url.');
+        throw new Error('Hosting service did not return a raw_url in its response.');
       }
       
       return {
