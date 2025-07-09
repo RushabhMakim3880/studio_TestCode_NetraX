@@ -9,9 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
 
 export type CapturedCredential = {
-    username: string;
-    password?: string;
     timestamp: number;
+    [key: string]: any; // Allows for arbitrary keys from form fields
 };
 
 type CredentialHarvesterProps = {
@@ -50,16 +49,26 @@ export function CredentialHarvester({ credentials, onClear }: CredentialHarveste
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Timestamp</TableHead>
-                                <TableHead>Username</TableHead>
-                                <TableHead>Password</TableHead>
+                                <TableHead colSpan={2}>Captured Data</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {credentials.slice().reverse().map((cred) => (
-                                <TableRow key={cred.timestamp}>
+                            {credentials.slice().reverse().map((cred, index) => (
+                                <TableRow key={cred.timestamp + index}>
                                     <TableCell>{new Date(cred.timestamp).toLocaleString()}</TableCell>
-                                    <TableCell className="font-mono">{cred.username}</TableCell>
-                                    <TableCell className="font-mono">{cred.password}</TableCell>
+                                    <TableCell colSpan={2}>
+                                        <div className="font-mono text-xs space-y-1">
+                                            {Object.entries(cred).map(([key, value]) => {
+                                                if (key === 'timestamp') return null;
+                                                return (
+                                                    <div key={key} className="truncate">
+                                                        <span className="text-muted-foreground">{key}: </span>
+                                                        <span className="text-foreground">{String(value)}</span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

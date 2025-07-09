@@ -37,10 +37,15 @@ export default function PhishingPage() {
             setCapturedCredentials(currentCreds => {
               if (newCreds.length > currentCreds.length) {
                 const newCredential = newCreds[newCreds.length - 1];
+                const summary = Object.entries(newCredential)
+                    .filter(([key]) => key !== 'timestamp')
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ');
+
                 toast({
                   variant: "destructive",
                   title: "Credentials Captured!",
-                  description: `Username: ${newCredential.username}`,
+                  description: summary || "A form was submitted.",
                 });
               }
               return newCreds;
