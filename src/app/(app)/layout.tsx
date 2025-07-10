@@ -30,10 +30,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [user, isLoading, router, isClient]);
 
-  // On the server, and on the initial client render, show a loading skeleton
-  // to prevent hydration mismatch.
-  if (!isClient || isLoading || !user) {
-    return (
+  // On the server, render nothing to avoid hydration mismatches.
+  // The loading skeleton will appear instantly on the client.
+  if (!isClient) {
+    return null;
+  }
+
+  if (isLoading || !user) {
+     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="w-full max-w-md space-y-4">
             <Skeleton className="h-12 w-full" />
