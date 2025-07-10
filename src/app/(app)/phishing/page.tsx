@@ -5,9 +5,28 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester, type CapturedCredential } from '@/components/credential-harvester';
 import { LoginPageCloner } from '@/components/login-page-cloner';
+import { useRouter } from 'next/navigation';
+
+// In-memory store for passing HTML to the preview page.
+// In a real multi-user app, this would be managed more robustly (e.g., Redis, DB).
+const pageStore = new Map<string, string>();
+
+export function storeClonedPage(htmlContent: string): string {
+    const id = crypto.randomUUID();
+    pageStore.set(id, htmlContent);
+    // Auto-expire the page data to prevent memory leaks
+    setTimeout(() => pageStore.delete(id), 5 * 60 * 1000); // 5 minutes
+    return id;
+}
+
+export function retrieveClonedPage(id: string): string | undefined {
+    return pageStore.get(id);
+}
+
 
 export default function PhishingPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
   const storageKey = 'netra-captured-credentials';
 
@@ -77,17 +96,26 @@ export default function PhishingPage() {
     loadCredentialsFromStorage();
     toast({ title: "Log Refreshed" });
   };
+  
+  const handleHostPage = (htmlContent: string) => {
+    const pageId = storeClonedPage(htmlContent);
+    const url = `/phishing/${pageId}`;
+    
+    // Programmatically "host" the page by navigating to its viewer
+    // and passing the content via the simple in-memory store.
+    router.push(url);
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-headline text-3xl font-semibold">Phishing Campaign Simulator</h1>
-        <p className="text-muted-foreground">Craft landing pages, generate emails, and manage campaigns.</p>
+        <p className="text-muted-foreground">Clone login pages and manage credential harvesting campaigns.</p>
       </div>
       
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="flex flex-col gap-6">
-          <LoginPageCloner />
+          <LoginPageCloner onHostPage={handleHostPage} />
         </div>
         <div className="flex flex-col gap-6">
           <CredentialHarvester 
@@ -99,3 +127,4 @@ export default function PhishingPage() {
       </div>
     </div>
   );
+}

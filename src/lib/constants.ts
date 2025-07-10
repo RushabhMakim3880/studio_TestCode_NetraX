@@ -119,19 +119,28 @@ export const APP_MODULES: Module[] = [
     icon: Settings,
     roles: ALL_ROLES,
   },
+  {
+    name: 'Phishing Viewer',
+    path: '/phishing/[id]',
+    icon: Mail, // Placeholder icon
+    roles: ALL_ROLES
+  }
 ];
 
 export function getAllModuleNamesForRole(role: Role): string[] {
   const modules: string[] = [];
   APP_MODULES.forEach(module => {
+    // Add parent module if it's a direct link
+    if(module.path && !module.subModules && module.roles.includes(role)) {
+      modules.push(module.name);
+    }
+    // Add submodules
     if (module.subModules) {
       module.subModules.forEach(subModule => {
         if (subModule.roles.includes(role)) {
           modules.push(subModule.name);
         }
       });
-    } else if (module.path && module.roles.includes(role)) {
-      modules.push(module.name);
     }
   });
   return modules;

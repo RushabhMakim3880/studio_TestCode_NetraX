@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import {
   SidebarProvider,
@@ -17,11 +17,18 @@ import { WorkflowGenerator } from '@/components/workflow-generator';
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  // This is a special case for the phishing viewer page
+  if (pathname.startsWith('/phishing/')) {
+      return <>{children}</>;
+  }
+
 
   useEffect(() => {
     // Only redirect on the client side after the initial render.
