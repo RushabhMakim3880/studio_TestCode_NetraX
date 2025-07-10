@@ -2,12 +2,15 @@
 'use server';
 /**
  * @fileOverview A flow for "hosting" a cloned page.
- * This will save the page's HTML to a simple in-memory cache
- * and return an ID. This avoids making any outbound network requests from the server.
+ * This will save the page's HTML to a simple in-memory mock file system
+ * to ensure persistence between requests.
  */
 
 import { z } from 'zod';
-import { pageCache } from '@/lib/server-cache';
+
+// Simple in-memory "file system" to act as persistent storage.
+// In a real multi-server environment, this would be a proper distributed cache (Redis) or blob storage (GCS/S3).
+const mockFileStorage = new Map<string, string>();
 
 const HostClonedPageInputSchema = z.object({
   htmlContent: z.string().min(1, 'HTML content cannot be empty.'),
@@ -26,13 +29,12 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
 
     const pasteId = crypto.randomUUID();
     
-    // Store the content in the in-memory cache with the generated ID.
-    // In a real multi-server environment, this would be a distributed cache like Redis.
-    pageCache.set(pasteId, htmlContent);
+    // Store the content in the mock file storage with the generated ID.
+    mockFileStorage.set(pasteId, htmlContent);
 
-    // Set a timeout to clear the cache after a reasonable time, e.g., 1 hour
+    // Set a timeout to clear the storage after a reasonable time, e.g., 1 hour
     setTimeout(() => {
-        pageCache.delete(pasteId);
+        mockFileStorage.delete(pasteId);
     }, 3600 * 1000); 
 
     return {
@@ -40,10 +42,20 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
     };
 
   } catch (error) {
-     console.error('Error in hostClonedPageFlow:', error);
+     console.error('Error in hostClonedPage:', error);
      if (error instanceof Error) {
          throw new Error(`Failed to host page: ${error.message}`);
      }
      throw new Error('An unknown error occurred during page hosting.');
   }
+}
+
+/**
+ * Retrieves a page from the mock file storage.
+ * This is not a Genkit flow, but an exported function for the API route.
+ * @param id The ID of the page to retrieve.
+ * @returns The HTML content or null if not found.
+ */
+export function getClonedPage(id: string): string | null {
+    return mockFileStorage.get(id) || null;
 }

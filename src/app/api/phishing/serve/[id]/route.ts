@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { pageCache } from '@/lib/server-cache';
+import { getClonedPage } from '@/ai/flows/host-cloned-page-flow';
 
 export const revalidate = 0; // Don't cache this response
 
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         return new NextResponse('Missing page ID.', { status: 400 });
     }
 
-    const htmlContent = pageCache.get(id);
+    const htmlContent = getClonedPage(id);
 
     if (!htmlContent) {
         return new NextResponse('Page not found or has expired.', { status: 404 });
