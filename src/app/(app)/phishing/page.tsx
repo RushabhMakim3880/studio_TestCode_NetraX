@@ -4,10 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester, type CapturedCredential } from '@/components/credential-harvester';
-import { PhishingCampaignLauncher } from '@/components/phishing-campaign-launcher';
-import { EmailGenerator } from '@/components/email-generator';
 import { LoginPageCloner } from '@/components/login-page-cloner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PhishingPage() {
   const { toast } = useToast();
@@ -103,19 +100,5 @@ export default function PhishingPage() {
           />
         </div>
       </div>
-
-      <Tabs defaultValue="email-generator" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="email-generator">Email Generator</TabsTrigger>
-          <TabsTrigger value="campaign-launcher">Campaign Launcher</TabsTrigger>
-        </TabsList>
-        <TabsContent value="email-generator" className="mt-4">
-          <EmailGenerator />
-        </TabsContent>
-         <TabsContent value="campaign-launcher" className="mt-4">
-            <PhishingCampaignLauncher />
-        </TabsContent>
-      </Tabs>
     </div>
   );
-}
