@@ -2,15 +2,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { retrieveClonedPage } from '@/app/(app)/phishing/page';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
-export default function HostedPageViewer({ params }: { params: { id: string } }) {
+export default function HostedPageViewer() {
+  const params = useParams();
+  const id = params.id as string;
+
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { id } = params;
 
   useEffect(() => {
     if (id) {
