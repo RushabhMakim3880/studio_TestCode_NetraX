@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         return new NextResponse('Missing page ID.', { status: 400 });
     }
 
-    const htmlContent = getClonedPage(id);
+    const htmlContent = await getClonedPage(id);
 
     if (!htmlContent) {
         return new NextResponse('Page not found or has expired.', { status: 404 });

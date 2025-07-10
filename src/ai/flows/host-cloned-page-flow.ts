@@ -56,6 +56,6 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
  * @param id The ID of the page to retrieve.
  * @returns The HTML content or null if not found.
  */
-export function getClonedPage(id: string): string | null {
+export async function getClonedPage(id: string): Promise<string | null> {
     return mockFileStorage.get(id) || null;
 }
