@@ -10,10 +10,11 @@ export default function HostedPageViewer({ params }: { params: { id: string } })
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { id } = params;
 
   useEffect(() => {
-    if (params.id) {
-      const content = retrieveClonedPage(params.id);
+    if (id) {
+      const content = retrieveClonedPage(id);
       if (content) {
         setHtmlContent(content);
       } else {
@@ -21,7 +22,7 @@ export default function HostedPageViewer({ params }: { params: { id: string } })
       }
       setIsLoading(false);
     }
-  }, [params.id]);
+  }, [id]);
 
   if (isLoading) {
     return (
