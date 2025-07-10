@@ -25,12 +25,10 @@ export default function PhishingPage() {
     }
   };
 
-  // Effect for initial load from localStorage
   useEffect(() => {
     loadCredentialsFromStorage();
   }, []);
 
-  // Effect for real-time updates from other tabs
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === storageKey) {
@@ -40,13 +38,13 @@ export default function PhishingPage() {
             const newCreds = JSON.parse(newCredsRaw);
             const currentLength = capturedCredentials.length;
 
-            setCapturedCredentials(newCreds); // Update state with the new full list
+            setCapturedCredentials(newCreds); 
 
             if (newCreds.length > currentLength) {
                 const newCredential = newCreds[newCreds.length - 1];
                 const summary = Object.entries(newCredential)
                     .filter(([key]) => key !== 'timestamp' && key !== 'source')
-                    .map(([key, value]) => `${key}: ${String(value).substring(0,20)}`) // Truncate long values
+                    .map(([key, value]) => `${key}: ${String(value).substring(0,20)}`)
                     .join(', ');
 
                 toast({
@@ -59,7 +57,6 @@ export default function PhishingPage() {
             console.error('Failed to parse updated credentials', e);
           }
         } else {
-          // Handle log clearing from another tab
           setCapturedCredentials([]);
         }
       }
@@ -69,7 +66,7 @@ export default function PhishingPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [toast, capturedCredentials.length]); // Depend on length to get fresh comparison value
+  }, [toast, capturedCredentials.length]); 
 
   const handleClearCredentials = () => {
     setCapturedCredentials([]);
