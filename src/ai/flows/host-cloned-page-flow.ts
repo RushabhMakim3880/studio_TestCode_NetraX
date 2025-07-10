@@ -1,11 +1,13 @@
+
 'use server';
 /**
  * @fileOverview A flow for "hosting" a cloned page.
- * This will upload the page's HTML to a public paste service and return an ID
- * that can be used to serve the content via a proxy API route.
+ * This will save the page's HTML to a simple in-memory cache
+ * and return an ID. This avoids making any outbound network requests from the server.
  */
 
 import { z } from 'zod';
+import { pageCache } from '@/lib/server-cache';
 
 const HostClonedPageInputSchema = z.object({
   htmlContent: z.string().min(1, 'HTML content cannot be empty.'),
@@ -22,32 +24,17 @@ export async function hostClonedPage(input: HostClonedPageInput): Promise<HostCl
   try {
     const { htmlContent } = HostClonedPageInputSchema.parse(input);
 
-    const postResponse = await fetch('https://paste.rs/', {
-        method: 'POST',
-        body: htmlContent,
-        headers: {
-            'Content-Type': 'text/plain',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        },
-    });
+    const pasteId = crypto.randomUUID();
     
-    if (!postResponse.ok) {
-        const body = await postResponse.text();
-        throw new Error(`Failed to post to hosting service. Status: ${postResponse.status}. Body: ${body}`);
-    }
+    // Store the content in the in-memory cache with the generated ID.
+    // In a real multi-server environment, this would be a distributed cache like Redis.
+    pageCache.set(pasteId, htmlContent);
 
-    const pasteUrl = (await postResponse.text()).trim();
+    // Set a timeout to clear the cache after a reasonable time, e.g., 1 hour
+    setTimeout(() => {
+        pageCache.delete(pasteId);
+    }, 3600 * 1000); 
 
-    if (!pasteUrl || !pasteUrl.startsWith('http')) {
-        throw new Error(`Hosting service returned an invalid response: ${pasteUrl}`);
-    }
-    
-    const pasteId = pasteUrl.substring(pasteUrl.lastIndexOf('/') + 1);
-
-    if (!pasteId) {
-        throw new Error('Could not extract ID from the paste URL.');
-    }
-    
     return {
       pasteId: pasteId,
     };

