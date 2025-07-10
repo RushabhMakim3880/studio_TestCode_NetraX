@@ -7,14 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function HostedPageViewer({ params }: { params: { id: string } }) {
-  const { id } = params;
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      const content = retrieveClonedPage(id);
+    if (params.id) {
+      const content = retrieveClonedPage(params.id);
       if (content) {
         setHtmlContent(content);
       } else {
@@ -22,7 +21,7 @@ export default function HostedPageViewer({ params }: { params: { id: string } })
       }
       setIsLoading(false);
     }
-  }, [id]);
+  }, [params.id]);
 
   if (isLoading) {
     return (
