@@ -27,6 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             <div class="loader"></div>
             <script>
                 (async () => {
+                    const id = '${id}'; // Make the server-side ID available to the client script
                     try {
                         // The user's browser fetches the content, not our server.
                         const response = await fetch(\`https://paste.rs/\${id}\`);
