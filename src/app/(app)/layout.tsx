@@ -23,12 +23,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  // This is a special case for the phishing viewer page
+
+  // The hosted phishing page will manage its own minimal layout.
+  // We check for the specific path pattern to avoid rendering the main app UI.
   if (pathname.startsWith('/phishing/')) {
       return <>{children}</>;
   }
-
 
   useEffect(() => {
     // Only redirect on the client side after the initial render.
