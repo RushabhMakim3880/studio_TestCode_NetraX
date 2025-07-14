@@ -99,11 +99,10 @@ export default function PhishingPage() {
   
   const handleHostPage = (htmlContent: string) => {
     const pageId = storeClonedPage(htmlContent);
+    // Open in a new tab
     const url = `/phishing/${pageId}`;
-    
-    // Programmatically "host" the page by navigating to its viewer
-    // and passing the content via the simple in-memory store.
-    router.push(url);
+    window.open(url, '_blank');
+    toast({ title: "Page Hosted", description: "Cloned page opened in a new tab."});
   };
 
   return (

