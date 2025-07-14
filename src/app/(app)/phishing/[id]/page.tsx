@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { retrieveClonedPage } from '@/app/(app)/phishing/page';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -16,24 +15,31 @@ export default function HostedPageViewer() {
   const [error, setError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  // Ensure this component only renders on the client
   useEffect(() => {
     setIsClient(true);
   }, []);
   
   useEffect(() => {
-    if (id) {
-      const content = retrieveClonedPage(id);
-      if (content) {
-        setHtmlContent(content);
-      } else {
-        setError("Page not found or has expired. Please generate a new link.");
+    // Only try to access localStorage on the client and when the id is available
+    if (isClient && id) {
+      try {
+        const content = localStorage.getItem(`phishing-page-${id}`);
+        if (content) {
+          setHtmlContent(content);
+        } else {
+          setError("Page not found or has expired. Please generate a new link.");
+        }
+      } catch (e) {
+        console.error("Failed to read from localStorage", e);
+        setError("Could not load page content due to a browser error.");
       }
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, isClient]);
 
+  // On the server, or before the client has mounted, render nothing to prevent hydration mismatch.
   if (!isClient) {
-    // Render nothing on the server to prevent hydration mismatch
     return null;
   }
 
