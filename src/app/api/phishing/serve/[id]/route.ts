@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
                 (async () => {
                     try {
                         // The user's browser fetches the content, not our server.
-                        const response = await fetch('https://paste.rs/' + '${id}');
+                        const response = await fetch(\`https://paste.rs/\${id}\`);
                         if (!response.ok) {
                             throw new Error('Failed to load page content. The link may have expired.');
                         }
