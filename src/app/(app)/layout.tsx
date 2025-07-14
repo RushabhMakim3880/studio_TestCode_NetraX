@@ -17,18 +17,11 @@ import { WorkflowGenerator } from '@/components/workflow-generator';
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // The hosted phishing page will manage its own minimal layout.
-  // We check for the specific path pattern to avoid rendering the main app UI.
-  if (pathname.startsWith('/phishing/')) {
-      return <>{children}</>;
-  }
 
   useEffect(() => {
     // Only redirect on the client side after the initial render.

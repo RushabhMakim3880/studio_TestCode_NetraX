@@ -119,12 +119,6 @@ export const APP_MODULES: Module[] = [
     icon: Settings,
     roles: ALL_ROLES,
   },
-  {
-    name: 'Phishing Viewer',
-    path: '/phishing/[id]',
-    icon: Mail, // Placeholder icon
-    roles: ALL_ROLES
-  }
 ];
 
 export function getAllModuleNamesForRole(role: Role): string[] {
