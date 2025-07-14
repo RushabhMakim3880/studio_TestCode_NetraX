@@ -74,31 +74,9 @@ export default function PhishingPage() {
     localStorage.removeItem(storageKey);
   };
   
-  const handleHostPage = (htmlContent: string) => {
-    try {
-      const pageId = crypto.randomUUID();
-      const storageKey = `phishing-page-${pageId}`;
-      
-      // Store the page content in localStorage
-      localStorage.setItem(storageKey, htmlContent);
-      
-      // Remove the content after a reasonable time to prevent localStorage bloat
-      setTimeout(() => localStorage.removeItem(storageKey), 10 * 60 * 1000); // 10 minutes
-
-      // Open the viewer page in a new tab
-      const url = `/phishing/${pageId}`;
-      window.open(url, '_blank');
-
-      if (isClient) {
-          setHostedPageUrl(window.location.origin + url);
-      }
-
-      toast({ title: "Page Hosted", description: "Cloned page opened in a new tab."});
-
-    } catch (e) {
-        console.error("Failed to host page in localStorage", e);
-        toast({ variant: 'destructive', title: "Hosting Failed", description: "Could not save page content to browser storage." });
-    }
+  const handleHostPage = (url: string) => {
+    setHostedPageUrl(url);
+    window.open(url, '_blank');
   };
 
   return (

