@@ -9,7 +9,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function HostedPageViewer() {
   const params = useParams();
-  const id = params.id as string;
+  const id = params?.id as string;
 
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
