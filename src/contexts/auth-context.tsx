@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -58,6 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  useEffect(() => {
+    if (!isClient) return;
+
     try {
       const storedUsersJSON = localStorage.getItem('netra-users');
       let allUsers: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : seedUsers;
@@ -93,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isClient]);
 
   const login = async (credentials: LoginCredentials) => {
     const foundUser = users.find(u => u.username === credentials.username);
@@ -179,6 +186,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = { user, users, login, logout, register, updateUser, deleteUser, changePassword, isLoading };
+
+  if (!isClient) {
+      return null;
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
