@@ -14,7 +14,12 @@ export default function HostedPageViewer() {
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
   useEffect(() => {
     if (id) {
       const content = retrieveClonedPage(id);
@@ -26,6 +31,11 @@ export default function HostedPageViewer() {
       setIsLoading(false);
     }
   }, [id]);
+
+  if (!isClient) {
+    // Render nothing on the server to prevent hydration mismatch
+    return null;
+  }
 
   if (isLoading) {
     return (
