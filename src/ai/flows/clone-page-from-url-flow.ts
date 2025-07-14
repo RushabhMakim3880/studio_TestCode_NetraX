@@ -38,15 +38,17 @@ const getPageContentTool = ai.defineTool(
                 }
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Throw an error that can be caught by the flow
+                throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
             }
             return await response.text();
         } catch (error) {
             console.error('Failed to fetch URL:', error);
             if (error instanceof Error) {
-                return `Error fetching page: ${error.message}`;
+                // Re-throw the error to be handled by the caller
+                throw new Error(`Failed to fetch page content: ${error.message}`);
             }
-            return 'An unknown error occurred while fetching the page.';
+            throw new Error('An unknown error occurred while fetching the page.');
         }
     }
 );
@@ -68,17 +70,21 @@ const clonePageFlow = ai.defineFlow(
     const toolResponse = llmResponse.toolRequest();
     
     // Check if the LLM decided to use our tool.
-    if (toolResponse?.tool === 'getPageContent') {
-      const content = await getPageContentTool(toolResponse.input);
-       if (content.startsWith('Error fetching page:') || content.startsWith('An unknown error')) {
-            // Propagate fetch errors back to the client.
-            throw new Error(content);
-        }
-      return { htmlContent: content };
+    if (!toolResponse || toolResponse.tool !== 'getPageContent') {
+        // This would happen if the LLM decides not to use the tool for some reason.
+        throw new Error('The model did not use the tool to fetch the page content.');
     }
     
-    // This would happen if the LLM decides not to use the tool for some reason.
-    throw new Error('The model did not use the tool to fetch the page content.');
+    try {
+        const content = await getPageContentTool(toolResponse.input);
+        return { htmlContent: content };
+    } catch(e) {
+        // This catches the errors thrown from within the getPageContentTool
+        if (e instanceof Error) {
+            throw new Error(e.message);
+        }
+        throw new Error("An unknown error occurred in the page cloning tool.");
+    }
   }
 );
 
