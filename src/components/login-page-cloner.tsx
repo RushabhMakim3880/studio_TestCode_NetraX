@@ -186,7 +186,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
         navigator.clipboard.writeText(modifiedHtml);
         toast({ title: 'Copied!', description: 'Injected HTML copied to clipboard.' });
     }
-  }
+  };
 
   return (
       <Card>
