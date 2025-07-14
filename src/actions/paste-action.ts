@@ -24,15 +24,23 @@ export async function hostOnPasteRs(htmlContent: string): Promise<ReturnType> {
         throw new Error(`paste.rs service responded with status: ${response.status}`);
     }
     
-    const pasteId = await response.text();
-    const validation = PasteRsResponseSchema.safeParse(pasteId);
+    // The response from paste.rs is the full URL, e.g., "https://paste.rs/S4IzJ"
+    const responseUrl = await response.text();
+    const validation = PasteRsResponseSchema.safeParse(responseUrl);
 
     if (!validation.success) {
       console.error("paste.rs API response validation error:", validation.error);
       throw new Error('Invalid response received from hosting service.');
     }
+    
+    // Extract only the ID part from the URL.
+    const pasteId = validation.data.split('/').pop();
 
-    return { success: true, pasteId: validation.data };
+    if (!pasteId) {
+        throw new Error('Could not parse the paste ID from the response URL.');
+    }
+
+    return { success: true, pasteId: pasteId };
 
   } catch (e: any) {
     console.error('hostOnPasteRs failed:', e);
