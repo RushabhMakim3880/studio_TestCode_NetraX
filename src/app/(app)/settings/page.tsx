@@ -6,6 +6,7 @@ import { AppearanceSettings } from '@/components/appearance-settings';
 import { CompanyProfileManager } from '@/components/company-profile-manager';
 import { CustomThemeGenerator } from '@/components/custom-theme-generator';
 import { EmailSettings } from '@/components/email-settings';
+import { ApiKeysManager } from '@/components/api-keys-manager';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your application preferences and modules.</p>
       </div>
 
+      <ApiKeysManager />
       <AppearanceSettings />
       <CustomThemeGenerator />
       <CompanyProfileManager />

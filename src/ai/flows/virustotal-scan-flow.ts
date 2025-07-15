@@ -53,12 +53,12 @@ export type VirusTotalScanOutput = z.infer<typeof VirusTotalScanOutputSchema>;
 
 
 export async function scanFileHash(input: VirusTotalScanInput): Promise<VirusTotalScanOutput> {
-  const apiKey = getApiKey('VIRUSTOTAL_API_KEY');
+  const apiKey = await getApiKey('VIRUSTOTAL_API_KEY');
 
   if (!apiKey) {
     return {
       success: false,
-      error: 'VirusTotal API key is not configured on the server. Please add VIRUSTOTAL_API_KEY to the .env file.',
+      error: 'VirusTotal API key is not configured on the server. Please add it in the Settings page.',
     };
   }
 

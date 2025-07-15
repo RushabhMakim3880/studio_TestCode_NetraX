@@ -14,13 +14,16 @@ export function ApiKeysManager() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<ApiKeySettings>({ VIRUSTOTAL_API_KEY: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, these keys would be fetched from a secure backend
-    // and the user's role would be checked.
-    // For this prototype, we use localStorage.
-    const savedKeys = getApiKeys();
-    setSettings(savedKeys);
+    async function loadKeys() {
+      setIsLoading(true);
+      const savedKeys = await getApiKeys();
+      setSettings(savedKeys);
+      setIsLoading(false);
+    }
+    loadKeys();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,13 +31,17 @@ export function ApiKeysManager() {
     setSettings(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    saveApiKeys(settings);
-    setTimeout(() => {
-      toast({ title: 'API Keys Saved', description: 'Note: This is a simulation. For production, use a secure vault.' });
-      setIsSaving(false);
-    }, 500);
+    try {
+        await saveApiKeys(settings);
+        toast({ title: 'API Keys Saved', description: 'Your API keys have been securely stored.' });
+    } catch(e) {
+        const error = e instanceof Error ? e.message : "An unknown error occurred.";
+        toast({ variant: 'destructive', title: 'Save Failed', description: error });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -44,23 +51,29 @@ export function ApiKeysManager() {
           <KeyRound className="h-6 w-6" />
           <CardTitle>API Key Management</CardTitle>
         </div>
-        <CardDescription>Manage third-party API keys for platform integrations.</CardDescription>
+        <CardDescription>Manage third-party API keys for platform integrations. Keys are stored securely on the server.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-            <Label htmlFor="virustotal_api_key">VirusTotal API Key</Label>
-            <Input 
-                id="virustotal_api_key" 
-                name="VIRUSTOTAL_API_KEY" 
-                type="password"
-                value={settings.VIRUSTOTAL_API_KEY} 
-                onChange={handleInputChange} 
-                placeholder="Enter your VirusTotal API key"
-            />
-        </div>
+        {isLoading ? (
+            <div className="flex items-center justify-center h-24">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+        ) : (
+            <div className="space-y-2">
+                <Label htmlFor="VIRUSTOTAL_API_KEY">VirusTotal API Key</Label>
+                <Input 
+                    id="VIRUSTOTAL_API_KEY" 
+                    name="VIRUSTOTAL_API_KEY" 
+                    type="password"
+                    value={settings.VIRUSTOTAL_API_KEY} 
+                    onChange={handleInputChange} 
+                    placeholder="Enter your VirusTotal API key"
+                />
+            </div>
+        )}
       </CardContent>
        <CardFooter className="justify-end border-t pt-6">
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={isSaving || isLoading}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save API Keys
           </Button>
