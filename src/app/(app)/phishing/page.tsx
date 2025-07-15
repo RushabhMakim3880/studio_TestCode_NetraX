@@ -219,15 +219,13 @@ export default function PhishingPage() {
     setHostedUrl(null);
     toast({ title: "Hosting Page...", description: "Uploading content to secure host." });
 
-    const redirectUrl = form.getValues('redirectUrl');
-
     try {
       const result = await hostOnPasteRs(modifiedHtml);
       if (!result.success || !result.pasteId) {
         throw new Error(result.error || "Failed to get a paste ID from the hosting service.");
       }
       
-      const url = `${window.location.origin}/api/phishing/serve/${result.pasteId}?redirectUrl=${encodeURIComponent(redirectUrl)}`;
+      const url = `${window.location.origin}/api/phishing/serve/${result.pasteId}`;
       setHostedUrl(url);
       
       toast({ title: "Page Hosted Successfully!", description: "Link is ready to be shared." });
@@ -387,3 +385,5 @@ export default function PhishingPage() {
     </div>
   );
 }
+
+    
