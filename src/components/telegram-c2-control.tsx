@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage, FormDescription as FormDesc } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -105,6 +105,12 @@ export function TelegramC2Control() {
       addLog(response.message, !response.success);
       if(response.success) {
         sendForm.resetField('message');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Send Failed',
+          description: response.message,
+        })
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message.';
@@ -176,7 +182,15 @@ export function TelegramC2Control() {
             <Form {...sendForm}>
             <form onSubmit={sendForm.handleSubmit(onSend)} className="space-y-4 p-4 border rounded-lg">
                 <Label>2. Send Payload / Message</Label>
-                <FormField control={sendForm.control} name="chatId" render={({ field }) => (<FormItem><FormControl><Input placeholder="Target Chat ID" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={sendForm.control} name="chatId" render={({ field }) => (
+                    <FormItem>
+                        <FormControl><Input placeholder="Target Chat ID" {...field} /></FormControl>
+                        <FormDesc className="text-xs px-1">
+                            To find your Chat ID, message <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-accent underline">@userinfobot</a> on Telegram.
+                        </FormDesc>
+                        <FormMessage />
+                    </FormItem>
+                )} />
                 <FormField control={sendForm.control} name="message" render={({ field }) => (<FormItem><FormControl><Textarea placeholder="Type your message or payload here..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <Button type="submit" className="w-full" disabled={sendForm.formState.isSubmitting || !isConnected}>
                 {sendForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
