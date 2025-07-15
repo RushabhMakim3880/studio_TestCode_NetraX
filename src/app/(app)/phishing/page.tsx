@@ -232,35 +232,47 @@ export default function PhishingPage() {
     setHostedUrl(null);
     toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
 
-    // Start the tunnel but don't wait for it
-    await startNgrokTunnel();
+    try {
+      // Start the tunnel but don't wait for it
+      await startNgrokTunnel();
 
-    const pageId = crypto.randomUUID();
-    const storageKey = `phishing-html-${pageId}`;
-    localStorage.setItem(storageKey, modifiedHtml);
-    
-    // Poll for the URL
-    pollIntervalRef.current = setInterval(async () => {
-      const { status, url } = await getNgrokTunnelUrl();
-      if (status === 'connected' && url) {
-        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        const finalUrl = `${url}/phish/${pageId}`;
-        setHostedUrl(finalUrl);
+      const pageId = crypto.randomUUID();
+      const storageKey = `phishing-html-${pageId}`;
+      localStorage.setItem(storageKey, modifiedHtml);
+      
+      // Poll for the URL
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const { status, url } = await getNgrokTunnelUrl();
+          if (status === 'connected' && url) {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            const finalUrl = `${url}/phish/${pageId}`;
+            setHostedUrl(finalUrl);
+            setIsHosting(false);
+            toast({ title: "Public Link Generated!", description: "Your phishing page is accessible via ngrok." });
+            const urlToClone = form.getValues('urlToClone');
+            logActivity({
+                user: user?.displayName || 'Operator',
+                action: 'Generated Phishing Link',
+                details: `Source: ${urlToClone || 'Pasted HTML'}`,
+            });
+          } else if (status === 'error') {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            setIsHosting(false);
+            toast({ variant: 'destructive', title: "Link Generation Failed", description: "Could not establish ngrok tunnel." });
+          }
+        } catch (pollError) {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            setIsHosting(false);
+            toast({ variant: 'destructive', title: "Polling Error", description: "An error occurred while checking for the ngrok URL." });
+        }
+        // If status is 'connecting', do nothing and wait for the next poll.
+      }, 2000); // Poll every 2 seconds
+    } catch(err) {
         setIsHosting(false);
-        toast({ title: "Public Link Generated!", description: "Your phishing page is accessible via ngrok." });
-        const urlToClone = form.getValues('urlToClone');
-        logActivity({
-            user: user?.displayName || 'Operator',
-            action: 'Generated Phishing Link',
-            details: `Source: ${urlToClone || 'Pasted HTML'}`
-        });
-      } else if (status === 'error') {
-         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-         setIsHosting(false);
-         toast({ variant: 'destructive', title: "Link Generation Failed", description: "Could not establish ngrok tunnel." });
-      }
-      // If status is 'connecting', do nothing and wait for the next poll.
-    }, 2000); // Poll every 2 seconds
+        const error = err instanceof Error ? err.message : "An unknown error occurred";
+        toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
+    }
   };
   
   const handleCopyUrl = () => {
