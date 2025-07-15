@@ -1,6 +1,4 @@
 
-'use server';
-
 const API_KEYS_STORAGE_KEY = 'netra-api-keys';
 
 export type ApiKeySettings = {
