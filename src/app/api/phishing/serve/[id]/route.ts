@@ -39,5 +39,3 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         return new NextResponse('An internal error occurred while trying to load the page.', { status: 500 });
     }
 }
-
-    
