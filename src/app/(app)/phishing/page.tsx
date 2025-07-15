@@ -230,9 +230,10 @@ export default function PhishingPage() {
     if (!modifiedHtml) return;
     setIsHosting(true);
     setHostedUrl(null);
-    toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
+    
 
     try {
+      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
       // Start the tunnel but don't wait for it
       await startNgrokTunnel();
 
