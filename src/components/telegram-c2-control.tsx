@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,8 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { connectTelegramBot, sendTelegramPayload } from '@/ai/flows/telegram-c2-flow';
-import { Loader2, Bot, Send, CheckCircle, XCircle, LogOut } from 'lucide-react';
+import { connectTelegramBot, sendTelegramPayload, sendTelegramDocument } from '@/ai/flows/telegram-c2-flow';
+import { Loader2, Bot, Send, CheckCircle, XCircle, LogOut, Paperclip } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
@@ -22,7 +22,11 @@ const connectSchema = z.object({
 
 const sendSchema = z.object({
   chatId: z.string().min(1, 'Chat ID is required.'),
-  message: z.string().min(1, 'Message cannot be empty.'),
+  message: z.string(),
+  file: z.instanceof(FileList).optional(),
+}).refine(data => data.message || (data.file && data.file.length > 0), {
+    message: 'Either a message or a file is required.',
+    path: ['message'],
 });
 
 type LogEntry = {
@@ -36,6 +40,7 @@ const STORAGE_KEY = 'netra-telegram-bot-token';
 export function TelegramC2Control() {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [botName, setBotName] = useState<string | null>(null);
   const [savedToken, setSavedToken] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -50,6 +55,7 @@ export function TelegramC2Control() {
     resolver: zodResolver(sendSchema),
     defaultValues: { chatId: '', message: '' },
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEY);
@@ -93,30 +99,75 @@ export function TelegramC2Control() {
         setIsConnecting(false);
     }
   };
+  
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+  }
+
 
   const onSend = async (values: z.infer<typeof sendSchema>) => {
     if (!savedToken) {
       toast({ variant: 'destructive', title: 'Error', description: 'No active bot token found.' });
       return;
     }
-    addLog(`Sending message to chat ID: ${values.chatId}...`);
-    try {
-      const response = await sendTelegramPayload({...values, token: savedToken});
-      addLog(response.message, !response.success);
-      if(response.success) {
-        sendForm.resetField('message');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Send Failed',
-          description: response.message,
-        })
+    
+    setIsSending(true);
+
+    // Handle file sending
+    if (values.file && values.file.length > 0) {
+        const file = values.file[0];
+        addLog(`Sending file "${file.name}" to chat ID: ${values.chatId}...`);
+        try {
+            const dataUrl = await fileToDataUrl(file);
+            const response = await sendTelegramDocument({ 
+                token: savedToken, 
+                chatId: values.chatId,
+                fileName: file.name,
+                fileDataUrl: dataUrl,
+                caption: values.message,
+            });
+            addLog(response.message, !response.success);
+            if(response.success) {
+                sendForm.resetField('file');
+                if (fileInputRef.current) fileInputRef.current.value = "";
+                if (!values.message) sendForm.resetField('message'); // only reset message if it was only a caption
+            } else {
+                toast({ variant: 'destructive', title: 'File Send Failed', description: response.message });
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to send file.';
+            addLog(errorMessage, true);
+            console.error(err);
+        }
+    } 
+    // Handle text message sending (if there's text and no file, or if there's both)
+    else if (values.message) {
+      addLog(`Sending message to chat ID: ${values.chatId}...`);
+      try {
+        const response = await sendTelegramPayload({
+            token: savedToken, 
+            chatId: values.chatId, 
+            message: values.message
+        });
+        addLog(response.message, !response.success);
+        if(response.success) {
+          sendForm.resetField('message');
+        } else {
+          toast({ variant: 'destructive', title: 'Send Failed', description: response.message });
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to send message.';
+        addLog(errorMessage, true);
+        console.error(err);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message.';
-      addLog(errorMessage, true);
-      console.error(err);
     }
+    
+    setIsSending(false);
   };
 
   const handleDisconnect = () => {
@@ -186,16 +237,30 @@ export function TelegramC2Control() {
                     <FormItem>
                         <FormControl><Input placeholder="Target Chat ID" {...field} /></FormControl>
                         <FormDesc className="text-xs px-1">
-                            To find your Chat ID, message <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-accent underline">@userinfobot</a> on Telegram.
+                            Find Chat ID via <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-accent underline">@userinfobot</a>. The user must start your bot first.
                         </FormDesc>
                         <FormMessage />
                     </FormItem>
                 )} />
-                <FormField control={sendForm.control} name="message" render={({ field }) => (<FormItem><FormControl><Textarea placeholder="Type your message or payload here..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <Button type="submit" className="w-full" disabled={sendForm.formState.isSubmitting || !isConnected}>
-                {sendForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <FormField control={sendForm.control} name="message" render={({ field }) => (<FormItem><FormControl><Textarea placeholder="Type your message or a caption for your file..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={sendForm.control} name="file" render={({ field: { onChange, ...fieldProps} }) => (
+                    <FormItem>
+                        <FormControl>
+                            <Input 
+                                {...fieldProps}
+                                type="file" 
+                                ref={fileInputRef}
+                                onChange={(e) => onChange(e.target.files)}
+                             />
+                        </FormControl>
+                         <FormDesc className="text-xs px-1">Attach a file to send as a document.</FormDesc>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <Button type="submit" className="w-full" disabled={isSending || !isConnected}>
+                {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Send className="mr-2 h-4 w-4" />
-                Send Message
+                Send
                 </Button>
             </form>
             </Form>

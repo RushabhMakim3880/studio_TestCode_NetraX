@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A service for interacting with the real Telegram Bot API.
@@ -5,6 +6,7 @@
  *
  * - connectTelegramBot - Validates a bot token by calling the getMe endpoint.
  * - sendTelegramPayload - Sends a message to a chat via the bot.
+ * - sendTelegramDocument - Sends a document to a chat via the bot.
  */
 
 import { z } from 'zod';
@@ -22,7 +24,7 @@ const TelegramConnectOutputSchema = z.object({
 });
 export type TelegramConnectOutput = z.infer<typeof TelegramConnectOutputSchema>;
 
-// Schema for sending a payload
+// Schema for sending a text payload
 const TelegramPayloadInputSchema = z.object({
   token: z.string().min(20).describe('The Telegram Bot API token.'),
   chatId: z.string().min(1).describe('The target Telegram Chat ID.'),
@@ -35,6 +37,16 @@ const TelegramPayloadOutputSchema = z.object({
   message: z.string().describe('A confirmation or error message from the API.'),
 });
 export type TelegramPayloadOutput = z.infer<typeof TelegramPayloadOutputSchema>;
+
+// Schema for sending a document
+const TelegramDocumentInputSchema = z.object({
+  token: z.string().min(20).describe('The Telegram Bot API token.'),
+  chatId: z.string().min(1).describe('The target Telegram Chat ID.'),
+  fileDataUrl: z.string().describe('The file content as a data URI.'),
+  fileName: z.string().describe('The name of the file.'),
+  caption: z.string().optional().describe('An optional caption for the file.'),
+});
+export type TelegramDocumentInput = z.infer<typeof TelegramDocumentInputSchema>;
 
 
 export async function connectTelegramBot(input: TelegramConnectInput): Promise<TelegramConnectOutput> {
@@ -96,6 +108,46 @@ export async function sendTelegramPayload(input: TelegramPayloadInput): Promise<
     return {
       success: false,
       message: 'Network error or failed to reach Telegram API.',
+    };
+  }
+}
+
+export async function sendTelegramDocument(input: TelegramDocumentInput): Promise<TelegramPayloadOutput> {
+  const url = `https://api.telegram.org/bot${input.token}/sendDocument`;
+  
+  try {
+    const response = await fetch(input.fileDataUrl);
+    const blob = await response.blob();
+    
+    const formData = new FormData();
+    formData.append('chat_id', input.chatId);
+    formData.append('document', blob, input.fileName);
+    if (input.caption) {
+      formData.append('caption', input.caption);
+    }
+    
+    const sendResponse = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    const data = await sendResponse.json();
+
+    if (data.ok) {
+      return {
+        success: true,
+        message: `File "${input.fileName}" sent successfully to chat ID ${input.chatId}.`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `Failed to send file: ${data.description || 'Unknown error'}`,
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error or failed to process file for Telegram API.',
     };
   }
 }
