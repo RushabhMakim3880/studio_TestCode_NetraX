@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { connectTelegramBot, sendTelegramPayload } from '@/ai/flows/telegram-c2-flow';
-import { Loader2, AlertTriangle, Bot, Send, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Bot, Send, CheckCircle, XCircle, LogOut } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
@@ -30,9 +31,13 @@ type LogEntry = {
     isError?: boolean;
 }
 
+const STORAGE_KEY = 'netra-telegram-bot-token';
+
 export function TelegramC2Control() {
   const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [botName, setBotName] = useState<string | null>(null);
+  const [savedToken, setSavedToken] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const { toast } = useToast();
 
@@ -45,6 +50,15 @@ export function TelegramC2Control() {
     resolver: zodResolver(sendSchema),
     defaultValues: { chatId: '', message: '' },
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEY);
+    if (token) {
+        setSavedToken(token);
+        connectForm.setValue('token', token);
+        onConnect({ token });
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount
   
   const addLog = (message: string, isError = false) => {
       const newLog: LogEntry = {
@@ -56,7 +70,7 @@ export function TelegramC2Control() {
   };
 
   const onConnect = async (values: z.infer<typeof connectSchema>) => {
-    connectForm.formState.isSubmitting = true;
+    setIsConnecting(true);
     addLog(`Attempting to connect with token...`);
     try {
       const response = await connectTelegramBot(values);
@@ -64,27 +78,30 @@ export function TelegramC2Control() {
       setIsConnected(response.success);
       if (response.success && response.botName) {
         setBotName(response.botName);
+        localStorage.setItem(STORAGE_KEY, values.token);
+        setSavedToken(values.token);
       } else {
         setBotName(null);
+        localStorage.removeItem(STORAGE_KEY);
+        setSavedToken(null);
       }
     } catch (err) {
       const errorMessage = 'Failed to connect. An error occurred in the server action.';
       addLog(errorMessage, true);
       console.error(err);
     } finally {
-        connectForm.formState.isSubmitting = false;
+        setIsConnecting(false);
     }
   };
 
   const onSend = async (values: z.infer<typeof sendSchema>) => {
-    sendForm.formState.isSubmitting = true;
+    if (!savedToken) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No active bot token found.' });
+      return;
+    }
     addLog(`Sending message to chat ID: ${values.chatId}...`);
     try {
-      const token = connectForm.getValues('token');
-      if (!token) {
-        throw new Error('Bot token not available.');
-      }
-      const response = await sendTelegramPayload({...values, token});
+      const response = await sendTelegramPayload({...values, token: savedToken});
       addLog(response.message, !response.success);
       if(response.success) {
         sendForm.resetField('message');
@@ -93,9 +110,17 @@ export function TelegramC2Control() {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message.';
       addLog(errorMessage, true);
       console.error(err);
-    } finally {
-        sendForm.formState.isSubmitting = false;
     }
+  };
+
+  const handleDisconnect = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setSavedToken(null);
+    setIsConnected(false);
+    setBotName(null);
+    connectForm.reset({ token: '' });
+    addLog('Bot disconnected and token cleared.');
+    toast({ title: 'Bot Disconnected' });
   };
 
   return (
@@ -109,41 +134,44 @@ export function TelegramC2Control() {
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-8">
         <div className="space-y-6">
+            {!isConnected && (
             <Form {...connectForm}>
-            <form onSubmit={connectForm.handleSubmit(onConnect)} className="space-y-4 p-4 border rounded-lg">
-                <div className="flex justify-between items-center">
-                    <Label>1. Connect Bot</Label>
-                    {botName && (
-                        <Badge variant="secondary">
-                           <CheckCircle className="mr-2 h-4 w-4 text-green-400"/> 
-                           Connected: @{botName}
-                        </Badge>
+                <form onSubmit={connectForm.handleSubmit(onConnect)} className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <Label>1. Connect Bot</Label>
+                    </div>
+                    <FormField
+                    control={connectForm.control}
+                    name="token"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormControl>
+                            <Input placeholder="Enter Telegram Bot API Token" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
                     )}
-                     {!botName && isConnected === false && logs.some(l => l.isError) &&(
-                        <Badge variant="destructive">
-                           <XCircle className="mr-2 h-4 w-4"/> 
-                           Connection Failed
-                        </Badge>
-                    )}
-                </div>
-                <FormField
-                control={connectForm.control}
-                name="token"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormControl>
-                        <Input placeholder="Enter Telegram Bot API Token" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <Button type="submit" className="w-full" disabled={connectForm.formState.isSubmitting}>
-                {connectForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Connect
-                </Button>
-            </form>
+                    />
+                    <Button type="submit" className="w-full" disabled={isConnecting}>
+                    {isConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Connect
+                    </Button>
+                </form>
             </Form>
+            )}
+
+            {isConnected && botName && (
+                 <div className="p-4 border rounded-lg space-y-4">
+                     <div className="flex justify-between items-center">
+                         <Label>1. Bot Status</Label>
+                         <Button variant="ghost" size="sm" onClick={handleDisconnect}><LogOut className="mr-2 h-4 w-4" /> Disconnect</Button>
+                     </div>
+                     <Badge variant="secondary" className="text-base w-full justify-center">
+                       <CheckCircle className="mr-2 h-4 w-4 text-green-400"/> 
+                       Connected as @{botName}
+                    </Badge>
+                </div>
+            )}
 
             <Form {...sendForm}>
             <form onSubmit={sendForm.handleSubmit(onSend)} className="space-y-4 p-4 border rounded-lg">
