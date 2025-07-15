@@ -1,8 +1,8 @@
 
 'use server';
 /**
- * @fileOverview A flow for scanning a file hash using the real VirusTotal API.
- * This has been updated to use the ApiKeyService.
+ * @fileOverview A flow for scanning a file hash using the VirusTotal API.
+ * It securely retrieves the API key from server-side environment variables.
  *
  * - scanFileHash - Scans a file hash using the VirusTotal API.
  * - VirusTotalScanInput - The input type for the scanFileHash function.
@@ -58,7 +58,7 @@ export async function scanFileHash(input: VirusTotalScanInput): Promise<VirusTot
   if (!apiKey) {
     return {
       success: false,
-      error: 'VirusTotal API key is not configured on the server. Please add it via the Settings page or .env file.',
+      error: 'VirusTotal API key is not configured on the server. Please add VIRUSTOTAL_API_KEY to the .env file.',
     };
   }
 
@@ -84,7 +84,6 @@ export async function scanFileHash(input: VirusTotalScanInput): Promise<VirusTot
     }
 
     const responseData = await response.json();
-    // Use safeParse to ensure the response from the external API matches our expected schema
     const parsed = VirusTotalApiDataSchema.safeParse(responseData.data);
     if (!parsed.success) {
       console.error("VirusTotal API response validation error:", parsed.error);
