@@ -68,7 +68,7 @@ export function TelegramC2Control() {
         setBotName(null);
       }
     } catch (err) {
-      const errorMessage = 'Failed to connect. The AI may have refused the request.';
+      const errorMessage = 'Failed to connect. An error occurred in the server action.';
       addLog(errorMessage, true);
       console.error(err);
     } finally {
