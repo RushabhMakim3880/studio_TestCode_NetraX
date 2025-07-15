@@ -113,20 +113,24 @@ export default function PhishingPage() {
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === storageKey) {
-        loadCredentialsFromStorage(); // Reload from storage
+        const oldCredsLength = capturedCredentials.length;
         const newCredsRaw = event.newValue;
-         if (newCredsRaw) {
+        if (newCredsRaw) {
+          try {
             const newCredsList = JSON.parse(newCredsRaw);
-            if(newCredsList.length > capturedCredentials.length) {
-                 toast({
-                  variant: "destructive",
-                  title: "Credentials Captured!",
-                  description: "New credentials have been harvested.",
-                });
+            setCapturedCredentials(newCredsList);
+            if (newCredsList.length > oldCredsLength) {
+              toast({
+                variant: "destructive",
+                title: "Credentials Captured!",
+                description: "New credentials have been harvested.",
+              });
             }
-         }
+          } catch (e) { console.error('Failed to parse new credentials:', e); }
+        }
       }
     };
+
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
