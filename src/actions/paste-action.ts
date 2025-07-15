@@ -3,8 +3,6 @@
 
 import { z } from 'zod';
 
-const PasteRsResponseSchema = z.string();
-
 const ReturnSchema = z.object({
   success: z.boolean(),
   pasteId: z.string().optional(),
@@ -24,19 +22,14 @@ export async function hostOnPasteRs(htmlContent: string): Promise<ReturnType> {
         throw new Error(`paste.rs service responded with status: ${response.status}`);
     }
     
-    // The response from paste.rs is the full URL, e.g., "https://paste.rs/S4IzJ"
+    // The response from paste.rs is the full URL as a text string, e.g., "https://paste.rs/S4IzJ"
     const responseUrl = await response.text();
-    const validation = PasteRsResponseSchema.safeParse(responseUrl);
-
-    if (!validation.success) {
-      console.error("paste.rs API response validation error:", validation.error);
-      throw new Error('Invalid response received from hosting service.');
-    }
     
     // Extract only the ID part from the URL.
-    const pasteId = validation.data.split('/').pop();
+    const pasteId = responseUrl.split('/').pop();
 
-    if (!pasteId) {
+    if (!pasteId || pasteId.trim() === '') {
+        console.error('Could not parse the paste ID from the response URL:', responseUrl);
         throw new Error('Could not parse the paste ID from the response URL.');
     }
 
