@@ -1,7 +1,8 @@
+
 'use server';
 /**
  * @fileOverview A flow for scanning a file hash using the real VirusTotal API.
- * This replaces the previous simulation.
+ * This has been updated to use the ApiKeyService.
  *
  * - scanFileHash - Scans a file hash using the VirusTotal API.
  * - VirusTotalScanInput - The input type for the scanFileHash function.
@@ -9,14 +10,13 @@
  */
 
 import { z } from 'zod';
+import { getApiKey } from '@/services/api-key-service';
 
 const VirusTotalScanInputSchema = z.object({
   hash: z.string().min(32).describe('The file hash (MD5, SHA1, or SHA256) to scan.'),
 });
 export type VirusTotalScanInput = z.infer<typeof VirusTotalScanInputSchema>;
 
-// This schema is designed to be a subset of the actual VirusTotal API response
-// to make it easier to handle on the frontend.
 const ScanEngineResultSchema = z.object({
   engine_name: z.string(),
   category: z.string(),
@@ -53,12 +53,12 @@ export type VirusTotalScanOutput = z.infer<typeof VirusTotalScanOutputSchema>;
 
 
 export async function scanFileHash(input: VirusTotalScanInput): Promise<VirusTotalScanOutput> {
-  const apiKey = process.env.VIRUSTOTAL_API_KEY;
+  const apiKey = getApiKey('VIRUSTOTAL_API_KEY');
 
   if (!apiKey) {
     return {
       success: false,
-      error: 'VirusTotal API key is not configured on the server. Please set VIRUSTOTAL_API_KEY in your .env file.',
+      error: 'VirusTotal API key is not configured on the server. Please add it via the Settings page or .env file.',
     };
   }
 
@@ -84,7 +84,14 @@ export async function scanFileHash(input: VirusTotalScanInput): Promise<VirusTot
     }
 
     const responseData = await response.json();
-    return { success: true, data: responseData.data };
+    // Use safeParse to ensure the response from the external API matches our expected schema
+    const parsed = VirusTotalApiDataSchema.safeParse(responseData.data);
+    if (!parsed.success) {
+      console.error("VirusTotal API response validation error:", parsed.error);
+      return { success: false, error: "Received an invalid response format from VirusTotal." };
+    }
+
+    return { success: true, data: parsed.data };
   } catch (e: any) {
     console.error('VirusTotal API call failed:', e);
     return { success: false, error: e.message || 'Failed to communicate with the VirusTotal API.' };
