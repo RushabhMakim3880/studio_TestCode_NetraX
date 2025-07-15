@@ -12,11 +12,35 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2, Clipboard } from 'lucide-react';
 import { hostOnPasteRs } from '@/actions/paste-action';
+import { useAuth } from '@/hooks/use-auth';
+import { logActivity } from '@/services/activity-log-service';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const clonerSchema = z.object({
+  redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
+  urlToClone: z.string().optional(),
+  htmlContent: z.string().optional(),
+}).refine(data => data.urlToClone || data.htmlContent, {
+  message: 'Either a URL or HTML content is required.',
+  path: ['urlToClone'],
+});
 
 export default function PhishingPage() {
   const { toast } = useToast();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
   const storageKey = 'netra-captured-credentials';
+  const { user } = useAuth();
+
+  const form = useForm<z.infer<typeof clonerSchema>>({
+    resolver: zodResolver(clonerSchema),
+    defaultValues: {
+      redirectUrl: 'https://github.com/password_reset',
+      urlToClone: 'https://github.com/login',
+      htmlContent: '',
+    },
+  });
 
   const [hostedUrl, setHostedUrl] = useState<string | null>(null);
   const [isHosting, setIsHosting] = useState(false);
@@ -81,6 +105,13 @@ export default function PhishingPage() {
       
       toast({ title: "Page Hosted Successfully!", description: "Link is ready to be shared." });
 
+      const urlToClone = form.getValues('urlToClone');
+      logActivity({
+          user: user?.displayName || 'Operator',
+          action: 'Hosted Phishing Page',
+          details: `Source: ${urlToClone || 'Pasted HTML'}`
+      });
+
     } catch (e) {
       const error = e instanceof Error ? e.message : "An unknown error occurred";
       toast({ variant: 'destructive', title: "Hosting Failed", description: error });
@@ -105,7 +136,7 @@ export default function PhishingPage() {
       
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="flex flex-col gap-6">
-          <LoginPageCloner onHostPage={handleHostPage} />
+          <LoginPageCloner form={form} onHostPage={handleHostPage} />
           
           {isHosting && (
             <Card className="flex items-center justify-center p-8">

