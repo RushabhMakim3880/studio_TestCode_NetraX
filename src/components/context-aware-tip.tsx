@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -11,7 +12,7 @@ export function ContextAwareTip() {
   const { user } = useAuth();
   const pathname = usePathname();
   const [tip, setTip] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
 
   const currentModule = useMemo(() => {
@@ -38,7 +39,7 @@ export function ContextAwareTip() {
         })
         .catch((err) => {
           // Fail silently for this non-critical component.
-          // Don't log the error to the console to avoid alarming the user.
+          console.error("Failed to fetch context-aware tip:", err);
           setError(true);
         })
         .finally(() => {
@@ -58,7 +59,7 @@ export function ContextAwareTip() {
     );
   }
 
-  // If there's an error or no tip, render nothing
+  // If there's an error or no tip, render nothing to avoid breaking the UI
   if (error || !tip) {
     return null;
   }
