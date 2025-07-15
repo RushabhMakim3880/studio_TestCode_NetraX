@@ -39,6 +39,7 @@ async function readSecrets(): Promise<ApiKeySettings> {
  */
 export async function getApiKeys(): Promise<ApiKeySettings> {
     const secrets = await readSecrets();
+    const envToken = process.env.NGROK_AUTHTOKEN; // This is for ngrok, but let's keep env vars in one place
     return {
         VIRUSTOTAL_API_KEY: secrets.VIRUSTOTAL_API_KEY || process.env.VIRUSTOTAL_API_KEY || '',
     };
