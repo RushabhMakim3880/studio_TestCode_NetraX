@@ -32,6 +32,10 @@ export default function PhishingRenderPage({ params }: { params: { id: string } 
   useEffect(() => {
     // If content is loaded, inject it into the document.
     if (htmlContent) {
+      // Temporarily hide the loading state to avoid flash of content
+      const rootEl = document.getElementById('phish-root');
+      if (rootEl) rootEl.style.display = 'none';
+      
       document.open();
       document.write(htmlContent);
       document.close();
@@ -44,20 +48,34 @@ export default function PhishingRenderPage({ params }: { params: { id: string } 
   }
 
   // Display a loading indicator while fetching from localStorage.
+  // This will be replaced by the document.write call.
   return (
-    <html>
-        <head>
-            <title>Loading...</title>
-             <style>
-                body { font-family: sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #111; color: #eee; }
-                .loader { border: 4px solid #444; border-top: 4px solid #79ffef; border-radius: 50%; width: 50px; height: 50px; animation: spin 1.5s linear infinite; }
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            </style>
-        </head>
-        <body>
-            <div className="loader"></div>
-            <p style={{ marginTop: '20px' }}>Loading content...</p>
-        </body>
-    </html>
+    <div id="phish-root" style={{
+        fontFamily: 'sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        margin: 0,
+        backgroundColor: '#111',
+        color: '#eee'
+    }}>
+        <div style={{
+            border: '4px solid #444',
+            borderTop: '4px solid #79ffef',
+            borderRadius: '50%',
+            width: '50px',
+            height: '50px',
+            animation: 'spin 1.5s linear infinite'
+        }} />
+        <p style={{ marginTop: '20px' }}>Loading content...</p>
+        <style>{`
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `}</style>
+    </div>
   );
 }
