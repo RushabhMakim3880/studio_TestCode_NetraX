@@ -18,7 +18,7 @@ export function Logo({ className }: { className?: string }) {
         <path d="M17 9.5L7 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M7 9.5L17 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
-      <span className="font-headline text-lg font-semibold tracking-wider">
+      <span className="font-headline text-lg font-semibold tracking-wider group-data-[collapsible=icon]:hidden">
         NETRA-X
       </span>
     </div>
