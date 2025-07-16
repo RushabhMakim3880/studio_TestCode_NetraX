@@ -393,7 +393,7 @@ export default function TemplatesPage() {
                         name="name"
                         render={({ field }) => (
                             <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="name" className="text-right">Name</Label>
+                                <FormLabel htmlFor="name" className="text-right">Name</FormLabel>
                                 <FormControl>
                                     <Input id="name" {...field} className="col-span-3"/>
                                 </FormControl>
