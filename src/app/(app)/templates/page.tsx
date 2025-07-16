@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, MoreVertical, Edit, Trash2, MessageSquarePlus, Mail, MessageSquare } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Form, FormField, FormControl } from '@/components/ui/form';
+import { Form, FormField, FormControl, FormMessage } from '@/components/ui/form';
 
 type Template = {
   id: string;
