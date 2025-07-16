@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -9,36 +10,34 @@ import {
   SidebarMenuButton,
   SidebarContent,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { APP_MODULES, Module } from '@/lib/constants';
 import { useAuth } from '@/hooks/use-auth';
-import { useEffect, useState } from 'react';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ChevronRight } from 'lucide-react';
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [openCollapsibles, setOpenCollapsibles] = useState<string[]>([]);
-  
-  useEffect(() => {
-    const activeParent = APP_MODULES.find(m => m.subModules?.some(sm => sm.path === pathname));
-    if (activeParent) {
-      setOpenCollapsibles(prev => [...new Set([...prev, activeParent.name])]);
-    }
-  }, [pathname]);
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   if (!user) return null;
 
   const getVisibleSubModules = (module: Module): Module[] => {
     if (!module.subModules) return [];
-    // A submodule is visible if the user has the role AND the module is in their enabled list.
-    // The `enabledModules` array is the source of truth for fine-grained access.
     return module.subModules.filter(
       sm => sm.roles.includes(user.role) && (user.enabledModules || []).includes(sm.name)
     );
@@ -52,26 +51,42 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           {APP_MODULES.map((module) => {
-            if (module.subModules) {
-              const visibleSubModules = getVisibleSubModules(module);
-              if (visibleSubModules.length === 0) return null;
+            const visibleSubModules = module.subModules ? getVisibleSubModules(module) : [];
+            const hasVisibleSubModules = visibleSubModules.length > 0;
+            const isParentActive = hasVisibleSubModules && visibleSubModules.some(sm => sm.path === pathname);
 
+            // Handle parent modules with sub-modules
+            if (hasVisibleSubModules) {
+              if (isCollapsed) {
+                return (
+                  <SidebarMenuItem key={module.name} tooltip={module.name}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <SidebarMenuButton isActive={isParentActive} className="w-full justify-center">
+                          <module.icon />
+                        </SidebarMenuButton>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="right" align="start" className="ml-2">
+                        {visibleSubModules.map(subModule => (
+                          <DropdownMenuItem key={subModule.path} asChild>
+                            <Link href={subModule.path!}>
+                              <subModule.icon />
+                              <span>{subModule.name}</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </SidebarMenuItem>
+                );
+              }
+              
               return (
                 <SidebarMenuItem key={module.name}>
-                  <Collapsible
-                    open={openCollapsibles.includes(module.name)}
-                    onOpenChange={(isOpen) => {
-                      setOpenCollapsibles(current =>
-                        isOpen
-                          ? [...current, module.name]
-                          : current.filter(name => name !== module.name)
-                      );
-                    }}
-                  >
+                  <Collapsible>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
-                        isActive={visibleSubModules.some(sm => sm.path === pathname)}
-                        tooltip={module.name}
+                        isActive={isParentActive}
                         className="w-full justify-between"
                       >
                          <div className="flex items-center gap-2">
@@ -88,7 +103,6 @@ export function AppSidebar() {
                             <Link href={subModule.path!}>
                               <SidebarMenuButton
                                 isActive={pathname === subModule.path}
-                                tooltip={subModule.name}
                                 size="sm"
                                 variant="ghost"
                                 className="w-full"
@@ -106,7 +120,7 @@ export function AppSidebar() {
               );
             }
 
-            // A top-level module is visible if user has role AND it's in their enabled list.
+            // Handle top-level modules without sub-modules
             if (module.path && module.roles.includes(user.role) && (user.enabledModules || []).includes(module.name)) {
                 return (
                     <SidebarMenuItem key={module.path}>
