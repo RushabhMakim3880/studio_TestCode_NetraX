@@ -50,8 +50,17 @@ const contextAwareTipFlow = ai.defineFlow(
     inputSchema: ContextAwareTipInputSchema,
     outputSchema: ContextAwareTipOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    try {
+      const { output } = await prompt(input);
+      return output!;
+    } catch (error) {
+      console.error(`[contextAwareTipFlow] Failed to generate tip for role ${input.userRole} in module ${input.currentModule}:`, error);
+      // Return a generic, safe fallback tip if the AI call fails.
+      // This makes the UI more resilient to backend model outages.
+      return {
+        tip: `Remember to save your work frequently when using the ${input.currentModule} module.`
+      };
+    }
   }
 );
