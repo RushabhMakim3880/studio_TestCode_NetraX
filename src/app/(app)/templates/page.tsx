@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, MoreVertical, Edit, Trash2, MessageSquarePlus, Mail, MessageSquare } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { FormField, FormControl } from '@/components/ui/form';
+import { Form, FormField, FormControl } from '@/components/ui/form';
 
 type Template = {
   id: string;
@@ -132,7 +132,7 @@ export default function TemplatesPage() {
       toast({ title: 'Template Updated', description: `Template "${values.name}" has been updated.` });
     } else {
       const newTemplate: Template = {
-        id: `TPL-${String(templates.length + 1).padStart(3, '0')}`,
+        id: `TPL-${crypto.randomUUID()}`,
         ...values,
       }
       updateTemplates([...templates, newTemplate]);
@@ -259,41 +259,80 @@ export default function TemplatesPage() {
             <DialogTitle>{selectedTemplate ? 'Edit Template' : 'Create New Template'}</DialogTitle>
             <DialogDescription>{selectedTemplate ? `Update the details for "${selectedTemplate.name}".` : 'Create a reusable template for emails or SMS.'}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">Name</Label>
-                    <Input id="name" {...form.register('name')} className="col-span-3"/>
-                    {form.formState.errors.name && <p className="col-span-4 text-sm text-destructive text-right">{form.formState.errors.name.message}</p>}
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="type" className="text-right">Type</Label>
-                    <FormField control={form.control} name="type" render={({field}) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value} >
-                            <FormControl><SelectTrigger className="col-span-3"><SelectValue/></SelectTrigger></FormControl>
-                            <SelectContent><SelectItem value="Email">Email</SelectItem><SelectItem value="SMS">SMS</SelectItem></SelectContent>
-                        </Select>
-                    )}/>
-                  </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                <div className="grid gap-4 py-4">
+                    <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">Name</Label>
+                                <FormControl>
+                                    <Input id="name" {...field} className="col-span-3"/>
+                                </FormControl>
+                                <div className="col-start-2 col-span-3">
+                                    <FormMessage />
+                                </div>
+                            </div>
+                        )}
+                    />
+                   <FormField
+                        control={form.control}
+                        name="type"
+                        render={({field}) => (
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right">Type</Label>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} >
+                                    <FormControl><SelectTrigger className="col-span-3"><SelectValue/></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Email">Email</SelectItem>
+                                        <SelectItem value="SMS">SMS</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                    />
                   {form.watch('type') === 'Email' && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="subject" className="text-right">Subject</Label>
-                        <Input id="subject" {...form.register('subject')} className="col-span-3"/>
-                        {form.formState.errors.subject && <p className="col-span-4 text-sm text-destructive text-right">{form.formState.errors.subject.message}</p>}
-                    </div>
+                    <FormField
+                        control={form.control}
+                        name="subject"
+                        render={({ field }) => (
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="subject" className="text-right">Subject</Label>
+                                <FormControl>
+                                    <Input id="subject" {...field} value={field.value ?? ''} className="col-span-3"/>
+                                </FormControl>
+                                 <div className="col-start-2 col-span-3">
+                                    <FormMessage />
+                                </div>
+                            </div>
+                        )}
+                    />
                   )}
-                  <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="body" className="text-right pt-2">Body</Label>
-                    <Textarea id="body" {...form.register('body')} className="col-span-3 min-h-[150px]"/>
-                    {form.formState.errors.body && <p className="col-span-4 text-sm text-destructive text-right">{form.formState.errors.body.message}</p>}
-                  </div>
+                  <FormField
+                        control={form.control}
+                        name="body"
+                        render={({ field }) => (
+                            <div className="grid grid-cols-4 items-start gap-4">
+                                <Label htmlFor="body" className="text-right pt-2">Body</Label>
+                                <FormControl>
+                                    <Textarea id="body" {...field} className="col-span-3 min-h-[150px]"/>
+                                </FormControl>
+                                 <div className="col-start-2 col-span-3">
+                                    <FormMessage />
+                                </div>
+                            </div>
+                        )}
+                    />
                   <CardDescription className="col-span-4 text-center">{'Use `{{variable_name}}` for personalization (e.g., `{{name}}`, `{{company}}`).'}</CardDescription>
-              </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Template</Button>
-            </DialogFooter>
-          </form>
+                </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                <Button type="submit">Save Template</Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
       
