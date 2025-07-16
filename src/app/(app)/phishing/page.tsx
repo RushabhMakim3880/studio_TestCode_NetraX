@@ -263,7 +263,7 @@ export default function PhishingPage() {
     } catch (err) {
       setIsHosting(false);
       const error = err instanceof Error ? err.message : "An unknown error occurred";
-      toast({ variant: 'destructive', title: 'Hosting Failed', description: error, });
+      toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
     }
   };
 
