@@ -211,7 +211,7 @@ export default function PhishingPage() {
       toast({ title: 'HTML Prepared', description: 'Raw HTML is ready for hosting.' });
     } catch (e) {
       const error = e instanceof Error ? e.message : 'An unknown error occurred';
-      toast({ variant: 'destructive', title: 'Processing Failed', description: error });
+      toast({ variant: 'destructive', title: 'Processing Failed', description: error, });
     } finally {
       setIsProcessing(false);
     }
