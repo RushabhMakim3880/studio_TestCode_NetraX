@@ -386,73 +386,72 @@ export default function TemplatesPage() {
             <DialogDescription>{selectedTemplate ? `Update the details for "${selectedTemplate.name}".` : 'Create a reusable template for emails or SMS.'}</DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="grid gap-4 py-4">
-                    <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <FormLabel htmlFor="name" className="text-right">Name</FormLabel>
-                                <FormControl>
-                                    <Input id="name" {...field} className="col-span-3"/>
-                                </FormControl>
-                                <div className="col-start-2 col-span-3">
-                                    <FormMessage />
-                                </div>
-                            </div>
-                        )}
-                    />
-                   <FormField
-                        control={form.control}
-                        name="type"
-                        render={({field}) => (
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <FormLabel className="text-right">Type</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} >
-                                    <FormControl><SelectTrigger className="col-span-3"><SelectValue/></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Email">Email</SelectItem>
-                                        <SelectItem value="SMS">SMS</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-                    />
-                  {form.watch('type') === 'Email' && (
-                    <FormField
-                        control={form.control}
-                        name="subject"
-                        render={({ field }) => (
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <FormLabel htmlFor="subject" className="text-right">Subject</FormLabel>
-                                <FormControl>
-                                    <Input id="subject" {...field} value={field.value ?? ''} className="col-span-3"/>
-                                </FormControl>
-                                 <div className="col-start-2 col-span-3">
-                                    <FormMessage />
-                                </div>
-                            </div>
-                        )}
-                    />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input id="name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Email">Email</SelectItem>
+                        <SelectItem value="SMS">SMS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              {form.watch('type') === 'Email' && (
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subject</FormLabel>
+                      <FormControl>
+                        <Input id="subject" {...field} value={field.value ?? ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  <FormField
-                        control={form.control}
-                        name="body"
-                        render={({ field }) => (
-                            <div className="grid grid-cols-4 items-start gap-4">
-                                <FormLabel htmlFor="body" className="text-right pt-2">Body</FormLabel>
-                                <FormControl>
-                                    <Textarea id="body" {...field} className="col-span-3 min-h-[150px]"/>
-                                </FormControl>
-                                 <div className="col-start-2 col-span-3">
-                                    <FormMessage />
-                                </div>
-                            </div>
-                        )}
-                    />
-                  <CardDescription className="col-span-4 text-center">{'Use `{{variable_name}}` for personalization (e.g., `{{name}}`, `{{company}}`).'}</CardDescription>
-                </div>
+                />
+              )}
+              <FormField
+                control={form.control}
+                name="body"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Body</FormLabel>
+                    <FormControl>
+                      <Textarea id="body" {...field} className="min-h-[150px]" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <CardDescription className="text-center pt-2">
+                {'Use `{{variable_name}}` for personalization (e.g., `{{name}}`, `{{company}}`).'}
+              </CardDescription>
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
                 <Button type="submit">Save Template</Button>
@@ -471,5 +470,3 @@ export default function TemplatesPage() {
     </>
   );
 }
-
-    
