@@ -32,10 +32,6 @@ export default function PhishingRenderPage({ params }: { params: { id: string } 
   useEffect(() => {
     // If content is loaded, inject it into the document.
     if (htmlContent) {
-      // Temporarily hide the loading state to avoid flash of content
-      const rootEl = document.getElementById('phish-root');
-      if (rootEl) rootEl.style.display = 'none';
-      
       document.open();
       document.write(htmlContent);
       document.close();
