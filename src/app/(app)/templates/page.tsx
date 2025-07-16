@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, MoreVertical, Edit, Trash2, MessageSquarePlus, Mail, MessageSquare } from 'lucide-react';
+import { PlusCircle, MoreVertical, Edit, Trash2, Mail, MessageSquare } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormField, FormControl, FormMessage, FormLabel } from '@/components/ui/form';
@@ -40,7 +40,7 @@ const initialTemplates: Template[] = [
     type: 'SMS',
     body: '{{company}} Alert: We detected an unusual login attempt on your account from a new device. If this was not you, please secure your account immediately at [Link].'
   },
-  {
+    {
     id: 'TPL-003',
     name: 'Invoice Overdue',
     type: 'Email',
@@ -471,3 +471,5 @@ export default function TemplatesPage() {
     </>
   );
 }
+
+    
