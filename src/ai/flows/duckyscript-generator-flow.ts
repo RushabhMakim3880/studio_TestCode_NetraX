@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow for generating DuckyScript payloads.
@@ -32,15 +33,18 @@ const prompt = ai.definePrompt({
 Your task is to convert a natural language prompt into a valid DuckyScript payload.
 
 The script should be efficient and follow DuckyScript 2.0 syntax.
-- Use DELAY to pause execution.
-- Use STRING to type text.
-- Use ENTER to press the Enter key.
-- Use GUI r to open the Run dialog.
-- Use other keys like SHIFT, CTRL, ALT as needed.
+- Use 'DELAY' to pause execution.
+- Use 'STRING' to type text.
+- Use 'ENTER' to press the Enter key.
+- Use 'GUI r' to open the Run dialog.
+- Use 'CTRL-SHIFT-ESCAPE' to open Task Manager.
+- Use 'ALT F4' to close a window.
+- Understand multi-stage commands, like opening PowerShell, downloading a file with Invoke-WebRequest, and then executing it.
+- Your output must be only the DuckyScript code, with no explanations, markdown formatting, or conversational text.
 
 Prompt: {{{prompt}}}
 
-Generate only the DuckyScript code. Do not include any explanations, markdown formatting, or conversational text.
+Generate only the DuckyScript code.
 `,
 });
 

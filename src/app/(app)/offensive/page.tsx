@@ -5,10 +5,10 @@ import { RubberDuckyEditor } from '@/components/rubber-ducky-editor';
 import { PasswordCracker } from '@/components/password-cracker';
 import { HashCalculator } from '@/components/hash-calculator';
 import { ExploitSuggester } from '@/components/exploit-suggester';
-import { PayloadGenerator } from '@/components/payload-generator';
 import { CustomMalwareGenerator } from '@/components/custom-malware-generator';
 import { EncoderDecoder } from '@/components/encoder-decoder';
 import { RealPortScanner } from '@/components/real-port-scanner';
+import { ReverseShellPayloadGenerator } from '@/components/reverse-shell-payload-generator';
 
 export default function OffensivePage() {
   return (
@@ -20,7 +20,7 @@ export default function OffensivePage() {
 
       <RealPortScanner />
       
-      <PayloadGenerator />
+      <ReverseShellPayloadGenerator />
 
       <CustomMalwareGenerator />
 
