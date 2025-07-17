@@ -44,7 +44,7 @@ export function ComplianceAndLegalReference() {
         <CardDescription>A quick reference guide for cyber laws, reporting, and compliance standards.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Accordion type="multiple" defaultValue={['item-1', 'item-2']}>
+        <Accordion type="multiple">
           <AccordionItem value="item-1">
             <AccordionTrigger className="text-lg">Reporting Protocols</AccordionTrigger>
             <AccordionContent className="space-y-6 pt-2">
