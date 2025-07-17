@@ -2,13 +2,14 @@
 'use client';
 
 import { RubberDuckyEditor } from '@/components/rubber-ducky-editor';
-import { PasswordCracker } from '@/components/password-cracker';
 import { HashCalculator } from '@/components/hash-calculator';
 import { ExploitSuggester } from '@/components/exploit-suggester';
 import { CustomMalwareGenerator } from '@/components/custom-malware-generator';
 import { EncoderDecoder } from '@/components/encoder-decoder';
 import { RealPortScanner } from '@/components/real-port-scanner';
 import { ReverseShellPayloadGenerator } from '@/components/reverse-shell-payload-generator';
+import ActiveCampaigns from '@/components/active-campaigns';
+
 
 export default function OffensivePage() {
   return (
@@ -18,6 +19,8 @@ export default function OffensivePage() {
         <p className="text-muted-foreground">A collection of tools for penetration testing and red team operations.</p>
       </div>
 
+      <ActiveCampaigns />
+      
       <RealPortScanner />
       
       <ReverseShellPayloadGenerator />
@@ -25,8 +28,6 @@ export default function OffensivePage() {
       <CustomMalwareGenerator />
 
       <ExploitSuggester />
-
-      <PasswordCracker />
 
       <HashCalculator />
 
