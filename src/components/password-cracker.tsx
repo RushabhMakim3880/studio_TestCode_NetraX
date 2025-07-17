@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import MD5 from 'crypto-js/md5';
 import SHA1 from 'crypto-js/sha1';
 import SHA256 from 'crypto-js/sha256';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   hash: z.string().min(32, { message: 'Please enter a valid hash.' }),
@@ -263,3 +264,4 @@ export function PasswordCracker() {
     </Card>
   );
 }
+ 
