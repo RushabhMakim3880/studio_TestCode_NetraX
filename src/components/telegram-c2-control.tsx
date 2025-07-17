@@ -181,107 +181,97 @@ export function TelegramC2Control() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-            <Bot className="h-6 w-6" />
-            <CardTitle>Telegram C2 Control</CardTitle>
-        </div>
-        <CardDescription>Use a Telegram bot for C2 communications and payload delivery.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-            {!isConnected && (
-            <Form {...connectForm}>
-                <form onSubmit={connectForm.handleSubmit(onConnect)} className="space-y-4 p-4 border rounded-lg">
-                    <div className="flex justify-between items-center">
-                        <Label>1. Connect Bot</Label>
-                    </div>
-                    <FormField
-                    control={connectForm.control}
-                    name="token"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormControl>
-                            <Input placeholder="Enter Telegram Bot API Token" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <Button type="submit" className="w-full" disabled={isConnecting}>
-                    {isConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Connect
-                    </Button>
-                </form>
-            </Form>
-            )}
-
-            {isConnected && botName && (
-                 <div className="p-4 border rounded-lg space-y-4">
-                     <div className="flex justify-between items-center">
-                         <Label>1. Bot Status</Label>
-                         <Button variant="ghost" size="sm" onClick={handleDisconnect}><LogOut className="mr-2 h-4 w-4" /> Disconnect</Button>
-                     </div>
-                     <Badge variant="secondary" className="text-base w-full justify-center">
-                       <CheckCircle className="mr-2 h-4 w-4 text-green-400"/> 
-                       Connected as @{botName}
-                    </Badge>
+    <div className="grid md:grid-cols-2 gap-8">
+    <div className="space-y-6">
+        {!isConnected && (
+        <Form {...connectForm}>
+            <form onSubmit={connectForm.handleSubmit(onConnect)} className="space-y-4 p-4 border rounded-lg">
+                <div className="flex justify-between items-center">
+                    <Label>1. Connect Bot</Label>
                 </div>
-            )}
-
-            <Form {...sendForm}>
-            <form onSubmit={sendForm.handleSubmit(onSend)} className="space-y-4 p-4 border rounded-lg">
-                <Label>2. Send Payload / Message</Label>
-                <FormField control={sendForm.control} name="chatId" render={({ field }) => (
+                <FormField
+                control={connectForm.control}
+                name="token"
+                render={({ field }) => (
                     <FormItem>
-                        <FormControl><Input placeholder="Target Chat ID" {...field} /></FormControl>
-                        <FormDesc className="text-xs px-1">
-                            Find Chat ID via <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-accent underline">@userinfobot</a>. The user must start your bot first.
-                        </FormDesc>
-                        <FormMessage />
+                    <FormControl>
+                        <Input placeholder="Enter Telegram Bot API Token" {...field} />
+                    </FormControl>
+                    <FormMessage />
                     </FormItem>
-                )} />
-                <FormField control={sendForm.control} name="message" render={({ field }) => (<FormItem><FormControl><Textarea placeholder="Type your message or a caption for your file..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={sendForm.control} name="file" render={({ field: { onChange, ...fieldProps} }) => (
-                    <FormItem>
-                        <FormControl>
-                            <Input 
-                                {...fieldProps}
-                                type="file" 
-                                ref={fileInputRef}
-                                onChange={(e) => onChange(e.target.files)}
-                             />
-                        </FormControl>
-                         <FormDesc className="text-xs px-1">Attach a file to send as a document.</FormDesc>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <Button type="submit" className="w-full" disabled={isSending || !isConnected}>
-                {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Send className="mr-2 h-4 w-4" />
-                Send
+                )}
+                />
+                <Button type="submit" className="w-full" disabled={isConnecting}>
+                {isConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Connect
                 </Button>
             </form>
-            </Form>
-        </div>
-        
-        <div className="space-y-2">
-            <Label>Activity Log</Label>
-            <div className="h-96 bg-primary/20 p-3 rounded-md font-mono text-xs overflow-y-auto flex flex-col-reverse">
-                {logs.length === 0 && <p className="m-auto text-muted-foreground">Awaiting commands...</p>}
-                <div className="space-y-2">
-                {logs.map((log, index) => (
-                    <p key={index} className={log.isError ? 'text-red-400' : ''}>
-                        <span className="text-muted-foreground/70 mr-2">{log.timestamp}</span>
-                        {log.message}
-                    </p>
-                ))}
-                </div>
+        </Form>
+        )}
+
+        {isConnected && botName && (
+             <div className="p-4 border rounded-lg space-y-4">
+                 <div className="flex justify-between items-center">
+                     <Label>1. Bot Status</Label>
+                     <Button variant="ghost" size="sm" onClick={handleDisconnect}><LogOut className="mr-2 h-4 w-4" /> Disconnect</Button>
+                 </div>
+                 <Badge variant="secondary" className="text-base w-full justify-center">
+                   <CheckCircle className="mr-2 h-4 w-4 text-green-400"/> 
+                   Connected as @{botName}
+                </Badge>
+            </div>
+        )}
+
+        <Form {...sendForm}>
+        <form onSubmit={sendForm.handleSubmit(onSend)} className="space-y-4 p-4 border rounded-lg">
+            <Label>2. Send Payload / Message</Label>
+            <FormField control={sendForm.control} name="chatId" render={({ field }) => (
+                <FormItem>
+                    <FormControl><Input placeholder="Target Chat ID" {...field} /></FormControl>
+                    <FormDesc className="text-xs px-1">
+                        Find Chat ID via <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-accent underline">@userinfobot</a>. The user must start your bot first.
+                    </FormDesc>
+                    <FormMessage />
+                </FormItem>
+            )} />
+            <FormField control={sendForm.control} name="message" render={({ field }) => (<FormItem><FormControl><Textarea placeholder="Type your message or a caption for your file..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={sendForm.control} name="file" render={({ field: { onChange, ...fieldProps} }) => (
+                <FormItem>
+                    <FormControl>
+                        <Input 
+                            {...fieldProps}
+                            type="file" 
+                            ref={fileInputRef}
+                            onChange={(e) => onChange(e.target.files)}
+                         />
+                    </FormControl>
+                     <FormDesc className="text-xs px-1">Attach a file to send as a document.</FormDesc>
+                    <FormMessage />
+                </FormItem>
+            )} />
+            <Button type="submit" className="w-full" disabled={isSending || !isConnected}>
+            {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Send className="mr-2 h-4 w-4" />
+            Send
+            </Button>
+        </form>
+        </Form>
+    </div>
+    
+    <div className="space-y-2">
+        <Label>Activity Log</Label>
+        <div className="h-96 bg-primary/20 p-3 rounded-md font-mono text-xs overflow-y-auto flex flex-col-reverse">
+            {logs.length === 0 && <p className="m-auto text-muted-foreground">Awaiting commands...</p>}
+            <div className="space-y-2">
+            {logs.map((log, index) => (
+                <p key={index} className={log.isError ? 'text-red-400' : ''}>
+                    <span className="text-muted-foreground/70 mr-2">{log.timestamp}</span>
+                    {log.message}
+                </p>
+            ))}
             </div>
         </div>
-
-      </CardContent>
-    </Card>
+    </div>
+    </div>
   );
 }

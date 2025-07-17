@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -175,9 +176,16 @@ export default function C2Page() {
                         {!isLoading && agents.length === 0 && <p className="text-center text-muted-foreground py-10">No active agents found.</p>}
                     </CardContent>
                 </Card>
-
-                <TelegramC2Control />
-                <TelegramBotGenerator />
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Telegram C2</CardTitle>
+                        <CardDescription>Use Telegram for command and control, payload delivery, and data exfiltration.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <TelegramBotGenerator />
+                        <TelegramC2Control />
+                    </CardContent>
+                </Card>
             </div>
 
             <Dialog open={isTerminalOpen} onOpenChange={setIsTerminalOpen}>
