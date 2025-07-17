@@ -8,7 +8,7 @@ import { CustomMalwareGenerator } from '@/components/custom-malware-generator';
 import { EncoderDecoder } from '@/components/encoder-decoder';
 import { RealPortScanner } from '@/components/real-port-scanner';
 import { ReverseShellPayloadGenerator } from '@/components/reverse-shell-payload-generator';
-import ActiveCampaigns from '@/components/active-campaigns';
+import { PhishingCampaignLauncher } from '@/components/phishing-campaign-launcher';
 
 
 export default function OffensivePage() {
@@ -19,7 +19,7 @@ export default function OffensivePage() {
         <p className="text-muted-foreground">A collection of tools for penetration testing and red team operations.</p>
       </div>
 
-      <ActiveCampaigns />
+      <PhishingCampaignLauncher />
       
       <RealPortScanner />
       

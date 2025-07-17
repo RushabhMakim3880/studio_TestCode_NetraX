@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Clipboard, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Base32, Base58 } from 'base-coding';
+import thirtyTwo from 'thirty-two';
+import bs58 from 'bs58';
 
 const rot13 = (str: string): string => {
   return str.replace(/[a-zA-Z]/g, (c) => {
@@ -45,8 +46,8 @@ export function EncoderDecoder() {
         
         setOutputs({
             base64: btoa(unescape(encodeURIComponent(input))),
-            base32: Base32.encode(encodedData),
-            base58: Base58.encode(encodedData),
+            base32: thirtyTwo.encode(encodedData).toString(),
+            base58: bs58.encode(encodedData),
             hex: Array.from(input).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(''),
             url: encodeURIComponent(input),
             rot13: rot13(input),
@@ -58,8 +59,8 @@ export function EncoderDecoder() {
       let decodedValues: typeof outputs = { base64: '', base32: '', base58: '', hex: '', url: '', rot13: '' };
       
       try { decodedValues.base64 = decodeURIComponent(escape(atob(input))); } catch (e) { decodedValues.base64 = "Invalid Base64 input"; }
-      try { const decoded = Base32.decode(input); decodedValues.base32 = new TextDecoder().decode(decoded); } catch (e) { decodedValues.base32 = "Invalid Base32 input"; }
-      try { const decoded = Base58.decode(input); decodedValues.base58 = new TextDecoder().decode(decoded); } catch (e) { decodedValues.base58 = "Invalid Base58 input"; }
+      try { const decoded = thirtyTwo.decode(input); decodedValues.base32 = new TextDecoder().decode(decoded); } catch (e) { decodedValues.base32 = "Invalid Base32 input"; }
+      try { const decoded = bs58.decode(input); decodedValues.base58 = new TextDecoder().decode(decoded); } catch (e) { decodedValues.base58 = "Invalid Base58 input"; }
       try { const hexResult = input.replace(/\s/g, '').match(/.{1,2}/g)?.map(byte => String.fromCharCode(parseInt(byte, 16))).join(''); decodedValues.hex = hexResult && !hexResult.includes('NaN') ? hexResult : "Invalid Hex input"; } catch (e) { decodedValues.hex = "Invalid Hex input"; }
       try { decodedValues.url = decodeURIComponent(input.replace(/\+/g, ' ')); } catch (e) { decodedValues.url = "Invalid URL encoding"; }
       decodedValues.rot13 = rot13(input);
