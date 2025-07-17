@@ -13,8 +13,8 @@ import { getThreatIntel, type ThreatIntelOutput } from '@/ai/flows/cyber-intel-f
 import { Loader2, AlertTriangle, ShieldCheck, Terminal } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { CveFeed } from '@/components/cve-feed';
-import { LawUpdatesFeed } from '@/components/law-updates-feed';
 import { ThreatActorProfiler } from '@/components/threat-actor-profiler';
+import { ComplianceAndLegalReference } from '@/components/compliance-legal-reference';
 
 const formSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -145,7 +145,7 @@ export default function CyberIntelPage() {
       
       <ThreatActorProfiler />
 
-      <LawUpdatesFeed />
+      <ComplianceAndLegalReference />
 
     </div>
   );
