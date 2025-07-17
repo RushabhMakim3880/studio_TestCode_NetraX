@@ -55,7 +55,14 @@ type Task = {
   templateId?: string;
 };
 
-type Profile = { id: string; fullName: string; };
+type Profile = { 
+  id: string; 
+  fullName: string;
+  email: string;
+  role: string;
+  company: string;
+  notes?: string;
+};
 type Template = { id: string; name: string; };
 
 const initialProjects: Project[] = [
@@ -90,6 +97,15 @@ const taskSchema = z.object({
     templateId: z.string().optional(),
 });
 
+const profileSchema = z.object({
+  fullName: z.string().min(3, 'Full name must be at least 3 characters.'),
+  email: z.string().email('Please enter a valid email address.'),
+  role: z.string().min(2, 'Role is required.'),
+  company: z.string().min(2, 'Company is required.'),
+  notes: z.string().optional(),
+});
+
+
 const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
   Active: 'default',
   Planning: 'secondary',
@@ -120,6 +136,7 @@ export default function ProjectManagementPage() {
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isProfileFormOpen, setIsProfileFormOpen] = useState(false);
   
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -137,6 +154,11 @@ export default function ProjectManagementPage() {
   const taskForm = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
   });
+
+  const profileForm = useForm<z.infer<typeof profileSchema>>({
+    resolver: zodResolver(profileSchema),
+  });
+  
   const watchedTaskType = taskForm.watch('type');
 
   useEffect(() => {
@@ -168,6 +190,11 @@ export default function ProjectManagementPage() {
   const updateTasks = (newTasks: Task[]) => {
     setTasks(newTasks);
     localStorage.setItem('netra-tasks', JSON.stringify(newTasks));
+  }
+
+  const updateProfiles = (newProfiles: Profile[]) => {
+    setProfiles(newProfiles);
+    localStorage.setItem('netra-profiles', JSON.stringify(newProfiles));
   }
 
   const filteredProjects = useMemo(() => {
@@ -315,6 +342,20 @@ export default function ProjectManagementPage() {
   const handleDeleteTask = (taskId: string) => {
     updateTasks(tasks.filter(t => t.id !== taskId));
     toast({ title: 'Task removed.' });
+  }
+
+  const handleCreateNewProfile = (values: z.infer<typeof profileSchema>) => {
+    const newProfile: Profile = {
+        id: `PROF-${crypto.randomUUID()}`,
+        ...values,
+    };
+    updateProfiles([...profiles, newProfile]);
+    toast({ title: 'Profile Created', description: `New profile for "${values.fullName}" has been added.` });
+    
+    // Auto-select the newly created profile in the task form
+    taskForm.setValue('targetProfileId', newProfile.id);
+
+    setIsProfileFormOpen(false);
   }
   
   const getProfileName = (profileId?: string) => profiles.find(p => p.id === profileId)?.fullName || 'N/A';
@@ -559,9 +600,20 @@ export default function ProjectManagementPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="task-profile">Target Profile</Label>
-                            <Select onValueChange={(v) => taskForm.setValue('targetProfileId', v)} defaultValue={taskForm.getValues('targetProfileId')}>
+                            <Select
+                                onValueChange={(v) => {
+                                    if (v === '__add_new__') {
+                                        profileForm.reset();
+                                        setIsProfileFormOpen(true);
+                                    } else {
+                                        taskForm.setValue('targetProfileId', v);
+                                    }
+                                }}
+                                value={taskForm.getValues('targetProfileId')}
+                            >
                                 <SelectTrigger><SelectValue placeholder="Select Profile..." /></SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="__add_new__" className="text-accent">＋ Add New Profile...</SelectItem>
                                     {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.fullName}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -580,6 +632,48 @@ export default function ProjectManagementPage() {
                  <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsTaskFormOpen(false)}>Cancel</Button>
                     <Button type="submit">Save Task</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Nested Profile Creation Dialog */}
+      <Dialog open={isProfileFormOpen} onOpenChange={setIsProfileFormOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Create New Target Profile</DialogTitle>
+                <DialogDescription>Add a new target profile. It will be automatically selected for this task.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={profileForm.handleSubmit(handleCreateNewProfile)} className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="new-profile-fullName">Full Name</Label>
+                    <Input id="new-profile-fullName" {...profileForm.register('fullName')} />
+                    {profileForm.formState.errors.fullName && <p className="text-sm text-destructive">{profileForm.formState.errors.fullName.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="new-profile-email">Email</Label>
+                    <Input id="new-profile-email" type="email" {...profileForm.register('email')} />
+                    {profileForm.formState.errors.email && <p className="text-sm text-destructive">{profileForm.formState.errors.email.message}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="new-profile-role">Role / Position</Label>
+                        <Input id="new-profile-role" {...profileForm.register('role')} />
+                        {profileForm.formState.errors.role && <p className="text-sm text-destructive">{profileForm.formState.errors.role.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-profile-company">Company</Label>
+                        <Input id="new-profile-company" {...profileForm.register('company')} />
+                        {profileForm.formState.errors.company && <p className="text-sm text-destructive">{profileForm.formState.errors.company.message}</p>}
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="new-profile-notes">Notes</Label>
+                    <Textarea id="new-profile-notes" {...profileForm.register('notes')} placeholder="Add any relevant notes for this target..."/>
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsProfileFormOpen(false)}>Cancel</Button>
+                    <Button type="submit">Create Profile</Button>
                 </DialogFooter>
             </form>
         </DialogContent>
