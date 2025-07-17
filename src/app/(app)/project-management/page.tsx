@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -24,26 +24,33 @@ import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CampaignPlanner } from '@/components/campaign-planner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, type User as AuthUser } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
 type Project = {
   id: string;
   name: string;
   target: string;
-  status: 'Planning' | 'Active' | 'On Hold' | 'Completed';
+  status: ProjectStatus;
   startDate: string;
   endDate: string;
 };
 
 type TaskType = 'Recon' | 'Phishing' | 'Payload' | 'Post-Exploitation' | 'General';
+type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+type TaskStatus = 'To Do' | 'In Progress' | 'Completed';
 
 type Task = {
   id: string;
   projectId: string;
   description: string;
-  status: 'To Do' | 'In Progress' | 'Completed';
+  status: TaskStatus;
   type: TaskType;
+  priority: TaskPriority;
+  assignedTo?: string; // username
   targetProfileId?: string;
   templateId?: string;
 };
@@ -59,11 +66,11 @@ const initialProjects: Project[] = [
 ];
 
 const initialTasks: Task[] = [
-  { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon' },
-  { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001' },
-  { id: 'TSK-003', projectId: 'PROJ-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload' },
-  { id: 'TSK-004', projectId: 'PROJ-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon' },
-  { id: 'TSK-005', projectId: 'PROJ-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload' },
+  { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon', priority: 'High', assignedTo: 'analyst' },
+  { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001', priority: 'Medium', assignedTo: 'operator' },
+  { id: 'TSK-003', projectId: 'PROJ-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload', priority: 'High' },
+  { id: 'TSK-004', projectId: 'PROJ-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon', priority: 'Medium', assignedTo: 'analyst' },
+  { id: 'TSK-005', projectId: 'PROJ-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload', priority: 'Critical', assignedTo: 'operator' },
 ];
 
 const projectSchema = z.object({
@@ -77,6 +84,8 @@ const projectSchema = z.object({
 const taskSchema = z.object({
     description: z.string().min(3, 'Description must be at least 3 characters.'),
     type: z.string().min(1, 'Task type is required.'),
+    priority: z.string().min(1, 'Priority is required.'),
+    assignedTo: z.string().optional(),
     targetProfileId: z.string().optional(),
     templateId: z.string().optional(),
 });
@@ -88,17 +97,25 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 
   'On Hold': 'destructive',
 };
 
-const taskStatusIcons: { [key: string]: React.ReactNode } = {
+const taskStatusIcons: { [key in TaskStatus]: React.ReactNode } = {
   'To Do': <Circle className="h-4 w-4 text-muted-foreground" />,
   'In Progress': <CircleDot className="h-4 w-4 text-sky-400" />,
   'Completed': <CheckCircle2 className="h-4 w-4 text-green-400" />,
 }
+
+const priorityColors: { [key in TaskPriority]: string } = {
+    'Low': 'text-sky-400',
+    'Medium': 'text-amber-400',
+    'High': 'text-orange-500',
+    'Critical': 'text-destructive',
+};
 
 export default function ProjectManagementPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [filter, setFilter] = useState<ProjectStatus | 'All'>('All');
 
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
@@ -111,7 +128,7 @@ export default function ProjectManagementPage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user: currentUser, users: teamMembers } = useAuth();
   
   const projectForm = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -152,6 +169,11 @@ export default function ProjectManagementPage() {
     setTasks(newTasks);
     localStorage.setItem('netra-tasks', JSON.stringify(newTasks));
   }
+
+  const filteredProjects = useMemo(() => {
+    if (filter === 'All') return projects;
+    return projects.filter(p => p.status === filter);
+  }, [projects, filter]);
   
   // Project Handlers
   const handleCreateProject = () => {
@@ -185,7 +207,7 @@ export default function ProjectManagementPage() {
 
   const onProjectSubmit = async (values: z.infer<typeof projectSchema>) => {
     if(selectedProject) {
-      const updatedProjects = projects.map(c => c.id === selectedProject.id ? { ...c, ...values } : c );
+      const updatedProjects = projects.map(c => c.id === selectedProject.id ? { ...c, ...values, status: c.status } : c );
       updateProjects(updatedProjects);
       toast({ title: 'Project Updated', description: `Project "${values.name}" has been updated.` });
       setIsProjectFormOpen(false);
@@ -204,7 +226,7 @@ export default function ProjectManagementPage() {
     updateProjects([...projects, newProject]);
     toast({ title: 'Project Created', description: `New project "${values.name}" has been added.` });
     logActivity({
-        user: user?.displayName || 'Admin',
+        user: currentUser?.displayName || 'Admin',
         action: 'Created Project',
         details: `Project Name: ${newProject.name}`
     });
@@ -225,6 +247,7 @@ export default function ProjectManagementPage() {
                 description: task.description,
                 type: task.type as TaskType,
                 status: 'To Do',
+                priority: 'Medium',
             }));
             
             updateTasks([...tasks, ...newAiTasks]);
@@ -250,7 +273,7 @@ export default function ProjectManagementPage() {
   const handleAddTaskClick = (projectId: string) => {
     setEditingTask(null);
     setCurrentProjectIdForTask(projectId);
-    taskForm.reset({ description: '', type: 'General', targetProfileId: '', templateId: '' });
+    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '' });
     setIsTaskFormOpen(true);
   }
 
@@ -263,7 +286,7 @@ export default function ProjectManagementPage() {
   
   const onTaskSubmit = (values: z.infer<typeof taskSchema>) => {
       if (editingTask) {
-        const updatedTasks = tasks.map(t => t.id === editingTask.id ? { ...t, ...values } : t);
+        const updatedTasks = tasks.map(t => t.id === editingTask.id ? { ...t, ...values, type: values.type as TaskType, priority: values.priority as TaskPriority } : t);
         updateTasks(updatedTasks);
         toast({ title: "Task Updated" });
       } else if (currentProjectIdForTask) {
@@ -273,6 +296,7 @@ export default function ProjectManagementPage() {
             status: 'To Do',
             ...values,
             type: values.type as TaskType,
+            priority: values.priority as TaskPriority,
         };
         updateTasks([...tasks, newTask]);
         toast({ title: "Task Added" });
@@ -295,6 +319,13 @@ export default function ProjectManagementPage() {
   
   const getProfileName = (profileId?: string) => profiles.find(p => p.id === profileId)?.fullName || 'N/A';
   const getTemplateName = (templateId?: string) => templates.find(t => t.id === templateId)?.name || 'N/A';
+  
+  const getInitials = (name?: string) => {
+    if (!name) return '??';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const getAssignee = (username?: string) => teamMembers.find(m => m.username === username);
 
   return (
     <>
@@ -304,7 +335,7 @@ export default function ProjectManagementPage() {
           <p className="text-muted-foreground">Plan, oversee, and manage all red team projects and associated tasks.</p>
         </div>
 
-        <Tabs defaultValue="planner" className="w-full">
+        <Tabs defaultValue="projects" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="planner">AI Project Planner</TabsTrigger>
                 <TabsTrigger value="projects">Projects & Tasks</TabsTrigger>
@@ -314,16 +345,23 @@ export default function ProjectManagementPage() {
             </TabsContent>
             <TabsContent value="projects" className="mt-4">
                  <div className="flex items-center justify-between">
-                    <h2 className="font-headline text-2xl font-semibold">Active & Planned Projects</h2>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <Button variant={filter === 'All' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('All')}>All</Button>
+                            <Button variant={filter === 'Active' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('Active')}>Active</Button>
+                            <Button variant={filter === 'Planning' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('Planning')}>Planning</Button>
+                            <Button variant={filter === 'Completed' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('Completed')}>Completed</Button>
+                        </div>
+                    </div>
                     <Button onClick={handleCreateProject}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         New Project
                     </Button>
                 </div>
 
-                {projects.length > 0 ? (
+                {filteredProjects.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
-                    {projects.map((project) => {
+                    {filteredProjects.map((project) => {
                     const projectTasks = tasks.filter(t => t.projectId === project.id);
                     return (
                         <Card key={project.id} className="flex flex-col">
@@ -334,11 +372,7 @@ export default function ProjectManagementPage() {
                                 <CardDescription>Target: {project.target}</CardDescription>
                             </div>
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                                </DropdownMenuTrigger>
+                                <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => handleEditProject(project)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
@@ -363,37 +397,52 @@ export default function ProjectManagementPage() {
                                 </AccordionTrigger>
                                 <AccordionContent className="space-y-4">
                                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                                    {projectTasks.length > 0 ? projectTasks.map(task => (
-                                    <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
-                                        <div className="flex-grow">
-                                            <div className="flex items-center gap-2">
-                                                {taskStatusIcons[task.status]}
-                                                <span className="font-medium">{task.description}</span>
-                                                <Badge variant="outline">{task.type}</Badge>
-                                            </div>
-                                            {task.type === 'Phishing' && (
-                                                <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
-                                                    <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
-                                                    <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
+                                    {projectTasks.length > 0 ? projectTasks.map(task => {
+                                      const assignee = getAssignee(task.assignedTo);
+                                      return (
+                                        <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
+                                            <div className="flex-grow">
+                                                <div className="flex items-center gap-2">
+                                                    {taskStatusIcons[task.status]}
+                                                    <span className="font-medium">{task.description}</span>
+                                                    <Badge variant="outline">{task.type}</Badge>
                                                 </div>
-                                            )}
+                                                <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
+                                                    <div className="flex items-center gap-4">
+                                                        <TooltipProvider><Tooltip><TooltipTrigger>
+                                                          <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
+                                                        </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
+                                                        {assignee && (
+                                                            <TooltipProvider><Tooltip><TooltipTrigger>
+                                                               <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
+                                                            </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
+                                                        )}
+                                                    </div>
+                                                    {task.type === 'Phishing' && (
+                                                      <>
+                                                        <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
+                                                        <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
+                                                      </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <DropdownMenu>
+                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed')}>Completed</DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
-                                        <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed')}>Completed</DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                    )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
+                                      )
+                                    }) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
                                 </div>
                                 <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(project.id)}>
                                     <PlusCircle className="mr-2 h-4 w-4" /> Add Task
@@ -408,7 +457,7 @@ export default function ProjectManagementPage() {
                 </div>
                 ) : (
                 <Card className="flex flex-col items-center justify-center py-20 mt-4">
-                    <CardHeader><CardTitle>No Projects Yet</CardTitle><CardDescription>Click "New Project" to get started.</CardDescription></CardHeader>
+                    <CardHeader><CardTitle>No projects found with status "{filter}"</CardTitle><CardDescription>Try selecting a different filter.</CardDescription></CardHeader>
                 </Card>
                 )}
             </TabsContent>
@@ -469,16 +518,40 @@ export default function ProjectManagementPage() {
                     <Textarea id="task-description" {...taskForm.register('description')} />
                     {taskForm.formState.errors.description && <p className="text-sm text-destructive">{taskForm.formState.errors.description.message}</p>}
                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="task-type">Task Type</Label>
+                        <Select onValueChange={(v) => taskForm.setValue('type', v)} defaultValue={taskForm.getValues('type')}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="General">General</SelectItem>
+                                <SelectItem value="Recon">Recon</SelectItem>
+                                <SelectItem value="Phishing">Phishing</SelectItem>
+                                <SelectItem value="Payload">Payload</SelectItem>
+                                <SelectItem value="Post-Exploitation">Post-Exploitation</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="task-priority">Priority</Label>
+                        <Select onValueChange={(v) => taskForm.setValue('priority', v)} defaultValue={taskForm.getValues('priority')}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Low">Low</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
+                                <SelectItem value="Critical">Critical</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
                 <div className="space-y-2">
-                    <Label htmlFor="task-type">Task Type</Label>
-                     <Select onValueChange={(v) => taskForm.setValue('type', v)} defaultValue={taskForm.getValues('type')}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Label htmlFor="task-assignee">Assign To</Label>
+                    <Select onValueChange={(v) => taskForm.setValue('assignedTo', v)} defaultValue={taskForm.getValues('assignedTo')}>
+                        <SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="General">General</SelectItem>
-                            <SelectItem value="Recon">Recon</SelectItem>
-                            <SelectItem value="Phishing">Phishing</SelectItem>
-                            <SelectItem value="Payload">Payload</SelectItem>
-                            <SelectItem value="Post-Exploitation">Post-Exploitation</SelectItem>
+                            <SelectItem value="">Unassigned</SelectItem>
+                            {teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -527,3 +600,4 @@ export default function ProjectManagementPage() {
     </>
   );
 }
+
