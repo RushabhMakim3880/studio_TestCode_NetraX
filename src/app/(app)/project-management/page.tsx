@@ -588,10 +588,10 @@ export default function ProjectManagementPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="task-assignee">Assign To</Label>
-                    <Select onValueChange={(v) => taskForm.setValue('assignedTo', v)} defaultValue={taskForm.getValues('assignedTo')}>
+                    <Select onValueChange={(v) => taskForm.setValue('assignedTo', v === 'unassigned' ? '' : v)} defaultValue={taskForm.getValues('assignedTo')}>
                         <SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">Unassigned</SelectItem>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
                             {teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}
                         </SelectContent>
                     </Select>
