@@ -49,9 +49,8 @@ export const APP_MODULES: Module[] = [
     icon: BrainCircuit,
     roles: ALL_ROLES,
     subModules: [
-      { name: 'Cyber Intel', path: '/cyber-intel', icon: Shield, roles: ALL_ROLES },
-      { name: 'Profiling', path: '/profiling', icon: Target, roles: ALL_ROLES },
-      { name: 'Dark Web', path: '/dark-web', icon: Shell, roles: ALL_ROLES },
+      { name: 'OSINT Investigator', path: '/osint', icon: Fingerprint, roles: ALL_ROLES },
+      { name: 'Threat Intelligence', path: '/threat-intelligence', icon: Shield, roles: ALL_ROLES },
     ]
   },
    {
@@ -70,7 +69,6 @@ export const APP_MODULES: Module[] = [
     subModules: [
       { name: 'C2 Panel', path: '/c2', icon: Server, roles: ALL_ROLES },
       { name: 'Offensive Tools', path: '/offensive', icon: KeyRound, roles: ALL_ROLES },
-      { name: 'Developer Tools', path: '/dev-tools', icon: Wrench, roles: ALL_ROLES },
       { name: 'Anonymization', path: '/anonymization', icon: Waypoints, roles: ALL_ROLES },
     ]
   },
