@@ -50,7 +50,6 @@ export const APP_MODULES: Module[] = [
     roles: ALL_ROLES,
     subModules: [
       { name: 'Cyber Intel', path: '/cyber-intel', icon: Shield, roles: ALL_ROLES },
-      { name: 'OSINT', path: '/osint', icon: Fingerprint, roles: ALL_ROLES },
       { name: 'Profiling', path: '/profiling', icon: Target, roles: ALL_ROLES },
       { name: 'Dark Web', path: '/dark-web', icon: Shell, roles: ALL_ROLES },
     ]

@@ -1,23 +1,18 @@
 
 'use client';
 
-import { SocialMediaAnalyzer } from '@/components/social-media-analyzer';
-import { GoogleDorkGenerator } from '@/components/google-dork-generator';
-import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
-import { BreachDataChecker } from '@/components/breach-data-checker';
+import { CyberIntelPageContent } from '@/components/cyber-intel-page-content';
 
 export default function OsintPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-headline text-3xl font-semibold">OSINT Investigator</h1>
-        <p className="text-muted-foreground">Gather open-source intelligence on targets.</p>
+        <h1 className="font-headline text-3xl font-semibold">Cyber Intelligence</h1>
+        <p className="text-muted-foreground">Monitor and analyze the latest cyber threats and gather open-source intelligence.</p>
       </div>
-      
-      <BreachDataChecker />
-      <SocialMediaAnalyzer />
-      <GoogleDorkGenerator />
-      <ShodanDorkGenerator />
+
+      <CyberIntelPageContent />
+
     </div>
   );
 }
