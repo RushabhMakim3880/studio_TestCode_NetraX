@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react';
 import { Logo } from '@/components/logo';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import type { User } from '@/hooks/use-auth';
 
-const loadingSteps = [
+const getLoadingSteps = (username?: string) => [
   'Initializing NETRA-X Core...',
   'Establishing secure kernel connection...',
   'Loading RBAC policies...',
@@ -14,12 +15,17 @@ const loadingSteps = [
   'Verifying system integrity...',
   'Mounting offensive toolkits...',
   'Finalizing UI...',
-  'Welcome, Operator.',
+  `Welcome, ${username || 'Operator'}.`,
 ];
 
-export default function SplashScreen() {
+type SplashScreenProps = {
+  user: User | null;
+};
+
+export default function SplashScreen({ user }: SplashScreenProps) {
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(0);
+  const loadingSteps = getLoadingSteps(user?.displayName);
 
   useEffect(() => {
     const stepInterval = setInterval(() => {
@@ -41,7 +47,7 @@ export default function SplashScreen() {
       clearInterval(stepInterval);
       clearInterval(progressInterval);
     };
-  }, []);
+  }, [loadingSteps.length]);
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 font-mono">

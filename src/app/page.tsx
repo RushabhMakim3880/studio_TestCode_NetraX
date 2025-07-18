@@ -28,5 +28,5 @@ export default function Home() {
     }
   }, [loading, isAuthLoading, user, router]);
 
-  return <SplashScreen />;
+  return <SplashScreen user={user} />;
 }
