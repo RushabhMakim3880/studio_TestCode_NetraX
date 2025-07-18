@@ -28,7 +28,8 @@ export function NetworkStatus() {
     const fetchNetworkStatus = async () => {
        try {
         const startTime = Date.now();
-        const response = await fetch('https://api.ipify.org?format=json');
+        // Add cache: 'no-store' to prevent some browser extensions from interfering.
+        const response = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
         const endTime = Date.now();
         
         if (!response.ok) throw new Error('Failed to fetch IP');
@@ -44,7 +45,8 @@ export function NetworkStatus() {
 
       } catch (error) {
         console.error("Network check failed:", error);
-        setStatus(prev => ({ ...prev, isOnline: false, ip: 'N/A', ping: null }));
+        // Provide a more helpful error message.
+        setStatus(prev => ({ ...prev, isOnline: false, ip: 'Blocked', ping: null }));
       } finally {
         setIsLoading(false);
       }
