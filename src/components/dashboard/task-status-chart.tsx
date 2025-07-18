@@ -13,6 +13,7 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart';
 import { ClipboardList } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 type Task = {
   id: string;
@@ -28,28 +29,25 @@ const chartConfig = {
 
 export function TaskStatusChart() {
   const [chartData, setChartData] = useState<{ name: keyof typeof chartConfig; value: number; fill: string; }[]>([]);
+  const { value: allTasks } = useLocalStorage<Task[]>('netra-tasks', []);
 
   useEffect(() => {
-    try {
-      const storedTasks = localStorage.getItem('netra-tasks');
-      const allTasks: Task[] = storedTasks ? JSON.parse(storedTasks) : [];
-      
-      const statusCounts = allTasks.reduce((acc, task) => {
-        acc[task.status] = (acc[task.status] || 0) + 1;
-        return acc;
-      }, {} as Record<Task['status'], number>);
-      
-      const data = Object.entries(statusCounts).map(([name, value]) => ({
-        name: name as keyof typeof chartConfig,
-        value,
-        fill: chartConfig[name as keyof typeof chartConfig].color,
-      }));
-      setChartData(data);
-
-    } catch (error) {
-      console.error('Failed to load task data from localStorage', error);
+    if (allTasks.length > 0) {
+        const statusCounts = allTasks.reduce((acc, task) => {
+            acc[task.status] = (acc[task.status] || 0) + 1;
+            return acc;
+        }, {} as Record<Task['status'], number>);
+        
+        const data = Object.entries(statusCounts).map(([name, value]) => ({
+            name: name as keyof typeof chartConfig,
+            value,
+            fill: chartConfig[name as keyof typeof chartConfig].color,
+        }));
+        setChartData(data);
+    } else {
+        setChartData([]);
     }
-  }, []);
+  }, [allTasks]);
 
   return (
     <Card>

@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Briefcase, FolderSearch } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 type Project = {
   id: string;
@@ -34,30 +34,23 @@ const chartConfig = {
 
 export function ProjectsBarChart() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const { value: allProjects } = useLocalStorage<Project[]>('netra-projects', []);
+  const { value: allTasks } = useLocalStorage<Task[]>('netra-tasks', []);
 
   useEffect(() => {
-    try {
-      const storedProjects = localStorage.getItem('netra-projects');
-      const allProjects: Project[] = storedProjects ? JSON.parse(storedProjects) : [];
-      const activeProjects = allProjects.filter((p: Project) => p.status === 'Active');
+    const activeProjects = allProjects.filter((p: Project) => p.status === 'Active');
 
-      const storedTasks = localStorage.getItem('netra-tasks');
-      const allTasks: Task[] = storedTasks ? JSON.parse(storedTasks) : [];
+    const data: ChartData[] = activeProjects.map(project => {
+      const projectTasks = allTasks.filter(t => t.projectId === project.id);
+      if (projectTasks.length === 0) return { name: project.name, progress: 0 };
+      const completedTasks = projectTasks.filter(t => t.status === 'Completed').length;
+      const progress = Math.round((completedTasks / projectTasks.length) * 100);
+      return { name: project.name, progress };
+    });
+    
+    setChartData(data);
 
-      const data: ChartData[] = activeProjects.map(project => {
-        const projectTasks = allTasks.filter(t => t.projectId === project.id);
-        if (projectTasks.length === 0) return { name: project.name, progress: 0 };
-        const completedTasks = projectTasks.filter(t => t.status === 'Completed').length;
-        const progress = Math.round((completedTasks / projectTasks.length) * 100);
-        return { name: project.name, progress };
-      });
-      
-      setChartData(data);
-
-    } catch (error) {
-      console.error('Failed to load project data from localStorage', error);
-    }
-  }, []);
+  }, [allProjects, allTasks]);
 
   return (
     <Card className="flex-grow">
