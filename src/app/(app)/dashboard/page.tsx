@@ -8,6 +8,7 @@ import { SystemInfo } from '@/components/dashboard/system-info';
 import { ThreatIntelSummary } from '@/components/dashboard/threat-intel-summary';
 import { UserStats } from '@/components/dashboard/user-stats';
 import { ROLES } from '@/lib/constants';
+import { NetworkStatus } from '@/components/dashboard/network-status';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -20,8 +21,9 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full flex flex-col gap-4">
-      <div className={`grid grid-cols-1 lg:grid-cols-${isAdmin ? '4' : '3'} gap-4`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-${isAdmin ? '5' : '4'} gap-4`}>
           <SystemInfo />
+          <NetworkStatus />
           <ThreatIntelSummary />
           <ActiveProjects />
           {isAdmin && <UserStats />}
