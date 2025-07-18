@@ -5,6 +5,7 @@ import { createContext, useState, useEffect, type ReactNode, useCallback } from 
 import { useRouter } from 'next/navigation';
 import { ROLES, type Role, getAllModuleNamesForRole } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
+import { DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboard-cards';
 
 export type User = {
   username: string;
@@ -14,6 +15,7 @@ export type User = {
   password?: string; // Should be hashed in a real app
   lastLogin?: string;
   enabledModules?: string[];
+  dashboardLayout?: string[];
 };
 
 type LoginCredentials = Pick<User, 'username' | 'password'>;
@@ -38,10 +40,10 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const seedUsers: User[] = [
-    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN) },
-    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST) },
-    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR) },
-    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR) },
+    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
+    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
+    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
+    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
 ];
 
 
@@ -69,10 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedUsersJSON = localStorage.getItem('netra-users');
       let allUsers: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : seedUsers;
 
-      // Data migration for users in localStorage that don't have enabledModules
+      // Data migration for users in localStorage that don't have enabledModules or dashboardLayout
       const migratedUsers = allUsers.map((u: User) => {
+          let needsUpdate = false;
           if (!u.enabledModules) {
-              return { ...u, enabledModules: getAllModuleNamesForRole(u.role) };
+              u.enabledModules = getAllModuleNamesForRole(u.role);
+              needsUpdate = true;
+          }
+          if (!u.dashboardLayout) {
+              u.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT;
+              needsUpdate = true;
           }
           return u;
       });
@@ -87,8 +95,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (storedCurrentUserJSON) {
         let currentUser: User = JSON.parse(storedCurrentUserJSON);
         // Also migrate the current user object if needed
+        let currentUserNeedsUpdate = false;
         if (!currentUser.enabledModules) {
-            currentUser = { ...currentUser, enabledModules: getAllModuleNamesForRole(currentUser.role) };
+            currentUser.enabledModules = getAllModuleNamesForRole(currentUser.role);
+            currentUserNeedsUpdate = true;
+        }
+        if (!currentUser.dashboardLayout) {
+            currentUser.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT;
+            currentUserNeedsUpdate = true;
+        }
+        if(currentUserNeedsUpdate) {
             localStorage.setItem('netra-currentUser', JSON.stringify(currentUser));
         }
         setUser(currentUser);
@@ -133,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         lastLogin: new Date().toISOString(),
         avatarUrl: null,
         enabledModules: getAllModuleNamesForRole(credentials.role),
+        dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
     };
     const updatedUsers = [...users, newUser];
     

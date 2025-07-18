@@ -2,16 +2,10 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { ActivityFeed } from '@/components/activity-feed';
-import { SystemInfo } from '@/components/dashboard/system-info';
-import { ThreatIntelSummary } from '@/components/dashboard/threat-intel-summary';
-import { UserStats } from '@/components/dashboard/user-stats';
 import { ROLES } from '@/lib/constants';
-import { NetworkStatus } from '@/components/dashboard/network-status';
-import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
-import { UserRoleChart } from '@/components/dashboard/user-role-chart';
-import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
-import { UserPerformanceChart } from '@/components/dashboard/user-performance-chart';
+import { AVAILABLE_DASHBOARD_CARDS } from '@/lib/dashboard-cards';
+import { DashboardLayoutManager } from '@/components/dashboard/dashboard-layout-manager';
+import { LayoutGrid } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -20,27 +14,37 @@ export default function DashboardPage() {
     return null;
   }
   
-  const isAdmin = user.role === ROLES.ADMIN;
+  const visibleCardIds = user.dashboardLayout || [];
+  const visibleCards = AVAILABLE_DASHBOARD_CARDS.filter(card => visibleCardIds.includes(card.id));
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 h-full">
-        <div className="xl:col-span-1 flex flex-col gap-6">
-            <SystemInfo />
-            <NetworkStatus />
-            {isAdmin && <UserStats />}
+    <div className="flex flex-col gap-6 h-full">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-headline text-3xl font-semibold">Dashboard</h1>
+          <p className="text-muted-foreground">Your operational command center.</p>
         </div>
-        <div className="xl:col-span-2 flex flex-col gap-6">
-            <ProjectsBarChart />
-            <div className="grid md:grid-cols-2 gap-6">
-                <TaskStatusChart />
-                <UserRoleChart />
-            </div>
-             <UserPerformanceChart />
+        <DashboardLayoutManager />
+      </div>
+
+      {visibleCards.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {visibleCards.map(card => {
+            const CardComponent = card.component;
+            return (
+              <div key={card.id} className={card.className || 'xl:col-span-1'}>
+                <CardComponent />
+              </div>
+            );
+          })}
         </div>
-        <div className="xl:col-span-1 flex flex-col gap-6">
-            <ThreatIntelSummary />
-            <ActivityFeed />
+      ) : (
+         <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg text-center">
+            <LayoutGrid className="h-16 w-16 text-muted-foreground/50 mb-4"/>
+            <h3 className="text-xl font-semibold">Your Dashboard is Empty</h3>
+            <p className="text-muted-foreground mt-2">Click "Customize Layout" to add some cards.</p>
         </div>
+      )}
     </div>
   );
 }
