@@ -20,17 +20,17 @@ export default function DashboardPage() {
   const isAdmin = user.role === ROLES.ADMIN;
 
   return (
-    <div className="h-full flex flex-col gap-4">
-      <div className={`grid grid-cols-1 lg:grid-cols-${isAdmin ? '5' : '4'} gap-4`}>
-          <SystemInfo />
-          <NetworkStatus />
-          <ThreatIntelSummary />
-          <ActiveProjects />
-          {isAdmin && <UserStats />}
-      </div>
-      <div className="grid grid-cols-1 flex-grow">
-          <ActivityFeed />
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
+            <SystemInfo />
+            <NetworkStatus />
+            <ThreatIntelSummary />
+            <ActiveProjects />
+            {isAdmin && <UserStats />}
+        </div>
+        <div className="lg:col-span-1">
+            <ActivityFeed />
+        </div>
     </div>
   );
 }
