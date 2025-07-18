@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Briefcase, FolderSearch } from 'lucide-react';
@@ -68,7 +68,7 @@ export function ProjectsBarChart() {
               accessibilityLayer
               data={chartData}
               layout="vertical"
-              margin={{ left: 10, right: 10 }}
+              margin={{ left: 10, right: 40 }}
             >
               <CartesianGrid horizontal={false} />
               <YAxis
@@ -82,20 +82,14 @@ export function ProjectsBarChart() {
               />
               <XAxis dataKey="progress" type="number" hide />
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-              <Bar dataKey="progress" layout="vertical" fill="var(--color-progress)" radius={4}>
-                 {chartData.map((entry, index) => (
-                    <text
-                        key={`label-${index}`}
-                        x={entry.progress - 20}
-                        y={index * 35 + 20}
-                        fill="hsl(var(--primary-foreground))"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="text-xs font-bold"
-                    >
-                        {`${entry.progress}%`}
-                    </text>
-                 ))}
+              <Bar dataKey="progress" layout="vertical" fill="var(--color-chart-1)" radius={4}>
+                 <LabelList
+                    dataKey="progress"
+                    position="right"
+                    offset={8}
+                    className="fill-foreground text-sm"
+                    formatter={(value: number) => `${value}%`}
+                />
               </Bar>
             </BarChart>
           </ChartContainer>
