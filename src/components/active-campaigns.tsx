@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { clonePageFromUrl } from 'workspace/src/ai/flows/clone-page-from-url-flow';
+import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { startNgrokTunnel, getNgrokTunnelUrl } from '@/services/ngrok-service';
 
 const clonerSchema = z.object({
