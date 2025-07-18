@@ -69,7 +69,7 @@ export function ComplianceAndLegalReference() {
       <CardHeader>
         <div className="flex items-center gap-3">
             <Scale className="h-6 w-6" />
-            <CardTitle>Compliance & Legal Reference</CardTitle>
+            <CardTitle>Compliance &amp; Legal Reference</CardTitle>
         </div>
         <CardDescription>A quick reference guide for cyber laws, reporting, and compliance standards.</CardDescription>
       </CardHeader>
@@ -167,7 +167,7 @@ export function ComplianceAndLegalReference() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-5">
-            <AccordionTrigger className="text-lg">ISO/IEC 27001 & ISMS</AccordionTrigger>
+            <AccordionTrigger className="text-lg">ISO/IEC 27001 &amp; ISMS</AccordionTrigger>
             <AccordionContent className="pt-2 space-y-4">
                 <p className="text-sm text-muted-foreground">ISO/IEC 27001 is the leading international standard for an Information Security Management System (ISMS), focusing on Confidentiality, Integrity, and Availability (CIA triad).</p>
                 <Card>
