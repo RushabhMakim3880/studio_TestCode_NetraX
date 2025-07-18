@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Pie, PieChart, Cell } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
@@ -23,16 +23,9 @@ const chartConfig = {
   [ROLES.AUDITOR]: { label: 'Auditor', color: 'hsl(var(--chart-4))' },
 } satisfies ChartConfig;
 
-const COLORS = {
-  [ROLES.ADMIN]: 'hsl(var(--chart-1))',
-  [ROLES.ANALYST]: 'hsl(var(--chart-2))',
-  [ROLES.OPERATOR]: 'hsl(var(--chart-3))',
-  [ROLES.AUDITOR]: 'hsl(var(--chart-4))',
-};
-
 export function UserRoleChart() {
   const { users } = useAuth();
-  const [chartData, setChartData] = useState<{ name: keyof typeof chartConfig; value: number }[]>([]);
+  const [chartData, setChartData] = useState<{ name: keyof typeof chartConfig; value: number; fill: string; }[]>([]);
 
   useEffect(() => {
     if (users.length > 0) {
@@ -44,6 +37,7 @@ export function UserRoleChart() {
       const data = Object.entries(roleCounts).map(([name, value]) => ({
         name: name as keyof typeof chartConfig,
         value,
+        fill: chartConfig[name as keyof typeof chartConfig].color,
       }));
       setChartData(data);
     }
@@ -56,18 +50,18 @@ export function UserRoleChart() {
             <Users />
             User Roles
         </CardTitle>
+         <CardDescription>Breakdown of users by assigned role.</CardDescription>
       </CardHeader>
       <CardContent>
          {chartData.length > 0 ? (
           <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[200px]">
             <PieChart>
-              <ChartTooltip content={<ChartTooltipContent nameKey="value" hideLabel />} />
+              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
               <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={50} strokeWidth={2}>
                  {chartData.map((entry) => (
                   <Cell
                     key={entry.name}
-                    fill={COLORS[entry.name]}
-                    stroke={COLORS[entry.name]}
+                    fill={entry.fill}
                   />
                 ))}
               </Pie>

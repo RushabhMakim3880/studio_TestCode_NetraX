@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Pie, PieChart, Cell } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
@@ -21,19 +21,13 @@ type Task = {
 };
 
 const chartConfig = {
-  'To Do': { label: 'To Do', color: 'hsl(var(--secondary-foreground))' },
+  'To Do': { label: 'To Do', color: 'hsl(var(--chart-3))' },
   'In Progress': { label: 'In Progress', color: 'hsl(var(--chart-2))' },
   'Completed': { label: 'Completed', color: 'hsl(var(--chart-1))' },
 } satisfies ChartConfig;
 
-const COLORS = {
-    'To Do': 'hsl(var(--secondary-foreground) / 0.5)',
-    'In Progress': 'hsl(var(--chart-2))',
-    'Completed': 'hsl(var(--chart-1))',
-};
-
 export function TaskStatusChart() {
-  const [chartData, setChartData] = useState<{ name: keyof typeof chartConfig; value: number }[]>([]);
+  const [chartData, setChartData] = useState<{ name: keyof typeof chartConfig; value: number; fill: string; }[]>([]);
 
   useEffect(() => {
     try {
@@ -48,6 +42,7 @@ export function TaskStatusChart() {
       const data = Object.entries(statusCounts).map(([name, value]) => ({
         name: name as keyof typeof chartConfig,
         value,
+        fill: chartConfig[name as keyof typeof chartConfig].color,
       }));
       setChartData(data);
 
@@ -61,21 +56,18 @@ export function TaskStatusChart() {
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-lg">
             <ClipboardList />
-            Task Distribution
+            Task Status
         </CardTitle>
+        <CardDescription>Distribution of all tasks by status.</CardDescription>
       </CardHeader>
       <CardContent>
          {chartData.length > 0 ? (
           <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[200px]">
             <PieChart>
-              <ChartTooltip content={<ChartTooltipContent nameKey="value" hideLabel />} />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
               <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={50} strokeWidth={2}>
                  {chartData.map((entry) => (
-                  <Cell
-                    key={entry.name}
-                    fill={COLORS[entry.name]}
-                    stroke={COLORS[entry.name]}
-                  />
+                  <Cell key={entry.name} fill={entry.fill} />
                 ))}
               </Pie>
               <ChartLegend content={<ChartLegendContent nameKey="name" />} />

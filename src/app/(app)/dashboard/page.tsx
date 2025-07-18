@@ -10,8 +10,7 @@ import { ROLES } from '@/lib/constants';
 import { NetworkStatus } from '@/components/dashboard/network-status';
 import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
 import { UserRoleChart } from '@/components/dashboard/user-role-chart';
-import { ComplianceAndLegalReference } from '@/components/compliance-legal-reference';
-
+import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -23,25 +22,22 @@ export default function DashboardPage() {
   const isAdmin = user.role === ROLES.ADMIN;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
-            {/* Info cards */}
+    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 h-full">
+        <div className="xl:col-span-1 flex flex-col gap-6">
             <SystemInfo />
             <NetworkStatus />
-            <ThreatIntelSummary />
             {isAdmin && <UserStats />}
-            
-            {/* Chart cards */}
-            <div className="md:col-span-1">
+        </div>
+        <div className="xl:col-span-2 flex flex-col gap-6">
+            <ProjectsBarChart />
+            <div className="grid md:grid-cols-2 gap-6">
                 <TaskStatusChart />
-            </div>
-            <div className="md:col-span-1">
                 <UserRoleChart />
             </div>
         </div>
-        <div className="lg:col-span-1 flex flex-col gap-6">
+        <div className="xl:col-span-1 flex flex-col gap-6">
+            <ThreatIntelSummary />
             <ActivityFeed />
-            <ComplianceAndLegalReference />
         </div>
     </div>
   );
