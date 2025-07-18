@@ -11,6 +11,7 @@ import { NetworkStatus } from '@/components/dashboard/network-status';
 import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
 import { UserRoleChart } from '@/components/dashboard/user-role-chart';
 import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
+import { UserPerformanceChart } from '@/components/dashboard/user-performance-chart';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -34,6 +35,7 @@ export default function DashboardPage() {
                 <TaskStatusChart />
                 <UserRoleChart />
             </div>
+             <UserPerformanceChart />
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
             <ThreatIntelSummary />
