@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useAuth } from "@/hooks/use-auth"
-import type { SidebarSettingsConfig } from "../sidebar-settings"
+import type { PageSettings } from "../settings/page-settings-manager"
 
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
@@ -35,7 +35,7 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
-  collapsible: SidebarSettingsConfig['collapsible']
+  collapsible: PageSettings['sidebar']['collapsible']
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -67,7 +67,7 @@ const SidebarProvider = React.forwardRef<
     const [openMobile, setOpenMobile] = React.useState(false)
 
     // The user's preferred collapsible behavior
-    const collapsible = user?.sidebarSettings?.collapsible || 'icon';
+    const collapsible = user?.pageSettings?.sidebar.collapsible || 'icon';
     
     // Internal state of the sidebar. Default to open unless collapsible is offcanvas.
     const [_open, _setOpen] = React.useState(collapsible !== 'offcanvas');

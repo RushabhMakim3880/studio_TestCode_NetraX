@@ -7,7 +7,6 @@ import { CompanyProfileManager } from '@/components/company-profile-manager';
 import { CustomThemeGenerator } from '@/components/custom-theme-generator';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
-import { SidebarSettings } from '@/components/sidebar-settings';
 import { PageSettingsManager } from '@/components/settings/page-settings-manager';
 
 export default function SettingsPage() {
@@ -25,7 +24,6 @@ export default function SettingsPage() {
       <ApiKeysManager />
       <EmailSettings />
       <PageSettingsManager />
-      <SidebarSettings />
       <AppearanceSettings />
       <CustomThemeGenerator />
       <CompanyProfileManager />

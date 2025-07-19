@@ -75,13 +75,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let allUsers: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : seedUsers;
 
       // Data migration for users in localStorage that don't have new properties
-      const migratedUsers = allUsers.map((u: User) => {
+      const migratedUsers = allUsers.map((u: any) => { // Use any to handle old structure
           let needsUpdate = false;
           if (!u.enabledModules) { u.enabledModules = getAllModuleNamesForRole(u.role); needsUpdate = true; }
           if (!u.dashboardLayout) { u.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; needsUpdate = true; }
-          if (!u.pageSettings) { u.pageSettings = defaultPageSettings; needsUpdate = true; }
           
-          return u;
+          if (!u.pageSettings) {
+            u.pageSettings = defaultPageSettings;
+            // if old sidebarSettings exist, migrate them
+            if (u.sidebarSettings) {
+                u.pageSettings.sidebar = u.sidebarSettings;
+            }
+            needsUpdate = true;
+          }
+          // Remove the old sidebarSettings property
+          if (u.sidebarSettings) {
+            delete u.sidebarSettings;
+            needsUpdate = true;
+          }
+          
+          return u as User;
       });
 
       setUsers(migratedUsers);
@@ -92,11 +105,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const storedCurrentUserJSON = localStorage.getItem('netra-currentUser');
       if (storedCurrentUserJSON) {
-        let currentUser: User = JSON.parse(storedCurrentUserJSON);
+        let currentUser: any = JSON.parse(storedCurrentUserJSON);
         let currentUserNeedsUpdate = false;
         if (!currentUser.enabledModules) { currentUser.enabledModules = getAllModuleNamesForRole(currentUser.role); currentUserNeedsUpdate = true; }
         if (!currentUser.dashboardLayout) { currentUser.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; currentUserNeedsUpdate = true; }
-        if (!currentUser.pageSettings) { currentUser.pageSettings = defaultPageSettings; currentUserNeedsUpdate = true; }
+        
+        if (!currentUser.pageSettings) {
+            currentUser.pageSettings = defaultPageSettings;
+             if (currentUser.sidebarSettings) {
+                currentUser.pageSettings.sidebar = currentUser.sidebarSettings;
+            }
+            currentUserNeedsUpdate = true;
+        }
+        if (currentUser.sidebarSettings) {
+           delete currentUser.sidebarSettings;
+           currentUserNeedsUpdate = true;
+        }
         
         if(currentUserNeedsUpdate) {
             localStorage.setItem('netra-currentUser', JSON.stringify(currentUser));
