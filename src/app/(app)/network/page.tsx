@@ -1,10 +1,8 @@
 
 'use client';
 
-import { DnsLookup } from '@/components/dns-lookup';
 import { RealPortScanner } from '@/components/real-port-scanner';
 import { SubdomainScanner } from '@/components/subdomain-scanner';
-import { WhoisLookup } from '@/components/whois-lookup';
 
 export default function NetworkAnalysisPage() {
 
@@ -15,8 +13,6 @@ export default function NetworkAnalysisPage() {
         <p className="text-muted-foreground">Tools for live network reconnaissance and analysis.</p>
       </div>
 
-      <WhoisLookup />
-      <DnsLookup />
       <SubdomainScanner />
       <RealPortScanner />
     </div>

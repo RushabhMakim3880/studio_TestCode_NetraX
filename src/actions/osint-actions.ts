@@ -46,13 +46,19 @@ export type DnsRecord = {
 
 /**
  * Performs a DNS lookup for a given domain and record type.
- * @param domain - The domain name to query.
- * @param recordType - The type of DNS record (e.g., 'A', 'MX').
+ * @param domain - The domain name or IP address to query.
+ * @param recordType - The type of DNS record (e.g., 'A', 'MX', 'PTR').
  * @returns A promise that resolves to an array of DnsRecord objects.
  */
 export async function dnsLookup(domain: string, recordType: string): Promise<DnsRecord[]> {
   try {
     const resolver = new dns.Resolver();
+    
+    if (recordType === 'PTR') {
+        const records = await resolver.reverse(domain);
+        return records.map(r => ({ type: recordType, value: r, ttl: 0 }));
+    }
+
     const records = await resolver.resolve(domain, recordType);
 
     if (Array.isArray(records)) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -13,10 +14,10 @@ import { dnsLookup, DnsRecord } from '@/actions/osint-actions';
 import { Loader2, AlertTriangle, BookKey } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
-const recordTypes = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA'];
+const recordTypes = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'PTR'];
 
 const formSchema = z.object({
-  domain: z.string().min(3, { message: 'Please enter a valid domain name.' }),
+  domain: z.string().min(3, { message: 'Please enter a valid domain or IP address.' }),
   recordType: z.string().min(1),
 });
 
@@ -55,7 +56,7 @@ export function DnsLookup() {
           <BookKey className="h-6 w-6" />
           <CardTitle>DNS Record Lookup</CardTitle>
         </div>
-        <CardDescription>Query DNS records for a specific domain.</CardDescription>
+        <CardDescription>Query DNS records for a domain, or perform a reverse lookup (PTR) on an IP.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -65,8 +66,8 @@ export function DnsLookup() {
               name="domain"
               render={({ field }) => (
                 <FormItem className="flex-grow w-full">
-                  <FormLabel>Domain Name</FormLabel>
-                  <FormControl><Input placeholder="e.g., example.com" {...field} /></FormControl>
+                  <FormLabel>Domain or IP Address</FormLabel>
+                  <FormControl><Input placeholder="e.g., example.com or 8.8.8.8" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}

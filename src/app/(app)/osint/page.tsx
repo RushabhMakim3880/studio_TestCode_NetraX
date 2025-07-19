@@ -9,6 +9,8 @@ import { MetadataScrubber } from '@/components/metadata-scrubber';
 import { EmailHeaderAnalyzer } from '@/components/email-header-analyzer';
 import { DataObfuscator } from '@/components/data-obfuscator';
 import { IocExtractor } from '@/components/ioc-extractor';
+import { WhoisLookup } from '@/components/whois-lookup';
+import { DnsLookup } from '@/components/dns-lookup';
 
 export default function OsintPage() {
   return (
@@ -18,6 +20,8 @@ export default function OsintPage() {
         <p className="text-muted-foreground">A collection of tools for open-source intelligence gathering and data analysis.</p>
       </div>
       
+      <WhoisLookup />
+      <DnsLookup />
       <BreachDataChecker />
       <SocialMediaAnalyzer />
       <IocExtractor />
