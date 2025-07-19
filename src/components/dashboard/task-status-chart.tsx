@@ -12,7 +12,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from '@/components/ui/chart';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, FolderSearch } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 type Task = {
@@ -56,7 +56,7 @@ export function TaskStatusChart() {
             <ClipboardList />
             Task Status
         </CardTitle>
-        <CardDescription>Distribution of all tasks by status.</CardDescription>
+         <CardDescription>Distribution of all tasks by status.</CardDescription>
       </CardHeader>
       <CardContent>
          {chartData.length > 0 ? (
@@ -72,8 +72,10 @@ export function TaskStatusChart() {
             </PieChart>
           </ChartContainer>
         ) : (
-            <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                No task data available.
+            <div className="h-[200px] flex flex-col items-center justify-center text-muted-foreground text-center">
+                <FolderSearch className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-sm">No task data available.</p>
+                <p className="text-xs">Add tasks in the Project Management module.</p>
             </div>
         )}
       </CardContent>

@@ -72,17 +72,19 @@ export function ActivityFeed() {
           </div>
         )}
         {!isLoading && feed.length === 0 && (
-            <div className="text-center text-muted-foreground h-full flex items-center justify-center">
-                <p>No activities yet.</p>
+            <div className="text-center text-muted-foreground h-full flex flex-col items-center justify-center p-4">
+                <History className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="font-semibold">No recent activity</p>
+                <p className="text-sm">Actions performed will appear here.</p>
             </div>
         )}
         {!isLoading && feed.length > 0 && (
           <div className="space-y-6">
-            {feed.map((item) => (
+            {feed.map((item, index) => (
               <div key={item.id} className="relative pl-8">
                  <div className="absolute left-0 top-1 h-full">
                     <span className="absolute left-[7px] top-[5px] h-2 w-2 rounded-full bg-accent ring-2 ring-background"></span>
-                    {item.id !== feed[feed.length - 1].id && <div className="absolute left-[10px] top-[14px] h-full w-px bg-border"></div>}
+                    {index !== feed.length - 1 && <div className="absolute left-[10px] top-[14px] h-full w-px bg-border"></div>}
                 </div>
                 <div className="flex items-start justify-between">
                     <div>

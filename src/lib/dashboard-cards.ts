@@ -27,7 +27,7 @@ export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
     description: 'Displays basic system and session information.',
     icon: Server,
     component: SystemInfo,
-    className: 'xl:col-span-1',
+    className: 'md:col-span-1',
   },
   {
     id: 'network-status',
@@ -35,7 +35,7 @@ export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
     description: 'Shows live network connectivity and speed data.',
     icon: Wifi,
     component: NetworkStatus,
-    className: 'xl:col-span-1',
+    className: 'md:col-span-1',
   },
   {
     id: 'user-stats',
@@ -43,39 +43,7 @@ export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
     description: 'Provides a quick link to user management.',
     icon: Users,
     component: UserStats,
-    className: 'xl:col-span-1',
-  },
-  {
-    id: 'project-progress',
-    title: 'Active Project Progress',
-    description: 'Bar chart showing the progress of active projects.',
-    icon: Briefcase,
-    component: ProjectsBarChart,
-    className: 'xl:col-span-2 md:col-span-2',
-  },
-  {
-    id: 'task-status',
-    title: 'Task Status',
-    description: 'Pie chart of all tasks by their current status.',
-    icon: ClipboardList,
-    component: TaskStatusChart,
-    className: 'xl:col-span-1 md:col-span-1',
-  },
-  {
-    id: 'user-roles',
-    title: 'User Roles',
-    description: 'Pie chart showing the breakdown of user roles.',
-    icon: UserCog,
-    component: UserRoleChart,
-    className: 'xl:col-span-1 md:col-span-1',
-  },
-  {
-    id: 'user-performance',
-    title: 'User Performance',
-    description: 'Chart of completed tasks per user.',
-    icon: Award,
-    component: UserPerformanceChart,
-    className: 'xl:col-span-2 md:col-span-2',
+    className: 'md:col-span-1',
   },
   {
     id: 'threat-intel',
@@ -83,7 +51,39 @@ export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
     description: 'A summary of the latest high-priority CVEs.',
     icon: Rss,
     component: ThreatIntelSummary,
-    className: 'xl:col-span-1',
+    className: 'md:col-span-1',
+  },
+  {
+    id: 'project-progress',
+    title: 'Active Project Progress',
+    description: 'Bar chart showing the progress of active projects.',
+    icon: Briefcase,
+    component: ProjectsBarChart,
+    className: 'md:col-span-2',
+  },
+  {
+    id: 'task-status',
+    title: 'Task Status',
+    description: 'Pie chart of all tasks by their current status.',
+    icon: ClipboardList,
+    component: TaskStatusChart,
+    className: 'md:col-span-1',
+  },
+  {
+    id: 'user-roles',
+    title: 'User Roles',
+    description: 'Pie chart showing the breakdown of user roles.',
+    icon: UserCog,
+    component: UserRoleChart,
+    className: 'md:col-span-1',
+  },
+  {
+    id: 'user-performance',
+    title: 'User Performance',
+    description: 'Chart of completed tasks per user.',
+    icon: Award,
+    component: UserPerformanceChart,
+    className: 'md:col-span-2',
   },
   {
     id: 'activity-feed',
@@ -91,7 +91,7 @@ export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
     description: 'A live feed of recent user actions on the platform.',
     icon: History,
     component: ActivityFeed,
-    className: 'xl:col-span-1 md:col-span-2',
+    className: 'md:col-span-2 xl:col-span-1',
   },
 ];
 
@@ -99,10 +99,11 @@ export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
 export const DEFAULT_DASHBOARD_LAYOUT = [
     'system-info',
     'network-status',
+    'user-stats',
+    'threat-intel',
     'project-progress',
     'task-status',
     'user-roles',
-    'user-performance',
-    'threat-intel',
-    'activity-feed'
+    'activity-feed',
+    'user-performance'
 ];

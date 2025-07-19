@@ -2,7 +2,6 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { ROLES } from '@/lib/constants';
 import { AVAILABLE_DASHBOARD_CARDS } from '@/lib/dashboard-cards';
 import { DashboardLayoutManager } from '@/components/dashboard/dashboard-layout-manager';
 import { LayoutGrid } from 'lucide-react';
@@ -17,6 +16,9 @@ export default function DashboardPage() {
   const visibleCardIds = user.dashboardLayout || [];
   const visibleCards = AVAILABLE_DASHBOARD_CARDS.filter(card => visibleCardIds.includes(card.id));
 
+  const mainCards = visibleCards.filter(card => card.id !== 'activity-feed');
+  const activityFeedCard = visibleCards.find(card => card.id === 'activity-feed');
+
   return (
     <div className="flex flex-col gap-6 h-full">
       <div className="flex items-center justify-between">
@@ -28,15 +30,20 @@ export default function DashboardPage() {
       </div>
 
       {visibleCards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {visibleCards.map(card => {
-            const CardComponent = card.component;
-            return (
-              <div key={card.id} className={card.className || 'xl:col-span-1'}>
-                <CardComponent />
-              </div>
-            );
-          })}
+         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {mainCards.map(card => {
+                    const CardComponent = card.component;
+                    return (
+                        <div key={card.id} className={card.className || ''}>
+                            <CardComponent />
+                        </div>
+                    );
+                })}
+            </div>
+             <div className="xl:col-span-1">
+                {activityFeedCard && <activityFeedCard.component />}
+             </div>
         </div>
       ) : (
          <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg text-center">

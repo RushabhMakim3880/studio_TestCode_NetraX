@@ -13,7 +13,7 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart';
 import { useAuth, type User } from '@/hooks/use-auth';
-import { Users } from 'lucide-react';
+import { Users, User as UserIcon } from 'lucide-react';
 import { ROLES } from '@/lib/constants';
 
 const chartConfig = {
@@ -69,8 +69,9 @@ export function UserRoleChart() {
             </PieChart>
           </ChartContainer>
         ) : (
-            <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                No user data available.
+             <div className="h-[200px] flex flex-col items-center justify-center text-muted-foreground text-center">
+                <UserIcon className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-sm">No user data available.</p>
             </div>
         )}
       </CardContent>
