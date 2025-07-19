@@ -54,6 +54,7 @@
     "next": "15.3.3",
     "next-themes": "^0.3.0",
     "ngrok": "^5.0.0-beta.2",
+    "nodemailer": "^6.9.14",
     "patch-package": "^8.0.0",
     "qrcode.react": "^3.1.0",
     "react": "^18.3.1",
@@ -64,6 +65,7 @@
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "thirty-two": "^1.0.2",
+    "use-local-storage-thin": "^0.0.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -71,6 +73,7 @@
     "@types/color-convert": "^2.0.3",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^20",
+    "@types/nodemailer": "^6.4.15",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "genkit-cli": "^1.13.0",

@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { ROLES, type Role, getAllModuleNamesForRole } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboard-cards';
+import type { SidebarSettingsConfig } from '@/components/sidebar-settings';
+import { defaultPageSettings, type PageSettings } from '@/components/settings/page-settings-manager';
+
 
 export type User = {
   username: string;
@@ -16,6 +19,8 @@ export type User = {
   lastLogin?: string;
   enabledModules?: string[];
   dashboardLayout?: string[];
+  sidebarSettings?: SidebarSettingsConfig;
+  pageSettings?: PageSettings;
 };
 
 type LoginCredentials = Pick<User, 'username' | 'password'>;
@@ -40,10 +45,10 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const seedUsers: User[] = [
-    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
-    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
-    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
-    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT },
+    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
+    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
+    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
+    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
 ];
 
 
@@ -71,17 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedUsersJSON = localStorage.getItem('netra-users');
       let allUsers: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : seedUsers;
 
-      // Data migration for users in localStorage that don't have enabledModules or dashboardLayout
+      // Data migration for users in localStorage that don't have new properties
       const migratedUsers = allUsers.map((u: User) => {
           let needsUpdate = false;
-          if (!u.enabledModules) {
-              u.enabledModules = getAllModuleNamesForRole(u.role);
-              needsUpdate = true;
-          }
-          if (!u.dashboardLayout) {
-              u.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT;
-              needsUpdate = true;
-          }
+          if (!u.enabledModules) { u.enabledModules = getAllModuleNamesForRole(u.role); needsUpdate = true; }
+          if (!u.dashboardLayout) { u.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; needsUpdate = true; }
+          if (!u.pageSettings) { u.pageSettings = defaultPageSettings; needsUpdate = true; }
+          
           return u;
       });
 
@@ -94,16 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedCurrentUserJSON = localStorage.getItem('netra-currentUser');
       if (storedCurrentUserJSON) {
         let currentUser: User = JSON.parse(storedCurrentUserJSON);
-        // Also migrate the current user object if needed
         let currentUserNeedsUpdate = false;
-        if (!currentUser.enabledModules) {
-            currentUser.enabledModules = getAllModuleNamesForRole(currentUser.role);
-            currentUserNeedsUpdate = true;
-        }
-        if (!currentUser.dashboardLayout) {
-            currentUser.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT;
-            currentUserNeedsUpdate = true;
-        }
+        if (!currentUser.enabledModules) { currentUser.enabledModules = getAllModuleNamesForRole(currentUser.role); currentUserNeedsUpdate = true; }
+        if (!currentUser.dashboardLayout) { currentUser.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; currentUserNeedsUpdate = true; }
+        if (!currentUser.pageSettings) { currentUser.pageSettings = defaultPageSettings; currentUserNeedsUpdate = true; }
+        
         if(currentUserNeedsUpdate) {
             localStorage.setItem('netra-currentUser', JSON.stringify(currentUser));
         }
@@ -150,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatarUrl: null,
         enabledModules: getAllModuleNamesForRole(credentials.role),
         dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
+        pageSettings: defaultPageSettings,
     };
     const updatedUsers = [...users, newUser];
     

@@ -12,19 +12,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { sendTestEmail, type TestEmailOutput } from '@/ai/flows/test-email-flow';
-
-export type EmailSettingsProfile = {
-  smtpHost: string;
-  smtpPort: string;
-  smtpUser: string;
-  smtpPass: string;
-  senderAddress: string;
-};
+import { sendTestEmail, type SmtpConfig } from '@/actions/send-email-action';
 
 const settingsSchema = z.object({
   smtpHost: z.string().min(1, 'Host is required'),
-  smtpPort: z.string().min(1, 'Port is required'),
+  smtpPort: z.string().min(1, 'Port is required').transform(Number).refine(n => !isNaN(n) && n > 0, 'Invalid port'),
   smtpUser: z.string().min(1, 'Username is required'),
   smtpPass: z.string().min(1, 'Password is required'),
   senderAddress: z.string().email('Invalid email address'),
@@ -35,11 +27,11 @@ export function EmailSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [testEmail, setTestEmail] = useState('');
   const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<TestEmailOutput | null>(null);
+  const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
 
-  const form = useForm<EmailSettingsProfile>({
+  const form = useForm<z.infer<typeof settingsSchema>>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { smtpHost: '', smtpPort: '', smtpUser: '', smtpPass: '', senderAddress: '' },
+    defaultValues: { smtpHost: '', smtpPort: 587, smtpUser: '', smtpPass: '', senderAddress: '' },
   });
 
   useEffect(() => {
@@ -53,7 +45,7 @@ export function EmailSettings() {
     }
   }, [form]);
 
-  const onSave = (values: EmailSettingsProfile) => {
+  const onSave = (values: z.infer<typeof settingsSchema>) => {
     setIsSaving(true);
     localStorage.setItem('netra-email-settings', JSON.stringify(values));
     setTimeout(() => {
@@ -63,16 +55,22 @@ export function EmailSettings() {
   };
 
   const handleSendTest = async () => {
+    if (!testEmail) {
+        toast({variant: 'destructive', title: 'Error', description: 'Recipient email is required.'})
+        return;
+    }
     setIsTesting(true);
     setTestResult(null);
     try {
+        const settings = form.getValues();
         const response = await sendTestEmail({
-            ...form.getValues(),
+            ...settings,
             recipientEmail: testEmail,
         });
         setTestResult(response);
     } catch (e) {
-        setTestResult({success: false, log: 'AI simulation failed. The request may have been blocked.'});
+        const message = e instanceof Error ? e.message : 'An unknown error occurred.';
+        setTestResult({success: false, message });
         console.error(e);
     } finally {
         setIsTesting(false);
@@ -84,7 +82,7 @@ export function EmailSettings() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <Mail className="h-6 w-6" />
-          <CardTitle>Email Settings (Simulation)</CardTitle>
+          <CardTitle>Email SMTP Settings</CardTitle>
         </div>
         <CardDescription>Configure SMTP settings for sending email invites and reports from the platform.</CardDescription>
       </CardHeader>
@@ -98,7 +96,7 @@ export function EmailSettings() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="smtpPort">SMTP Port</Label>
-              <Input id="smtpPort" {...form.register('smtpPort')} placeholder="587" />
+              <Input id="smtpPort" type="number" {...form.register('smtpPort')} placeholder="587" />
                {form.formState.errors.smtpPort && <p className="text-sm text-destructive">{form.formState.errors.smtpPort.message}</p>}
             </div>
           </div>
@@ -138,9 +136,9 @@ export function EmailSettings() {
                         {isTesting && <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin"/></div>}
                         {testResult && (
                             <div className="space-y-2">
-                                <Label>Result Log</Label>
+                                <Label>Result</Label>
                                 <pre className={`text-xs font-mono p-3 rounded-md h-48 overflow-y-auto bg-primary/20 ${testResult.success ? '' : 'text-destructive'}`}>
-                                    {testResult.log}
+                                    {testResult.message}
                                 </pre>
                             </div>
                         )}

@@ -7,8 +7,9 @@ import { CompanyProfileManager } from '@/components/company-profile-manager';
 import { CustomThemeGenerator } from '@/components/custom-theme-generator';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
-import { SidebarSettings } from '@/components/sidebar-settings';
-import { PageSettingsManager } from '@/components/settings/page-settings-manager';
+import { SidebarSettings } from '../sidebar-settings';
+import { DashboardLayoutManager } from '../dashboard/dashboard-layout-manager';
+import { PageSettingsManager } from './page-settings-manager';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -25,7 +26,6 @@ export default function SettingsPage() {
       <ApiKeysManager />
       <EmailSettings />
       <PageSettingsManager />
-      <SidebarSettings />
       <AppearanceSettings />
       <CustomThemeGenerator />
       <CompanyProfileManager />
