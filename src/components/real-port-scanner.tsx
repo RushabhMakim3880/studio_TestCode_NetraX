@@ -235,7 +235,7 @@ export function RealPortScanner() {
               </div>
             )}
 
-             {!isLoading && !error && results.length === 0 && osResults.length === 0 && (
+             {!isLoading && !error && results.length === 0 && osResults.length === 0 && form.formState.isSubmitted && (
                 <div className="text-center text-muted-foreground py-10">
                     <p>Scan complete. No results to display.</p>
                 </div>

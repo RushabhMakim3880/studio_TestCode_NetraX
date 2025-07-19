@@ -30,6 +30,7 @@ import {
   Cookie,
   KeySquare,
   ShieldHalf,
+  Binary,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -95,6 +96,7 @@ export const APP_MODULES: Module[] = [
       { name: 'C2 Panel', path: '/c2', icon: Server, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Offensive Tools', path: '/offensive', icon: Wrench, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Bug Bounty', path: '/bug-bounty', icon: Bug, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
   {
