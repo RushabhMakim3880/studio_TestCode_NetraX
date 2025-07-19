@@ -29,6 +29,7 @@ import {
   Bug,
   Cookie,
   KeySquare,
+  ShieldHalf,
 } from 'lucide-react';
 
 export const ROLES = {

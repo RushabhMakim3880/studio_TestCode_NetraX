@@ -5,6 +5,7 @@ import { CvssCalculator } from '@/components/cvss-calculator';
 import { ConfigAnalyzer } from '@/components/config-analyzer';
 import { ExploitChainAssistant } from '@/components/exploit-chain-assistant';
 import { InjectionScanner } from '@/components/injection-scanner';
+import { HeaderAnalyzer } from '@/components/header-analyzer';
 
 export default function VaptPage() {
 
@@ -16,6 +17,7 @@ export default function VaptPage() {
       </div>
 
       <InjectionScanner />
+      <HeaderAnalyzer />
       <ExploitChainAssistant />
       <ConfigAnalyzer />
       <CvssCalculator />

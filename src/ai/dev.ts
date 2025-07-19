@@ -33,4 +33,6 @@ import '@/ai/flows/metadata-scrubber-flow.ts';
 import '@/ai/flows/virustotal-scan-flow.ts';
 import '@/ai/flows/custom-malware-generator-flow.ts';
 import '@/ai/flows/intelx-search-flow.ts';
+import '@/ai/flows/header-analyzer-flow.ts';
+
 
