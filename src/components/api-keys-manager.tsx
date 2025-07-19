@@ -9,10 +9,18 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, KeyRound } from 'lucide-react';
 import { getApiKeys, saveApiKeys, ApiKeySettings } from '@/services/api-key-service';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+
+const API_KEY_DEFINITIONS: { key: keyof ApiKeySettings, name: string }[] = [
+    { key: 'VIRUSTOTAL_API_KEY', name: 'VirusTotal' },
+    { key: 'WHOIS_API_KEY', name: 'WhoisXMLAPI' },
+    { key: 'INTELX_API_KEY', name: 'IntelX.io' },
+];
 
 export function ApiKeysManager() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<ApiKeySettings>({ VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '', INTELX_API_KEY: '' });
+  const [selectedKey, setSelectedKey] = useState<keyof ApiKeySettings>('VIRUSTOTAL_API_KEY');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,8 +41,8 @@ export function ApiKeysManager() {
   }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setSettings(prev => ({ ...prev, [name]: value }));
+    const { value } = e.target;
+    setSettings(prev => ({ ...prev, [selectedKey]: value }));
   };
 
   const handleSave = async () => {
@@ -59,44 +67,34 @@ export function ApiKeysManager() {
         </div>
         <CardDescription>Manage third-party API keys for platform integrations. Keys are stored securely on the server.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         {isLoading ? (
             <div className="flex items-center justify-center h-24">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
         ) : (
-            <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-2">
-                    <Label htmlFor="VIRUSTOTAL_API_KEY">VirusTotal API Key</Label>
-                    <Input 
-                        id="VIRUSTOTAL_API_KEY" 
-                        name="VIRUSTOTAL_API_KEY" 
-                        type="password"
-                        value={settings.VIRUSTOTAL_API_KEY} 
-                        onChange={handleInputChange} 
-                        placeholder="Enter your VirusTotal API key"
-                    />
+                    <Label htmlFor="api-service-select">API Service</Label>
+                    <Select value={selectedKey} onValueChange={(v) => setSelectedKey(v as keyof ApiKeySettings)}>
+                        <SelectTrigger id="api-service-select">
+                            <SelectValue placeholder="Select an API service..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {API_KEY_DEFINITIONS.map(def => (
+                                <SelectItem key={def.key} value={def.key}>{def.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="WHOIS_API_KEY">WhoisXMLAPI Key</Label>
-                    <Input 
-                        id="WHOIS_API_KEY" 
-                        name="WHOIS_API_KEY" 
+                <div className="space-y-2">
+                    <Label htmlFor="api-key-input">API Key</Label>
+                     <Input 
+                        id="api-key-input"
                         type="password"
-                        value={settings.WHOIS_API_KEY} 
+                        value={settings[selectedKey] || ''} 
                         onChange={handleInputChange} 
-                        placeholder="Enter your WhoisXMLAPI key"
-                    />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="INTELX_API_KEY">IntelX.io API Key</Label>
-                    <Input 
-                        id="INTELX_API_KEY" 
-                        name="INTELX_API_KEY" 
-                        type="password"
-                        value={settings.INTELX_API_KEY} 
-                        onChange={handleInputChange} 
-                        placeholder="Enter your IntelX API key"
+                        placeholder={`Enter ${API_KEY_DEFINITIONS.find(d => d.key === selectedKey)?.name} API key`}
                     />
                 </div>
             </div>
@@ -105,7 +103,7 @@ export function ApiKeysManager() {
        <CardFooter className="justify-end border-t pt-6">
           <Button onClick={handleSave} disabled={isSaving || isLoading}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save API Keys
+            Save All API Keys
           </Button>
         </CardFooter>
     </Card>
