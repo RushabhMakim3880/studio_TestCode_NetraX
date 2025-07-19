@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { ROLES, type Role, getAllModuleNamesForRole } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboard-cards';
-import type { SidebarSettingsConfig } from '@/components/sidebar-settings';
 import { defaultPageSettings, type PageSettings } from '@/components/settings/page-settings-manager';
 
 
@@ -19,7 +18,6 @@ export type User = {
   lastLogin?: string;
   enabledModules?: string[];
   dashboardLayout?: string[];
-  sidebarSettings?: SidebarSettingsConfig;
   pageSettings?: PageSettings;
 };
 
