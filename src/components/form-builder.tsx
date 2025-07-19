@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Clipboard, Code, PlusCircle, Trash2, Eye, TextFields, Settings } from 'lucide-react';
+import { Clipboard, Code, PlusCircle, Trash2, Eye, FileText, Settings } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -140,7 +140,7 @@ export function FormBuilder() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <TextFields className="h-6 w-6" />
+          <FileText className="h-6 w-6" />
           <CardTitle>Credential Form Builder</CardTitle>
         </div>
         <CardDescription>

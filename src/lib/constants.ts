@@ -32,7 +32,7 @@ import {
   ShieldHalf,
   Binary,
   MousePointer2,
-  TextFields,
+  GitFork,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -99,8 +99,9 @@ export const APP_MODULES: Module[] = [
       { name: 'Offensive Tools', path: '/offensive', icon: Wrench, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Bug Bounty', path: '/bug-bounty', icon: Bug, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Form Generator', path: '/form-generator', icon: TextFields, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Form Generator', path: '/form-generator', icon: FileText, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Web Vulnerabilities', path: '/web-vulns', icon: Binary, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Attack Surface', path: '/attack-surface', icon: GitFork, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
   {
