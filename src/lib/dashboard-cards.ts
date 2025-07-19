@@ -103,7 +103,7 @@ export const AVAILABLE_SHORTCUT_CARDS: DashboardCardInfo[] = APP_MODULES
   .flatMap(module => module.subModules ? module.subModules : [module])
   .filter(module => module.path && module.path !== '/dashboard') // Exclude dashboard itself
   .map(module => ({
-    id: `shortcut-${module.name.toLowerCase().replace(/\s+/g, '-')}`,
+    id: `shortcut-${module.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
     title: module.name,
     description: `Shortcut to the ${module.name} page.`,
     icon: module.icon,
@@ -120,7 +120,9 @@ export const getShortcutCardInfo = (id: string, modules: Module[]): DashboardCar
 
     const findModule = (mods: Module[]): Module | undefined => {
         for (const mod of mods) {
-            if (mod.name.toLowerCase().replace(/\s+/g, '-') === moduleName.replace(/\s+/g, '-')) return mod;
+            const normalizedModuleName = mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const normalizedTargetName = moduleName.replace(/\s+/g, '-');
+            if (normalizedModuleName === normalizedTargetName) return mod;
             if (mod.subModules) {
                 const found = findModule(mod.subModules);
                 if (found) return found;

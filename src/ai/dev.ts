@@ -35,3 +35,7 @@ import '@/ai/flows/document-generator-flow.ts';
 import '@/ai/flows/invite-user-flow.ts';
 import '@/ai/flows/clone-page-from-url-flow.ts';
 import '@/ai/flows/telegram-c2-flow.ts';
+import '@/ai/flows/email-header-analyzer-flow.ts';
+import '@/ai/flows/data-obfuscator-flow.ts';
+import '@/ai/flows/metadata-scrubber-flow.ts';
+

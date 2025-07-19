@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase, FileText, Mail } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase, FileText, Mail, Eraser } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -77,6 +77,7 @@ export const APP_MODULES: Module[] = [
     icon: Dna,
     roles: ALL_ROLES,
     subModules: [
+      { name: 'Anonymization Toolkit', path: '/anonymization', icon: Eraser, roles: ALL_ROLES },
       { name: 'VAPT & Compliance', path: '/vapt', icon: ShieldCheck, roles: ALL_ROLES },
       { name: 'Malware Analysis', path: '/analysis', icon: FileScan, roles: ALL_ROLES },
       { name: 'Network Analysis', path: '/network', icon: Network, roles: ALL_ROLES },
