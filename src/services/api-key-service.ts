@@ -8,6 +8,7 @@ import { z } from 'zod';
 const ApiKeySettingsSchema = z.object({
   VIRUSTOTAL_API_KEY: z.string().optional(),
   WHOIS_API_KEY: z.string().optional(),
+  INTELX_API_KEY: z.string().optional(),
 });
 
 export type ApiKeySettings = z.infer<typeof ApiKeySettingsSchema>;
@@ -29,7 +30,7 @@ async function readSecrets(): Promise<ApiKeySettings> {
     return parsed;
   } catch (error) {
     // If the file doesn't exist or is invalid, return a default empty object.
-    return { VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '' };
+    return { VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '', INTELX_API_KEY: '' };
   }
 }
 
@@ -43,6 +44,7 @@ export async function getApiKeys(): Promise<ApiKeySettings> {
     return {
         VIRUSTOTAL_API_KEY: secrets.VIRUSTOTAL_API_KEY || process.env.VIRUSTOTAL_API_KEY || '',
         WHOIS_API_KEY: secrets.WHOIS_API_KEY || process.env.WHOIS_API_KEY || '',
+        INTELX_API_KEY: secrets.INTELX_API_KEY || process.env.INTELX_API_KEY || '',
     };
 }
 

@@ -11,6 +11,7 @@ import { EmailHeaderAnalyzer } from '@/components/email-header-analyzer';
 import { DataObfuscator } from '@/components/data-obfuscator';
 import { IocExtractor } from '@/components/ioc-extractor';
 import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
+import { DarkWebScanner } from '@/components/dark-web-scanner';
 
 export default function OsintPage() {
   return (
@@ -20,6 +21,7 @@ export default function OsintPage() {
         <p className="text-muted-foreground">A collection of tools for open-source intelligence gathering and data analysis.</p>
       </div>
       
+      <DarkWebScanner />
       <WhoisLookup />
       <DnsLookup />
       <BreachDataChecker />

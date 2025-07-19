@@ -12,7 +12,7 @@ import { getApiKeys, saveApiKeys, ApiKeySettings } from '@/services/api-key-serv
 
 export function ApiKeysManager() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<ApiKeySettings>({ VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '' });
+  const [settings, setSettings] = useState<ApiKeySettings>({ VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '', INTELX_API_KEY: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -86,6 +86,17 @@ export function ApiKeysManager() {
                         value={settings.WHOIS_API_KEY} 
                         onChange={handleInputChange} 
                         placeholder="Enter your WhoisXMLAPI key"
+                    />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="INTELX_API_KEY">IntelX.io API Key</Label>
+                    <Input 
+                        id="INTELX_API_KEY" 
+                        name="INTELX_API_KEY" 
+                        type="password"
+                        value={settings.INTELX_API_KEY} 
+                        onChange={handleInputChange} 
+                        placeholder="Enter your IntelX API key"
                     />
                 </div>
             </div>
