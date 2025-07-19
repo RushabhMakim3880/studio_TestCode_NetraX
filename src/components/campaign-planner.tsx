@@ -117,7 +117,7 @@ export function CampaignPlanner() {
               {isLoading && <div className="flex items-center justify-center h-full text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>}
               {error && <div className="text-destructive flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{error}</div>}
               {!isLoading && !result && (
-                <div className="text-muted-foreground text-center h-full flex flex-col items-center justify-center">
+                <div className="text-muted-foreground text-center flex flex-col items-center justify-center min-h-[400px]">
                   <Bot className="h-10 w-10 mb-2" />
                   Your generated project plan will appear here.
                 </div>
