@@ -32,6 +32,7 @@ import {
   ShieldHalf,
   Binary,
   MousePointer2,
+  TextFields,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -98,6 +99,7 @@ export const APP_MODULES: Module[] = [
       { name: 'Offensive Tools', path: '/offensive', icon: Wrench, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Bug Bounty', path: '/bug-bounty', icon: Bug, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Form Generator', path: '/form-generator', icon: TextFields, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
   {
