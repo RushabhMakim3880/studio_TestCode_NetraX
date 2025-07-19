@@ -31,6 +31,7 @@ import {
   KeySquare,
   ShieldHalf,
   Binary,
+  MousePointer2,
 } from 'lucide-react';
 
 export const ROLES = {

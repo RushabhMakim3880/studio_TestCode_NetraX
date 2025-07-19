@@ -11,6 +11,7 @@ import { PasswordCracker } from '@/components/password-cracker';
 import { YaraRuleGenerator } from '@/components/yara-rule-generator';
 import { SessionHijackingTool } from '@/components/session-hijacking-tool';
 import { JwtAnalyzer } from '@/components/jwt-analyzer';
+import { ClickjackingTool } from '@/components/clickjacking-tool';
 
 
 export default function OffensivePage() {
@@ -23,6 +24,7 @@ export default function OffensivePage() {
 
       <ReverseShellPayloadGenerator />
       <SessionHijackingTool />
+      <ClickjackingTool />
       <JwtAnalyzer />
       <PasswordCracker />
       <CustomMalwareGenerator />
