@@ -7,43 +7,67 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, KeyRound } from 'lucide-react';
+import { Loader2, KeyRound, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { getApiKeys, saveApiKeys, ApiKeySettings } from '@/services/api-key-service';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-const API_KEY_DEFINITIONS: { key: keyof ApiKeySettings, name: string }[] = [
-    { key: 'VIRUSTOTAL_API_KEY', name: 'VirusTotal' },
-    { key: 'WHOIS_API_KEY', name: 'WhoisXMLAPI' },
-    { key: 'INTELX_API_KEY', name: 'IntelX.io' },
-];
+const addKeySchema = z.object({
+    keyName: z.string().min(1, 'Key name is required.').refine(val => /^[A-Z0-9_]+$/.test(val), {
+        message: 'Key name must be uppercase letters, numbers, and underscores only (e.g., MY_API_KEY).'
+    }),
+    keyValue: z.string().min(1, 'Key value is required.'),
+});
 
 export function ApiKeysManager() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<ApiKeySettings>({ VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '', INTELX_API_KEY: '' });
-  const [selectedKey, setSelectedKey] = useState<keyof ApiKeySettings>('VIRUSTOTAL_API_KEY');
+  const [settings, setSettings] = useState<ApiKeySettings>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const addKeyForm = useForm<z.infer<typeof addKeySchema>>({ resolver: zodResolver(addKeySchema) });
+
+  const loadKeys = async () => {
+    setIsLoading(true);
+    try {
+      const savedKeys = await getApiKeys();
+      setSettings(savedKeys);
+    } catch (e) {
+      const error = e instanceof Error ? e.message : 'Could not load API keys.';
+      toast({ variant: 'destructive', title: 'Loading Failed', description: error });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadKeys() {
-      setIsLoading(true);
-      try {
-        const savedKeys = await getApiKeys();
-        setSettings(savedKeys);
-      } catch (e) {
-        const error = e instanceof Error ? e.message : 'Could not load API keys.';
-        toast({ variant: 'destructive', title: 'Loading Failed', description: error });
-      } finally {
-        setIsLoading(false);
-      }
-    }
     loadKeys();
   }, [toast]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setSettings(prev => ({ ...prev, [selectedKey]: value }));
-  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -58,12 +82,51 @@ export function ApiKeysManager() {
     }
   };
 
+  const handleAddNewKey = (values: z.infer<typeof addKeySchema>) => {
+    if (settings.hasOwnProperty(values.keyName)) {
+        addKeyForm.setError('keyName', { message: 'This key name already exists.' });
+        return;
+    }
+    const newSettings = { ...settings, [values.keyName]: values.keyValue };
+    setSettings(newSettings);
+    setIsAddModalOpen(false);
+    addKeyForm.reset();
+  }
+  
+  const handleEditKey = () => {
+      if (selectedKey) {
+          const newSettings = { ...settings, [selectedKey]: editValue };
+          setSettings(newSettings);
+          setIsEditModalOpen(false);
+          setSelectedKey(null);
+          setEditValue('');
+      }
+  }
+  
+  const handleDeleteKey = () => {
+      if (selectedKey) {
+          const newSettings = { ...settings };
+          delete newSettings[selectedKey];
+          setSettings(newSettings);
+          setIsDeleteAlertOpen(false);
+          setSelectedKey(null);
+      }
+  }
+
+
   return (
+    <>
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-3">
-          <KeyRound className="h-6 w-6" />
-          <CardTitle>API Key Management</CardTitle>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+            <KeyRound className="h-6 w-6" />
+            <CardTitle>API Key Management</CardTitle>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setIsAddModalOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add New Key
+            </Button>
         </div>
         <CardDescription>Manage third-party API keys for platform integrations. Keys are stored securely on the server.</CardDescription>
       </CardHeader>
@@ -73,39 +136,94 @@ export function ApiKeysManager() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
         ) : (
-            <div className="grid md:grid-cols-2 gap-6 items-start">
-                <div className="space-y-2">
-                    <Label htmlFor="api-service-select">API Service</Label>
-                    <Select value={selectedKey} onValueChange={(v) => setSelectedKey(v as keyof ApiKeySettings)}>
-                        <SelectTrigger id="api-service-select">
-                            <SelectValue placeholder="Select an API service..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {API_KEY_DEFINITIONS.map(def => (
-                                <SelectItem key={def.key} value={def.key}>{def.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="api-key-input">API Key</Label>
-                     <Input 
-                        id="api-key-input"
-                        type="password"
-                        value={settings[selectedKey] || ''} 
-                        onChange={handleInputChange} 
-                        placeholder={`Enter ${API_KEY_DEFINITIONS.find(d => d.key === selectedKey)?.name} API key`}
-                    />
-                </div>
+            <div className="space-y-4">
+                {Object.keys(settings).length > 0 ? Object.entries(settings).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between p-3 border rounded-md bg-primary/20">
+                       <div>
+                         <p className="font-mono text-sm font-semibold">{key}</p>
+                         <p className="font-mono text-xs text-muted-foreground">{'*'.repeat(value.length)}</p>
+                       </div>
+                       <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => { setSelectedKey(key); setEditValue(value); setIsEditModalOpen(true);}}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { setSelectedKey(key); setIsDeleteAlertOpen(true);}}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                       </div>
+                    </div>
+                )) : (
+                    <p className="text-sm text-center text-muted-foreground py-8">No API keys configured. Click "Add New Key" to get started.</p>
+                )}
             </div>
         )}
       </CardContent>
        <CardFooter className="justify-end border-t pt-6">
           <Button onClick={handleSave} disabled={isSaving || isLoading}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save All API Keys
+            Save All Changes
           </Button>
         </CardFooter>
     </Card>
+
+    <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add New API Key</DialogTitle>
+                <DialogDescription>Add a new secret key to be stored on the server.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={addKeyForm.handleSubmit(handleAddNewKey)} className="py-4 space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="keyName">Key Name</Label>
+                    <Input id="keyName" {...addKeyForm.register('keyName')} placeholder="e.g., SHODAN_API_KEY" className="font-mono" />
+                    {addKeyForm.formState.errors.keyName && <p className="text-sm text-destructive">{addKeyForm.formState.errors.keyName.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="keyValue">Key Value</Label>
+                    <Input id="keyValue" {...addKeyForm.register('keyValue')} type="password" />
+                    {addKeyForm.formState.errors.keyValue && <p className="text-sm text-destructive">{addKeyForm.formState.errors.keyValue.message}</p>}
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+                    <Button type="submit">Add Key</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+    
+    <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit API Key</DialogTitle>
+                <DialogDescription>Update the value for <span className="font-mono text-accent">{selectedKey}</span>.</DialogDescription>
+            </DialogHeader>
+             <div className="py-4 space-y-2">
+                <Label htmlFor="editKeyValue">New Value</Label>
+                <Input id="editKeyValue" value={editValue} onChange={(e) => setEditValue(e.target.value)} type="password" />
+            </div>
+             <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+                <Button type="button" onClick={handleEditKey}>Save Value</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+        <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the <span className="font-mono text-accent">{selectedKey}</span> key.
+            </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteKey} className="bg-destructive hover:bg-destructive/90">
+            Delete
+            </AlertDialogAction>
+        </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
