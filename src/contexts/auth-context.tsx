@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [isClient]);
+  }, [isClient, syncUsers]);
 
   const login = async (credentials: LoginCredentials) => {
     const foundUser = users.find(u => u.username === credentials.username);

@@ -10,17 +10,20 @@ import { ThreatIntelSummary } from '@/components/dashboard/threat-intel-summary'
 import { ActivityFeed } from '@/components/activity-feed';
 import type { LucideIcon } from 'lucide-react';
 import { Server, Wifi, Users, Briefcase, ClipboardList, UserCog, Award, Rss, History } from 'lucide-react';
+import type { Module } from '@/lib/constants';
+import { APP_MODULES } from '@/lib/constants';
 
 export type DashboardCardInfo = {
   id: string;
   title: string;
   description: string;
   icon: LucideIcon;
-  component: React.ComponentType;
+  component?: React.ComponentType; // Optional for shortcuts
   className?: string; // Optional className for grid layout (e.g., 'xl:col-span-2')
+  module?: Module; // Optional for shortcuts
 };
 
-export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
+export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
   {
     id: 'system-info',
     title: 'System Info',
@@ -95,15 +98,54 @@ export const AVAILABLE_DASHBOARD_CARDS: DashboardCardInfo[] = [
   },
 ];
 
+// Dynamically generate shortcut cards from APP_MODULES
+export const AVAILABLE_SHORTCUT_CARDS: DashboardCardInfo[] = APP_MODULES
+  .flatMap(module => module.subModules ? module.subModules : [module])
+  .filter(module => module.path && module.path !== '/dashboard') // Exclude dashboard itself
+  .map(module => ({
+    id: `shortcut-${module.name.toLowerCase().replace(/\s+/g, '-')}`,
+    title: module.name,
+    description: `Shortcut to the ${module.name} page.`,
+    icon: module.icon,
+    module: module,
+  }));
+  
+export const ALL_AVAILABLE_CARDS = [...AVAILABLE_WIDGET_CARDS, ...AVAILABLE_SHORTCUT_CARDS];
+
+// Helper function to get shortcut card info by ID
+export const getShortcutCardInfo = (id: string, modules: Module[]): DashboardCardInfo | null => {
+    if (!id.startsWith('shortcut-')) return null;
+
+    const moduleName = id.replace('shortcut-', '').replace(/-/g, ' ');
+
+    const findModule = (mods: Module[]): Module | undefined => {
+        for (const mod of mods) {
+            if (mod.name.toLowerCase().replace(/\s+/g, '-') === moduleName.replace(/\s+/g, '-')) return mod;
+            if (mod.subModules) {
+                const found = findModule(mod.subModules);
+                if (found) return found;
+            }
+        }
+    };
+    
+    const module = findModule(modules);
+    if (!module) return null;
+
+    return {
+        id,
+        title: module.name,
+        description: `Shortcut to the ${module.name} page.`,
+        icon: module.icon,
+        module,
+    };
+};
 
 export const DEFAULT_DASHBOARD_LAYOUT = [
     'system-info',
     'network-status',
-    'user-stats',
     'threat-intel',
+    'shortcut-phishing',
     'project-progress',
     'task-status',
-    'user-roles',
     'activity-feed',
-    'user-performance'
 ];

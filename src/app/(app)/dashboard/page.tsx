@@ -2,9 +2,11 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { AVAILABLE_DASHBOARD_CARDS } from '@/lib/dashboard-cards';
+import { AVAILABLE_WIDGET_CARDS, getShortcutCardInfo } from '@/lib/dashboard-cards';
 import { DashboardLayoutManager } from '@/components/dashboard/dashboard-layout-manager';
 import { LayoutGrid } from 'lucide-react';
+import { ShortcutCard } from '@/components/dashboard/shortcut-card';
+import { APP_MODULES } from '@/lib/constants';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -14,10 +16,15 @@ export default function DashboardPage() {
   }
   
   const visibleCardIds = user.dashboardLayout || [];
-  const visibleCards = AVAILABLE_DASHBOARD_CARDS.filter(card => visibleCardIds.includes(card.id));
+  
+  const visibleWidgets = AVAILABLE_WIDGET_CARDS.filter(card => visibleCardIds.includes(card.id));
+  const visibleShortcuts = visibleCardIds
+    .map(id => getShortcutCardInfo(id, APP_MODULES))
+    .filter(Boolean);
 
-  const mainCards = visibleCards.filter(card => card.id !== 'activity-feed');
-  const activityFeedCard = visibleCards.find(card => card.id === 'activity-feed');
+
+  const mainWidgets = visibleWidgets.filter(card => card.id !== 'activity-feed');
+  const activityFeedCard = visibleWidgets.find(card => card.id === 'activity-feed');
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -29,10 +36,10 @@ export default function DashboardPage() {
         <DashboardLayoutManager />
       </div>
 
-      {visibleCards.length > 0 ? (
+      {visibleWidgets.length > 0 || visibleShortcuts.length > 0 ? (
          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {mainCards.map(card => {
+            <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                 {mainWidgets.map(card => {
                     const CardComponent = card.component;
                     return (
                         <div key={card.id} className={card.className || ''}>
@@ -40,6 +47,11 @@ export default function DashboardPage() {
                         </div>
                     );
                 })}
+                {visibleShortcuts.map(shortcut => (
+                  <div key={shortcut.id}>
+                      <ShortcutCard module={shortcut.module} />
+                  </div>
+                ))}
             </div>
              <div className="xl:col-span-1">
                 {activityFeedCard && <activityFeedCard.component />}
