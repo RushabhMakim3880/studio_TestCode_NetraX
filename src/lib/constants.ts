@@ -25,6 +25,7 @@ import {
   MessageSquarePlus,
   Network,
   Syringe,
+  Cpu,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -99,7 +100,7 @@ export const APP_MODULES: Module[] = [
     subModules: [
       { name: 'Vulnerability Analysis', path: '/vapt', icon: Syringe, roles: [ROLES.ADMIN, ROLES.ANALYST], },
       { name: 'Log Analysis', path: '/log-analysis', icon: GanttChartSquare, roles: [ROLES.ADMIN, ROLES.ANALYST], },
-      { name: 'IoT Security', path: '/iot', icon: Router, roles: [ROLES.ADMIN, ROLES.ANALYST], },
+      { name: 'IoT Security', path: '/iot', icon: Cpu, roles: [ROLES.ADMIN, ROLES.ANALYST], },
       { name: 'Malware Analysis', path: '/analysis', icon: FileScan, roles: [ROLES.ADMIN, ROLES.ANALYST], },
     ],
   },

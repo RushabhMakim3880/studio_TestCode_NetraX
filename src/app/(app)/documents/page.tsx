@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DocumentGenerator } from '@/components/document-generator';

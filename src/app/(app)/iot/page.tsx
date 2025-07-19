@@ -1,3 +1,4 @@
+
 'use client';
 
 import { FirmwareAnalyzer } from '@/components/firmware-analyzer';
