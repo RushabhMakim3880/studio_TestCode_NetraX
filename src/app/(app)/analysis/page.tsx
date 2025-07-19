@@ -9,17 +9,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, FileScan, Hash, Terminal, List } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2, AlertTriangle, FileScan, Hash, Terminal } from 'lucide-react';
 import { VirusTotalScanner } from '@/components/virustotal-scanner';
-import { MetadataScrubber } from '@/components/metadata-scrubber';
-import { YaraRuleGenerator } from '@/components/yara-rule-generator';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import MD5 from 'crypto-js/md5';
 import SHA1 from 'crypto-js/sha1';
 import SHA256 from 'crypto-js/sha256';
-import { IocExtractor } from '@/components/ioc-extractor';
 
 const formSchema = z.object({
   file: z
@@ -120,19 +116,16 @@ export default function AnalysisPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-headline text-3xl font-semibold">Malware Analysis Toolkit</h1>
+        <h1 className="font-headline text-3xl font-semibold">Malware Analysis</h1>
         <p className="text-muted-foreground">A collection of tools for analyzing suspicious files and artifacts.</p>
       </div>
       
-      <IocExtractor />
       <VirusTotalScanner />
-      <YaraRuleGenerator />
-      <MetadataScrubber />
 
       <Card>
         <CardHeader>
           <CardTitle>Client-Side File Analyzer</CardTitle>
-          <CardDescription>Analyze a file locally in your browser. The file is not uploaded.</CardDescription>
+          <CardDescription>Analyze a file locally in your browser to extract hashes and strings. The file is not uploaded.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

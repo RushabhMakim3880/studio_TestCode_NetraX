@@ -25,7 +25,6 @@ const formSchema = z.object({
   wordlistSource: z.enum(['rockyou', 'top1000', 'custom']),
 });
 
-const hashTypes = ['MD5', 'SHA1', 'SHA256'];
 const simulatedWordlists: Record<string, string[]> = {
     'rockyou': ['password', '123456', 'qwerty', 'dragon', 'sunshine', 'princess', 'football', 'monkey', 'shadow', 'admin', 'hunter', 'iloveyou'],
     'top1000': ['love', 'god', 'secret', 'money', 'magic', 'master', 'system', 'hello', 'welcome'],
@@ -148,7 +147,10 @@ export function PasswordCracker() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Password Cracker</CardTitle>
+        <div className="flex items-center gap-3">
+            <KeyRound className="h-6 w-6" />
+            <CardTitle>Password Cracker</CardTitle>
+        </div>
         <CardDescription>Perform a dictionary attack against a password hash using simulated or custom wordlists.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -264,4 +266,3 @@ export function PasswordCracker() {
     </Card>
   );
 }
- 

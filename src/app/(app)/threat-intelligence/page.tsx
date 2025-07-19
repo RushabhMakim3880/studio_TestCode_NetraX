@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ThreatActorProfiler } from '@/components/threat-actor-profiler';

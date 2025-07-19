@@ -8,6 +8,7 @@ import { BreachDataChecker } from '@/components/breach-data-checker';
 import { MetadataScrubber } from '@/components/metadata-scrubber';
 import { EmailHeaderAnalyzer } from '@/components/email-header-analyzer';
 import { DataObfuscator } from '@/components/data-obfuscator';
+import { IocExtractor } from '@/components/ioc-extractor';
 
 export default function OsintPage() {
   return (
@@ -19,6 +20,7 @@ export default function OsintPage() {
       
       <BreachDataChecker />
       <SocialMediaAnalyzer />
+      <IocExtractor />
       <DataObfuscator />
       <MetadataScrubber />
       <EmailHeaderAnalyzer />
