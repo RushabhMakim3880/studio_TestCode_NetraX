@@ -28,6 +28,7 @@ import {
   Cpu,
   Bug,
   Cookie,
+  KeySquare,
 } from 'lucide-react';
 
 export const ROLES = {
