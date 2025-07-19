@@ -27,6 +27,7 @@ import {
   Syringe,
   Cpu,
   Bug,
+  Cookie,
 } from 'lucide-react';
 
 export const ROLES = {

@@ -9,6 +9,7 @@ import { EncoderDecoder } from '@/components/encoder-decoder';
 import { ReverseShellPayloadGenerator } from '@/components/reverse-shell-payload-generator';
 import { PasswordCracker } from '@/components/password-cracker';
 import { YaraRuleGenerator } from '@/components/yara-rule-generator';
+import { SessionHijackingTool } from '@/components/session-hijacking-tool';
 
 
 export default function OffensivePage() {
@@ -20,6 +21,7 @@ export default function OffensivePage() {
       </div>
 
       <ReverseShellPayloadGenerator />
+      <SessionHijackingTool />
       <PasswordCracker />
       <CustomMalwareGenerator />
       <ExploitSuggester />
