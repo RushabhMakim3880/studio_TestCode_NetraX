@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Network, Server, GanttChartSquare, ListCollapse, Wrench, Router, Waypoints, Shell, BrainCircuit, Dna, Briefcase, FileText, Mail, Eraser } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, ShieldCheck, Fingerprint, Bot, Files, Presentation, UserCog, Target, FileScan, MessageSquarePlus, KeyRound, Server, GanttChartSquare, ListCollapse, Wrench, Router, BrainCircuit, Dna, Briefcase, FileText, Mail, Eraser, Network } from 'lucide-react';
 
 export const ROLES = {
   ADMIN: 'Admin',
@@ -77,13 +77,12 @@ export const APP_MODULES: Module[] = [
     icon: Dna,
     roles: ALL_ROLES,
     subModules: [
-      { name: 'Anonymization Toolkit', path: '/anonymization', icon: Eraser, roles: ALL_ROLES },
-      { name: 'VAPT & Compliance', path: '/vapt', icon: ShieldCheck, roles: ALL_ROLES },
-      { name: 'Malware Analysis', path: '/analysis', icon: FileScan, roles: ALL_ROLES },
-      { name: 'Network Analysis', path: '/network', icon: Network, roles: ALL_ROLES },
+      { name: 'Network Investigation', path: '/network', icon: Network, roles: ALL_ROLES },
       { name: 'IoT Security', path: '/iot', icon: Router, roles: ALL_ROLES },
+      { name: 'Malware Analysis', path: '/analysis', icon: FileScan, roles: ALL_ROLES },
       { name: 'Log Analysis', path: '/log-analysis', icon: GanttChartSquare, roles: ALL_ROLES },
       { name: 'IoC Management', path: '/ioc-management', icon: ListCollapse, roles: ALL_ROLES },
+      { name: 'VAPT & Compliance', path: '/vapt', icon: ShieldCheck, roles: ALL_ROLES },
     ]
   },
   {

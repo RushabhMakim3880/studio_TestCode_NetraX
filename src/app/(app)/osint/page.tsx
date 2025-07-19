@@ -1,12 +1,10 @@
+
 'use client';
 
 import { SocialMediaAnalyzer } from '@/components/social-media-analyzer';
 import { GoogleDorkGenerator } from '@/components/google-dork-generator';
 import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 import { BreachDataChecker } from '@/components/breach-data-checker';
-import { WhoisLookup } from '@/components/whois-lookup';
-import { DnsLookup } from '@/components/dns-lookup';
-import { SubdomainScanner } from '@/components/subdomain-scanner';
 import { MetadataScrubber } from '@/components/metadata-scrubber';
 import { EmailHeaderAnalyzer } from '@/components/email-header-analyzer';
 import { DataObfuscator } from '@/components/data-obfuscator';
@@ -19,9 +17,6 @@ export default function OsintPage() {
         <p className="text-muted-foreground">A collection of tools for open-source intelligence gathering and data analysis.</p>
       </div>
       
-      <WhoisLookup />
-      <DnsLookup />
-      <SubdomainScanner />
       <BreachDataChecker />
       <SocialMediaAnalyzer />
       <DataObfuscator />
