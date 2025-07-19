@@ -80,7 +80,6 @@ export const APP_MODULES: Module[] = [
     subModules: [
       { name: 'OSINT Investigator', path: '/osint', icon: Fingerprint, roles: ALL_ROLES },
       { name: 'Threat Intelligence', path: '/threat-intelligence', icon: Shield, roles: ALL_ROLES },
-      { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.ANALYST, ROLES.OPERATOR] },
     ],
   },
   {
@@ -103,7 +102,6 @@ export const APP_MODULES: Module[] = [
       { name: 'Vulnerability Analysis', path: '/vapt', icon: Syringe, roles: [ROLES.ADMIN, ROLES.ANALYST], },
       { name: 'Log Analysis', path: '/log-analysis', icon: GanttChartSquare, roles: [ROLES.ADMIN, ROLES.ANALYST], },
       { name: 'IoT Security', path: '/iot', icon: Cpu, roles: [ROLES.ADMIN, ROLES.ANALYST], },
-      { name: 'Malware Analysis', path: '/analysis', icon: FileScan, roles: [ROLES.ADMIN, ROLES.ANALYST], },
     ],
   },
   {
