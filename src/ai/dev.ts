@@ -30,7 +30,6 @@ import '@/ai/flows/injection-scanner-flow.ts';
 import '@/ai/flows/exploit-chain-assistant-flow.ts';
 import '@/ai/flows/firmware-analysis-flow.ts';
 import '@/ai/flows/iot-traffic-analysis-flow.ts';
-import '@/ai/flows/anonymizer-flow.ts';
 import '@/ai/flows/generate-telegram-bot-flow.ts';
 import '@/ai/flows/document-generator-flow.ts';
 import '@/ai/flows/invite-user-flow.ts';

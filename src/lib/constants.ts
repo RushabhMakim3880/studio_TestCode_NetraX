@@ -60,6 +60,7 @@ export const APP_MODULES: Module[] = [
     subModules: [
       { name: 'Phishing', path: '/phishing', icon: Mail, roles: ALL_ROLES },
       { name: 'Templates', path: '/templates', icon: MessageSquarePlus, roles: ALL_ROLES },
+      { name: 'Target Profiling', path: '/profiling', icon: Target, roles: ALL_ROLES},
     ]
   },
     {
@@ -68,8 +69,7 @@ export const APP_MODULES: Module[] = [
     roles: ALL_ROLES,
     subModules: [
       { name: 'C2 Panel', path: '/c2', icon: Server, roles: ALL_ROLES },
-      { name: 'Offensive Tools', path: '/offensive', icon: KeyRound, roles: ALL_ROLES },
-      { name: 'Anonymization', path: '/anonymization', icon: Waypoints, roles: ALL_ROLES },
+      { name: 'Offensive Tools', path: '/offensive', icon: Wrench, roles: ALL_ROLES },
     ]
   },
   {
