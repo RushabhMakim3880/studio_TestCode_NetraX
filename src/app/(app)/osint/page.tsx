@@ -3,14 +3,14 @@
 
 import { SocialMediaAnalyzer } from '@/components/social-media-analyzer';
 import { GoogleDorkGenerator } from '@/components/google-dork-generator';
-import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
+import { WhoisLookup } from '@/components/whois-lookup';
+import { DnsLookup } from '@/components/dns-lookup';
 import { BreachDataChecker } from '@/components/breach-data-checker';
 import { MetadataScrubber } from '@/components/metadata-scrubber';
 import { EmailHeaderAnalyzer } from '@/components/email-header-analyzer';
 import { DataObfuscator } from '@/components/data-obfuscator';
 import { IocExtractor } from '@/components/ioc-extractor';
-import { WhoisLookup } from '@/components/whois-lookup';
-import { DnsLookup } from '@/components/dns-lookup';
+import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 
 export default function OsintPage() {
   return (
