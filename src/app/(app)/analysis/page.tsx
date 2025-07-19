@@ -9,16 +9,17 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { analyzeFile, type MalwareAnalysisOutput } from '@/ai/flows/malware-analysis-flow';
-import { Loader2, AlertTriangle, FileScan, CheckCircle, ShieldAlert, ShieldX, Hash, Terminal, List } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Loader2, AlertTriangle, FileScan, Hash, Terminal, List } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { VirusTotalScanner } from '@/components/virustotal-scanner';
 import { SteganographyAnalyzer } from '@/components/steganography-analyzer';
 import { YaraRuleGenerator } from '@/components/yara-rule-generator';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
+import MD5 from 'crypto-js/md5';
+import SHA1 from 'crypto-js/sha1';
+import SHA256 from 'crypto-js/sha256';
+import { IocExtractor } from '@/components/ioc-extractor';
 
 const formSchema = z.object({
   file: z
@@ -26,37 +27,44 @@ const formSchema = z.object({
     .refine((files) => files?.length === 1, 'Please select a file.')
 });
 
-const getVerdictIcon = (verdict?: string) => {
-  switch (verdict?.toLowerCase()) {
-    case 'malicious':
-      return <ShieldX className="h-10 w-10 text-destructive" />;
-    case 'suspicious':
-      return <ShieldAlert className="h-10 w-10 text-amber-400" />;
-    case 'safe':
-      return <CheckCircle className="h-10 w-10 text-green-400" />;
-    default:
-      return <FileScan className="h-10 w-10 text-muted-foreground" />;
-  }
-};
-
-const getVerdictColor = (verdict?: string): 'destructive' | 'secondary' | 'default' => {
-  switch (verdict?.toLowerCase()) {
-    case 'malicious':
-      return 'destructive';
-    case 'suspicious':
-      return 'secondary';
-    case 'safe':
-      return 'default';
-    default:
-      return 'default';
-  }
+type ClientSideAnalysisResult = {
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    hashes: {
+        md5: string;
+        sha1: string;
+        sha256: string;
+    };
+    strings: string[];
 }
 
+const extractStrings = (buffer: ArrayBuffer, minLength = 4) => {
+    const view = new Uint8Array(buffer);
+    const result: string[] = [];
+    let currentString = '';
+    for (let i = 0; i < view.length; i++) {
+        const charCode = view[i];
+        if (charCode >= 32 && charCode <= 126) {
+            currentString += String.fromCharCode(charCode);
+        } else {
+            if (currentString.length >= minLength) {
+                result.push(currentString);
+            }
+            currentString = '';
+        }
+    }
+    if (currentString.length >= minLength) {
+        result.push(currentString);
+    }
+    return result;
+};
+
+
 export default function AnalysisPage() {
-  const [result, setResult] = useState<MalwareAnalysisOutput | null>(null);
+  const [result, setResult] = useState<ClientSideAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string>('');
   const { user } = useAuth();
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -69,25 +77,40 @@ export default function AnalysisPage() {
     setError(null);
 
     const file = values.file[0];
-    setFileName(file.name);
 
     try {
-      const response = await analyzeFile({
-        filename: file.name,
-        fileSize: file.size,
-      });
-      setResult(response);
-      logActivity({
-          user: user?.displayName || 'Analyst',
-          action: 'Analyzed File',
-          details: `File: ${file.name}, Verdict: ${response.verdict}`
-      });
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const buffer = e.target?.result as ArrayBuffer;
+            if (buffer) {
+                const wordArray = new Uint8Array(buffer);
+                const md5 = MD5(wordArray as any).toString();
+                const sha1 = SHA1(wordArray as any).toString();
+                const sha256 = SHA256(wordArray as any).toString();
+                const strings = extractStrings(buffer);
+                
+                setResult({
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type || 'unknown',
+                    hashes: { md5, sha1, sha256 },
+                    strings,
+                });
+
+                logActivity({
+                    user: user?.displayName || 'Analyst',
+                    action: 'Analyzed File (Client-Side)',
+                    details: `File: ${file.name}`
+                });
+            }
+        };
+        reader.onerror = () => {
+             setError('Failed to read file for analysis.');
+        }
+        reader.readAsArrayBuffer(file);
+
     } catch (err) {
-      if (err instanceof Error && (err.message.includes('503') || err.message.toLowerCase().includes('overloaded'))) {
-        setError('The analysis service is temporarily busy. Please try again later.');
-      } else {
-        setError('Failed to analyze file. The simulation may have been blocked.');
-      }
+      setError('An error occurred during file processing.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -100,15 +123,16 @@ export default function AnalysisPage() {
         <h1 className="font-headline text-3xl font-semibold">Malware Analysis Toolkit</h1>
         <p className="text-muted-foreground">A collection of tools for analyzing suspicious files and artifacts.</p>
       </div>
-
+      
+      <IocExtractor />
       <VirusTotalScanner />
       <YaraRuleGenerator />
       <SteganographyAnalyzer />
 
       <Card>
         <CardHeader>
-          <CardTitle>Simulated Static File Analysis</CardTitle>
-          <CardDescription>Select a file to perform a simulated static analysis. The file is not uploaded.</CardDescription>
+          <CardTitle>Client-Side File Analyzer</CardTitle>
+          <CardDescription>Analyze a file locally in your browser. The file is not uploaded.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -134,7 +158,7 @@ export default function AnalysisPage() {
               />
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Run Simulated Analysis
+                Analyze File
               </Button>
             </form>
           </Form>
@@ -152,67 +176,29 @@ export default function AnalysisPage() {
               <div>
                 <CardTitle className="flex items-center gap-3">
                   <FileScan className="h-6 w-6" />
-                  Analysis Report for <span className="font-mono">{fileName}</span>
+                  Analysis Report for <span className="font-mono">{result.fileName}</span>
                 </CardTitle>
-                <CardDescription>Generated static analysis results.</CardDescription>
-              </div>
-              <div className="text-center">
-                  {getVerdictIcon(result.verdict)}
-                  <Badge variant={getVerdictColor(result.verdict)} className="mt-2 px-3 py-1 text-sm">{result.verdict}</Badge>
+                 <CardDescription>File Size: {result.fileSize} bytes, Type: {result.fileType}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {result.threatName && <p className="text-destructive font-semibold">Threat Detected: <span className="font-mono">{result.threatName}</span></p>}
-            <p className="text-sm text-muted-foreground">{result.analysisSummary}</p>
-
-            <Accordion type="multiple" defaultValue={['hashes', 'strings']} className="w-full">
-              <AccordionItem value="hashes">
-                <AccordionTrigger><div className="flex items-center gap-2"><Hash className="h-4 w-4"/> Hashes & File Info</div></AccordionTrigger>
-                <AccordionContent>
-                  <dl className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                    <div className="font-mono break-all"><dt className="font-semibold text-foreground">MD5</dt><dd className="text-muted-foreground">{result.fileInfo.md5}</dd></div>
-                    <div className="font-mono break-all"><dt className="font-semibold text-foreground">SHA1</dt><dd className="text-muted-foreground">{result.fileInfo.sha1}</dd></div>
-                    <div className="font-mono break-all"><dt className="font-semibold text-foreground">SHA256</dt><dd className="text-muted-foreground">{result.fileInfo.sha256}</dd></div>
-                    <div className="col-span-full"><dt className="font-semibold text-foreground">File Type</dt><dd className="text-muted-foreground">{result.fileInfo.fileType}</dd></div>
-                  </dl>
-                </AccordionContent>
-              </AccordionItem>
-              
-              {result.peInfo && (
-                <AccordionItem value="pe-info">
-                    <AccordionTrigger><div className="flex items-center gap-2"><List className="h-4 w-4"/> PE Sections & Info</div></AccordionTrigger>
-                    <AccordionContent>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                           <p className="text-sm"><strong>Entry Point: </strong><span className="font-mono text-muted-foreground">{result.peInfo.entryPoint}</span></p>
-                           <p className="text-sm"><strong>Image Base: </strong><span className="font-mono text-muted-foreground">{result.peInfo.imageBase}</span></p>
-                        </div>
-                        <Table>
-                            <TableHeader><TableRow><TableHead>Section</TableHead><TableHead>Address</TableHead><TableHead>Size</TableHead><TableHead className="text-right">Entropy</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {result.peInfo.sections.map(section => (
-                                    <TableRow key={section.name}>
-                                        <TableCell className="font-mono">{section.name}</TableCell>
-                                        <TableCell className="font-mono">{section.virtualAddress}</TableCell>
-                                        <TableCell className="font-mono">{section.virtualSize}</TableCell>
-                                        <TableCell className="text-right font-mono">{section.entropy.toFixed(4)}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </AccordionContent>
-                </AccordionItem>
-              )}
-
-              <AccordionItem value="strings">
-                <AccordionTrigger><div className="flex items-center gap-2"><Terminal className="h-4 w-4"/> Detected Strings</div></AccordionTrigger>
-                <AccordionContent>
-                  <pre className="bg-primary/20 p-4 rounded-md text-sm text-foreground overflow-y-auto max-h-60 font-mono">
-                    <code>{result.detectedStrings.join('\n')}</code>
-                  </pre>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <div className="space-y-4">
+                <div>
+                    <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><Hash className="h-5 w-5"/>Hashes</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm font-mono">
+                       <div className="font-mono break-all p-2 rounded bg-primary/20"><dt className="font-semibold text-foreground">MD5</dt><dd className="text-muted-foreground">{result.hashes.md5}</dd></div>
+                       <div className="font-mono break-all p-2 rounded bg-primary/20"><dt className="font-semibold text-foreground">SHA1</dt><dd className="text-muted-foreground">{result.hashes.sha1}</dd></div>
+                       <div className="font-mono break-all p-2 rounded bg-primary/20"><dt className="font-semibold text-foreground">SHA256</dt><dd className="text-muted-foreground">{result.hashes.sha256}</dd></div>
+                    </div>
+                </div>
+                 <div>
+                    <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><Terminal className="h-5 w-5"/>Printable Strings</h3>
+                    <pre className="bg-primary/20 p-4 rounded-md text-sm text-foreground overflow-y-auto max-h-80 font-mono">
+                        <code>{result.strings.join('\n')}</code>
+                    </pre>
+                </div>
+            </div>
           </CardContent>
         </Card>
       )}

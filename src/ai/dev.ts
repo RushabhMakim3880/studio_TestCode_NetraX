@@ -7,7 +7,6 @@ import '@/ai/flows/cyber-intel-flow.ts';
 import '@/ai/flows/phishing-flow.ts';
 import '@/ai/flows/vapt-flow.ts';
 import '@/ai/flows/reporting-flow.ts';
-import '@/ai/flows/malware-analysis-flow.ts';
 import '@/ai/flows/steganography-flow.ts';
 import '@/ai/flows/social-media-analysis-flow.ts';
 import '@/ai/flows/config-analyzer-flow.ts';
