@@ -12,19 +12,25 @@ import { getApiKeys, saveApiKeys, ApiKeySettings } from '@/services/api-key-serv
 
 export function ApiKeysManager() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<ApiKeySettings>({ VIRUSTOTAL_API_KEY: '' });
+  const [settings, setSettings] = useState<ApiKeySettings>({ VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadKeys() {
       setIsLoading(true);
-      const savedKeys = await getApiKeys();
-      setSettings(savedKeys);
-      setIsLoading(false);
+      try {
+        const savedKeys = await getApiKeys();
+        setSettings(savedKeys);
+      } catch (e) {
+        const error = e instanceof Error ? e.message : 'Could not load API keys.';
+        toast({ variant: 'destructive', title: 'Loading Failed', description: error });
+      } finally {
+        setIsLoading(false);
+      }
     }
     loadKeys();
-  }, []);
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -59,16 +65,29 @@ export function ApiKeysManager() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
         ) : (
-            <div className="space-y-2">
-                <Label htmlFor="VIRUSTOTAL_API_KEY">VirusTotal API Key</Label>
-                <Input 
-                    id="VIRUSTOTAL_API_KEY" 
-                    name="VIRUSTOTAL_API_KEY" 
-                    type="password"
-                    value={settings.VIRUSTOTAL_API_KEY} 
-                    onChange={handleInputChange} 
-                    placeholder="Enter your VirusTotal API key"
-                />
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="VIRUSTOTAL_API_KEY">VirusTotal API Key</Label>
+                    <Input 
+                        id="VIRUSTOTAL_API_KEY" 
+                        name="VIRUSTOTAL_API_KEY" 
+                        type="password"
+                        value={settings.VIRUSTOTAL_API_KEY} 
+                        onChange={handleInputChange} 
+                        placeholder="Enter your VirusTotal API key"
+                    />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="WHOIS_API_KEY">WhoisXMLAPI Key</Label>
+                    <Input 
+                        id="WHOIS_API_KEY" 
+                        name="WHOIS_API_KEY" 
+                        type="password"
+                        value={settings.WHOIS_API_KEY} 
+                        onChange={handleInputChange} 
+                        placeholder="Enter your WhoisXMLAPI key"
+                    />
+                </div>
             </div>
         )}
       </CardContent>

@@ -47,8 +47,8 @@ export function CustomThemeGenerator() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        toast({ variant: 'destructive', title: 'Image Too Large', description: 'Please select an image under 2MB.' });
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({ variant: 'destructive', title: 'Image Too Large', description: 'Please select an image under 5MB.' });
         return;
       }
       setIsLoading(true);

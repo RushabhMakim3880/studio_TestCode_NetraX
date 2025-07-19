@@ -1,5 +1,7 @@
+
 'use server';
 import dns from 'dns/promises';
+import { getApiKey } from '@/services/api-key-service';
 
 /**
  * Performs a WHOIS lookup for a given domain using a public API.
@@ -7,9 +9,13 @@ import dns from 'dns/promises';
  * @returns A promise that resolves to the raw WHOIS text.
  */
 export async function whoisLookup(domain: string): Promise<string> {
+    const apiKey = await getApiKey('WHOIS_API_KEY');
+    if (!apiKey) {
+        throw new Error('WHOIS_API_KEY is not configured on the server. Please add it in the Settings page.');
+    }
+    
     try {
-        // We use a public API to avoid managing a direct WHOIS client connection.
-        const response = await fetch(`https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=${process.env.WHOIS_API_KEY}&domainName=${domain}&outputFormat=JSON`);
+        const response = await fetch(`https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=${apiKey}&domainName=${domain}&outputFormat=JSON`);
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`WHOIS API request failed with status ${response.status}: ${errorBody}`);

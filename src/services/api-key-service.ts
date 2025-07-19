@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 const ApiKeySettingsSchema = z.object({
   VIRUSTOTAL_API_KEY: z.string().optional(),
+  WHOIS_API_KEY: z.string().optional(),
 });
 
 export type ApiKeySettings = z.infer<typeof ApiKeySettingsSchema>;
@@ -28,7 +29,7 @@ async function readSecrets(): Promise<ApiKeySettings> {
     return parsed;
   } catch (error) {
     // If the file doesn't exist or is invalid, return a default empty object.
-    return { VIRUSTOTAL_API_KEY: '' };
+    return { VIRUSTOTAL_API_KEY: '', WHOIS_API_KEY: '' };
   }
 }
 
@@ -39,9 +40,9 @@ async function readSecrets(): Promise<ApiKeySettings> {
  */
 export async function getApiKeys(): Promise<ApiKeySettings> {
     const secrets = await readSecrets();
-    const envToken = process.env.NGROK_AUTHTOKEN; // This is for ngrok, but let's keep env vars in one place
     return {
         VIRUSTOTAL_API_KEY: secrets.VIRUSTOTAL_API_KEY || process.env.VIRUSTOTAL_API_KEY || '',
+        WHOIS_API_KEY: secrets.WHOIS_API_KEY || process.env.WHOIS_API_KEY || '',
     };
 }
 
