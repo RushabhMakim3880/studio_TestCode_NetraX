@@ -19,6 +19,11 @@ const formSchema = z.object({
   description: z.string().min(10, { message: 'Please describe the bot\'s functionality in at least 10 characters.' }),
 });
 
+const defaultCode = `
+# Agent code will be generated here.
+# Click the "Generate Agent Code" button to start.
+`;
+
 const botTemplate = `
 import logging
 import os
@@ -221,21 +226,46 @@ export function TelegramBotGenerator() {
             </form>
             </Form>
             
-            {result?.usageInstructions && (
-                <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="setup">
-                  <AccordionTrigger>
-                    <div className="flex items-center gap-2">
-                      <Info className="h-4 w-4 text-accent"/>
-                      Agent Setup Instructions
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                     <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">{result.usageInstructions}</pre>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="setup-guide">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-2 text-base font-semibold">
+                    <Info className="h-4 w-4 text-accent"/>
+                    Agent Setup Guide
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2 text-sm text-muted-foreground">
+                  <p>Follow these steps to set up the two-way communication agent:</p>
+                  <ol className="list-decimal list-inside space-y-3">
+                    <li>
+                      <strong>Install Python Libraries:</strong>
+                      <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">pip install python-telegram-bot requests</pre>
+                    </li>
+                    <li>
+                      <strong>Get Bot Token:</strong> Open Telegram and talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-accent underline">@BotFather</a>. Create a new bot to get its unique API token.
+                    </li>
+                    <li>
+                      <strong>Get NETRA-X Webhook URL:</strong> This is the public URL of your NETRA-X app. If you're running locally, you must expose it to the internet using a tool like <a href="https://ngrok.com/" target="_blank" rel="noopener noreferrer" className="text-accent underline">ngrok</a>. Your final URL will look like this:
+                      <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">https://your-public-url.io/api/c2/telegram/webhook</pre>
+                    </li>
+                     <li>
+                      <strong>Set Environment Variables:</strong> Before running the script, set these variables in your terminal. This is more secure than hard-coding them.
+                      <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">
+                        export TELEGRAM_BOT_TOKEN="YOUR_TOKEN_HERE"<br/>
+                        export NETRAX_WEBHOOK_URL="YOUR_WEBHOOK_URL_HERE"
+                      </pre>
+                    </li>
+                    <li>
+                      <strong>Run the Agent:</strong> Save the generated code as a Python file (e.g., `agent.py`) and run it.
+                      <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">python agent.py</pre>
+                    </li>
+                     <li>
+                      <strong>Interact:</strong> Find your bot on Telegram and send `/start`. It will reply with your Chat ID. Use this ID in the "Send Payload" form to send messages from NETRA-X. Send commands like `!ping` from Telegram to test the two-way connection.
+                    </li>
+                  </ol>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
         </div>
         
         <div className="space-y-2">
