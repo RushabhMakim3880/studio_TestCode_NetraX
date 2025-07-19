@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A service for interacting with a public breach compilation database.

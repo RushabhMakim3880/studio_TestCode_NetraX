@@ -1,4 +1,3 @@
-
 'use client';
 
 import { MetadataScrubber } from '@/components/metadata-scrubber';
