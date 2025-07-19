@@ -100,10 +100,11 @@ export const APP_MODULES: Module[] = [
       { name: 'Bug Bounty', path: '/bug-bounty', icon: Bug, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Form Generator', path: '/form-generator', icon: TextFields, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Web Vulnerabilities', path: '/web-vulns', icon: Binary, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
   {
-    name: 'Analysis & Forensics',
+    name: 'Analysis &amp; Forensics',
     icon: Dna,
     roles: [ROLES.ADMIN, ROLES.ANALYST],
     subModules: [
@@ -114,7 +115,7 @@ export const APP_MODULES: Module[] = [
     ],
   },
   {
-    name: 'Assets & Reporting',
+    name: 'Assets &amp; Reporting',
     icon: Presentation,
     roles: ALL_ROLES,
     subModules: [
