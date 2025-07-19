@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, FileScan, Hash, Terminal, List } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { VirusTotalScanner } from '@/components/virustotal-scanner';
-import { SteganographyAnalyzer } from '@/components/steganography-analyzer';
+import { MetadataScrubber } from '@/components/metadata-scrubber';
 import { YaraRuleGenerator } from '@/components/yara-rule-generator';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
@@ -127,7 +127,7 @@ export default function AnalysisPage() {
       <IocExtractor />
       <VirusTotalScanner />
       <YaraRuleGenerator />
-      <SteganographyAnalyzer />
+      <MetadataScrubber />
 
       <Card>
         <CardHeader>
