@@ -97,14 +97,18 @@ export default function AnalysisPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-headline text-3xl font-semibold">Static Malware Analysis</h1>
-        <p className="text-muted-foreground">Perform static analysis on suspicious files (simulation).</p>
+        <h1 className="font-headline text-3xl font-semibold">Malware Analysis Toolkit</h1>
+        <p className="text-muted-foreground">A collection of tools for analyzing suspicious files and artifacts.</p>
       </div>
+
+      <VirusTotalScanner />
+      <YaraRuleGenerator />
+      <SteganographyAnalyzer />
 
       <Card>
         <CardHeader>
-          <CardTitle>File Submission</CardTitle>
-          <CardDescription>Select a file to begin the simulated analysis. The file is not uploaded.</CardDescription>
+          <CardTitle>Simulated Static File Analysis</CardTitle>
+          <CardDescription>Select a file to perform a simulated static analysis. The file is not uploaded.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -114,7 +118,7 @@ export default function AnalysisPage() {
                 name="file"
                 render={({ field: { onChange, onBlur, name, ref } }) => (
                   <FormItem>
-                    <FormLabel>File</FormLabel>
+                    <FormLabel>File for Analysis</FormLabel>
                     <FormControl>
                         <Input 
                             type="file" 
@@ -128,9 +132,9 @@ export default function AnalysisPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
+              <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Analyze File
+                Run Simulated Analysis
               </Button>
             </form>
           </Form>
@@ -212,10 +216,6 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
       )}
-
-      <VirusTotalScanner />
-      <SteganographyAnalyzer />
-      <YaraRuleGenerator />
     </div>
   );
 }
