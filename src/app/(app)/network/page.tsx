@@ -4,7 +4,7 @@
 import { RealPortScanner } from '@/components/real-port-scanner';
 import { SubdomainScanner } from '@/components/subdomain-scanner';
 
-export default function NetworkAnalysisPage() {
+export default function NetworkInvestigationPage() {
 
   return (
     <div className="flex flex-col gap-6">
