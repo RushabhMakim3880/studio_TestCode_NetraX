@@ -105,7 +105,7 @@ export const APP_MODULES: Module[] = [
     ],
   },
   {
-    name: 'Analysis &amp; Forensics',
+    name: 'Analysis & Forensics',
     icon: Dna,
     roles: [ROLES.ADMIN, ROLES.ANALYST],
     subModules: [
@@ -116,7 +116,7 @@ export const APP_MODULES: Module[] = [
     ],
   },
   {
-    name: 'Assets &amp; Reporting',
+    name: 'Assets & Reporting',
     icon: Presentation,
     roles: ALL_ROLES,
     subModules: [

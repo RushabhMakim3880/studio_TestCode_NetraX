@@ -7,6 +7,7 @@ import { DashboardLayoutManager } from '@/components/dashboard/dashboard-layout-
 import { LayoutGrid } from 'lucide-react';
 import { ShortcutCard } from '@/components/dashboard/shortcut-card';
 import { APP_MODULES } from '@/lib/constants';
+import { StatusReport } from '@/components/status-report';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -35,6 +36,8 @@ export default function DashboardPage() {
         </div>
         <DashboardLayoutManager />
       </div>
+      
+      <StatusReport />
 
       {visibleWidgets.length > 0 || visibleShortcuts.length > 0 ? (
          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
