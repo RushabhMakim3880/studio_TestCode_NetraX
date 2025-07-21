@@ -3,19 +3,20 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText } from 'lucide-react';
+import Link from 'next/link';
 
 const implementedFeatures = [
-    { icon: Cookie, title: 'Session Hijacking Tool', description: 'Generates replay commands from stolen session cookies.' },
-    { icon: KeySquare, title: 'JWT Analyzer & Manipulator', description: 'Decode, tamper, and test the security of JSON Web Tokens.' },
-    { icon: ShieldHalf, title: 'CSP & Security Headers Analyzer', description: 'Identifies misconfigurations in security headers and suggests bypasses.' },
-    { icon: Binary, title: 'Advanced Network Scanner', description: 'Performs live port scans with service and OS detection via an Nmap wrapper.' },
-    { icon: MousePointer2, title: 'Clickjacking Page Builder', description: 'Interactively build clickjacking proof-of-concept pages.' },
-    { icon: FileText, title: 'Credential Form Generator', description: 'Builds and generates HTML for custom credential capture forms.' },
-    { icon: Wand, title: 'DOM Cloner & XSS Injector', description: 'Clones a live webpage and injects a custom XSS payload.' },
-    { icon: GitFork, title: 'Attack Surface Visualizer', description: 'Crawls and renders a target’s web structure as an interactive graph.' },
-    { icon: Syringe, title: 'Passive Vulnerability Scanner', description: 'Uses AI to find potential injection vulnerabilities from a URL.' },
-    { icon: Bug, title: 'Bug Bounty Recon Helper', description: 'A toolkit including an IDOR scanner and report formatter.' },
-    { icon: Bot, title: 'AI Malware Concept Generator', description: 'Designs conceptual malware payloads based on specified features.' },
+    { icon: Wand, title: 'DOM Cloner & XSS Injector', description: 'Clones a live webpage and injects a custom XSS payload.', path: '/web-vulns' },
+    { icon: FileText, title: 'Credential Form Generator', description: 'Builds and generates HTML for custom credential capture forms.', path: '/form-generator' },
+    { icon: GitFork, title: 'Attack Surface Visualizer', description: 'Crawls and renders a target’s web structure as an interactive graph.', path: '/attack-surface' },
+    { icon: Syringe, title: 'Passive Vulnerability Scanner', description: 'Uses AI to find potential injection vulnerabilities from a URL.', path: '/vapt' },
+    { icon: Bug, title: 'Bug Bounty Recon Helper', description: 'A toolkit including an IDOR scanner and report formatter.', path: '/bug-bounty' },
+    { icon: Bot, title: 'AI Malware Concept Generator', description: 'Designs conceptual malware payloads based on specified features.', path: '/offensive' },
+    { icon: Cookie, title: 'Session Hijacking Tool', description: 'Generates replay commands from stolen session cookies.', path: '/offensive' },
+    { icon: KeySquare, title: 'JWT Analyzer & Manipulator', description: 'Decode, tamper, and test the security of JSON Web Tokens.', path: '/offensive' },
+    { icon: ShieldHalf, title: 'CSP & Security Headers Analyzer', description: 'Identifies misconfigurations in security headers and suggests bypasses.', path: '/vapt' },
+    { icon: Binary, title: 'Advanced Network Scanner', description: 'Performs live port scans with service and OS detection via an Nmap wrapper.', path: '/network' },
+    { icon: MousePointer2, title: 'Clickjacking Page Builder', description: 'Interactively build clickjacking proof-of-concept pages.', path: '/offensive' },
 ];
 
 const plannedFeatures = [
@@ -39,15 +40,17 @@ export function StatusReport() {
                         The following mandatory features have been successfully integrated into the platform.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+                <CardContent className="space-y-1 max-h-96 overflow-y-auto">
                     {implementedFeatures.map((feature, index) => (
-                        <div key={index} className="flex items-start gap-4">
-                           <feature.icon className="h-5 w-5 mt-1 shrink-0 text-accent" />
-                           <div>
-                            <p className="font-semibold">{feature.title}</p>
-                            <p className="text-sm text-muted-foreground">{feature.description}</p>
-                           </div>
-                        </div>
+                        <Link href={feature.path} key={index} className="block rounded-lg p-3 hover:bg-primary/10 transition-colors">
+                            <div className="flex items-start gap-4">
+                               <feature.icon className="h-5 w-5 mt-1 shrink-0 text-accent" />
+                               <div>
+                                <p className="font-semibold">{feature.title}</p>
+                                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                               </div>
+                            </div>
+                        </Link>
                     ))}
                 </CardContent>
             </Card>
