@@ -8,29 +8,34 @@ import { notFound } from 'next/navigation';
 export default function PhishingRenderPage({ params }: { params: { id: string } }) {
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && params.id) {
+    // This logic is now safely inside a useEffect, ensuring it only runs on the client
+    // after the initial render, preventing hydration mismatches.
+    if (params.id) {
       try {
-        // Retrieve the stored HTML from localStorage using the ID from the URL.
         const storedHtml = localStorage.getItem(`phishing-html-${params.id}`);
         if (storedHtml) {
           setHtmlContent(storedHtml);
         } else {
-          // If no content is found for this ID, it's a 404.
-          setHtmlContent(null);
+          // If no content is found for this ID, mark as an error to trigger notFound().
+          setError(true);
         }
-      } catch (error) {
-        console.error("Failed to read phishing page content from localStorage", error);
-        setHtmlContent(null);
+      } catch (e) {
+        console.error("Failed to read phishing page content from localStorage", e);
+        setError(true);
       } finally {
         setIsLoading(false);
       }
+    } else {
+        setIsLoading(false);
+        setError(true);
     }
   }, [params.id]);
 
   useEffect(() => {
-    // If content is loaded, inject it into the document.
+    // This effect runs only when htmlContent is successfully set.
     if (htmlContent) {
       document.open();
       document.write(htmlContent);
@@ -38,8 +43,8 @@ export default function PhishingRenderPage({ params }: { params: { id: string } 
     }
   }, [htmlContent]);
   
-  if (!isLoading && !htmlContent) {
-      // If after loading there's no content, show a proper 404.
+  if (error && !isLoading) {
+      // If an error occurred (e.g., page not found in localStorage), trigger a 404.
       notFound();
   }
 
