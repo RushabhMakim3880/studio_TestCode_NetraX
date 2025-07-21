@@ -51,7 +51,7 @@ const prompt = ai.definePrompt({
 
   Generate a report that includes:
   1. A suitable title.
-  2. A 3-4 paragraph executive summary analyzing trends and outcomes for the period. Invent plausible data and events.
+  2. A comprehensive 3-4 paragraph executive summary analyzing trends and outcomes for the period. Invent plausible data and events.
   3. A list of 3-4 key metrics with plausible values and changes from the previous period.
   4. A suitable title for a bar chart that visualizes a key aspect of the report.
   5. An array of 4 to 6 data points for the bar chart. The 'name' should be a label (like a week or month) and 'value' a number.
