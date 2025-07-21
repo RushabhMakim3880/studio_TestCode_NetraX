@@ -1,14 +1,13 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -28,6 +27,7 @@ import { useAuth, type User as AuthUser } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Link from 'next/link';
 
 type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
 type Project = {
@@ -53,6 +53,7 @@ type Task = {
   assignedTo?: string; // username
   targetProfileId?: string;
   templateId?: string;
+  mitreTtp?: string;
 };
 
 type Profile = { 
@@ -73,8 +74,8 @@ const initialProjects: Project[] = [
 ];
 
 const initialTasks: Task[] = [
-  { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon', priority: 'High', assignedTo: 'analyst' },
-  { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001', priority: 'Medium', assignedTo: 'operator' },
+  { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon', priority: 'High', assignedTo: 'analyst', mitreTtp: 'T1595' },
+  { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001', priority: 'Medium', assignedTo: 'operator', mitreTtp: 'T1566.001' },
   { id: 'TSK-003', projectId: 'PROJ-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload', priority: 'High' },
   { id: 'TSK-004', projectId: 'PROJ-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon', priority: 'Medium', assignedTo: 'analyst' },
   { id: 'TSK-005', projectId: 'PROJ-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload', priority: 'Critical', assignedTo: 'operator' },
@@ -95,6 +96,7 @@ const taskSchema = z.object({
     assignedTo: z.string().optional(),
     targetProfileId: z.string().optional(),
     templateId: z.string().optional(),
+    mitreTtp: z.string().optional(),
 });
 
 const profileSchema = z.object({
@@ -300,7 +302,7 @@ export default function ProjectManagementPage() {
   const handleAddTaskClick = (projectId: string) => {
     setEditingTask(null);
     setCurrentProjectIdForTask(projectId);
-    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '' });
+    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '', mitreTtp: '' });
     setIsTaskFormOpen(true);
   }
 
@@ -458,6 +460,13 @@ export default function ProjectManagementPage() {
                                                                <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
                                                             </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
                                                         )}
+                                                        {task.mitreTtp && (
+                                                            <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                                               <Link href={`https://attack.mitre.org/techniques/${task.mitreTtp.replace('.', '/')}`} target="_blank">
+                                                                    <Badge variant="destructive" className="font-mono text-xs">{task.mitreTtp}</Badge>
+                                                               </Link>
+                                                            </TooltipTrigger><TooltipContent><p>View MITRE ATT&amp;CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
+                                                        )}
                                                     </div>
                                                     {task.type === 'Phishing' && (
                                                       <>
@@ -586,16 +595,22 @@ export default function ProjectManagementPage() {
                         </Select>
                     </div>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="task-assignee">Assign To</Label>
-                    <Select onValueChange={(v) => taskForm.setValue('assignedTo', v === 'unassigned' ? '' : v)} defaultValue={taskForm.getValues('assignedTo')}>
-                        <SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
-                            {teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="task-assignee">Assign To</Label>
+                        <Select onValueChange={(v) => taskForm.setValue('assignedTo', v === 'unassigned' ? '' : v)} defaultValue={taskForm.getValues('assignedTo')}>
+                            <SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                {teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="task-mitre">MITRE ATT&amp;CK TTP</Label>
+                        <Input id="task-mitre" placeholder="e.g., T1566.001" {...taskForm.register('mitreTtp')} className="font-mono" />
+                    </div>
+                 </div>
                 {watchedTaskType === 'Phishing' && (
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -695,3 +710,4 @@ export default function ProjectManagementPage() {
   );
 }
 
+    

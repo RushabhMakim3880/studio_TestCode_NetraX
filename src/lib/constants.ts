@@ -1,4 +1,5 @@
 
+
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
@@ -33,6 +34,8 @@ import {
   Binary,
   MousePointer2,
   GitFork,
+  Link,
+  GitBranch,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -153,3 +156,5 @@ export function getAllModuleNamesForRole(role: Role): string[] {
   });
   return modules;
 }
+
+    

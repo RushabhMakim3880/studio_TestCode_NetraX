@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText, Presentation } from 'lucide-react';
+import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText, Presentation, GitBranch } from 'lucide-react';
 import Link from 'next/link';
 
 const implementedFeatures = [
@@ -17,10 +18,10 @@ const implementedFeatures = [
     { icon: Binary, title: 'Advanced Network Scanner', description: 'Performs live port scans with service and OS detection via an Nmap wrapper.', path: '/network' },
     { icon: MousePointer2, title: 'Clickjacking Page Builder', description: 'Interactively build clickjacking proof-of-concept pages.', path: '/offensive' },
     { icon: Presentation, title: 'Advanced Reporting & Analytics', description: 'Create comprehensive, customizable PDF reports from project data.', path: '/reporting' },
+    { icon: GitBranch, title: 'MITRE ATT&CK Framework Integration', description: 'Map project tasks and findings directly to ATT&CK techniques.', path: '/project-management' },
 ];
 
 const plannedFeatures = [
-    { title: 'MITRE ATT&CK Framework Integration', description: 'Map project tasks and findings directly to ATT&CK techniques.' },
     { title: 'Team Collaboration Features', description: 'Enable shared notes, comments on tasks, and real-time notifications.' },
     { title: 'Automated Workflow Execution', description: 'Chain multiple tools together into automated attack or analysis workflows.' },
     { title: 'Expanded C2 Channel Support', description: 'Add support for additional C2 channels like DNS over HTTPS.' },
@@ -75,3 +76,5 @@ export function StatusReport() {
         </div>
     );
 }
+
+    
