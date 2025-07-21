@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand } from 'lucide-react';
+import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText } from 'lucide-react';
 
 const implementedFeatures = [
     { icon: Cookie, title: 'Session Hijacking Tool', description: 'Generates replay commands from stolen session cookies.' },
@@ -73,4 +73,3 @@ export function StatusReport() {
         </div>
     );
 }
-
