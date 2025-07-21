@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText, Presentation, GitBranch, Server } from 'lucide-react';
+import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText, Presentation, GitBranch, Server, Workflow } from 'lucide-react';
 import Link from 'next/link';
 
 const implementedFeatures = [
@@ -20,11 +20,11 @@ const implementedFeatures = [
     { icon: Presentation, title: 'Advanced Reporting & Analytics', description: 'Create comprehensive, customizable PDF reports from project data.', path: '/reporting' },
     { icon: GitBranch, title: 'MITRE ATT&CK Framework Integration', description: 'Map project tasks and findings directly to ATT&CK techniques.', path: '/project-management' },
     { icon: Server, title: 'Expanded C2 Channel Support', description: 'Generate custom malware concepts with configurable C2 channels (e.g., DoH, Telegram).', path: '/offensive' },
+    { icon: Workflow, title: 'Automated Workflow Execution', description: 'Chain multiple tools together into automated attack or analysis workflows via an AI Exploit Chain Assistant.', path: '/vapt' },
 ];
 
 const plannedFeatures = [
     { title: 'Team Collaboration Features', description: 'Enable shared notes, comments on tasks, and real-time notifications.' },
-    { title: 'Automated Workflow Execution', description: 'Chain multiple tools together into automated attack or analysis workflows.' },
 ];
 
 export function StatusReport() {

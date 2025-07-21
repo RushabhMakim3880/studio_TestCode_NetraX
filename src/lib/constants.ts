@@ -36,6 +36,7 @@ import {
   GitFork,
   Link,
   GitBranch,
+  Workflow,
 } from 'lucide-react';
 
 export const ROLES = {
