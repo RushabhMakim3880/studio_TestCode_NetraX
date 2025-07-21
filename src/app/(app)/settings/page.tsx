@@ -8,6 +8,7 @@ import { CustomThemeGenerator } from '@/components/custom-theme-generator';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
 import { PageSettingsManager } from '@/components/settings/page-settings-manager';
+import { LocalAiProviderManager } from '@/components/local-ai-provider-manager';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function SettingsPage() {
       </div>
 
       <ApiKeysManager />
+      <LocalAiProviderManager />
       <EmailSettings />
       <PageSettingsManager />
       <AppearanceSettings />
