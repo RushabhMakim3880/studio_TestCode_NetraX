@@ -11,6 +11,8 @@ import { ScrollArea } from './ui/scroll-area';
 
 export type CapturedCredential = {
     timestamp: string; // ISO String
+    ipAddress?: string;
+    userAgent?: string;
     [key: string]: any; // Allows for arbitrary keys from form fields
 };
 
@@ -31,6 +33,11 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
         });
     }
 
+    // Dynamically get all headers except for the timestamp
+    const headers = credentials.length > 0
+        ? ['timestamp', ...Object.keys(credentials[0]).filter(key => key !== 'timestamp')]
+        : ['timestamp'];
+
     return (
         <Card className="flex flex-col h-full">
             <CardHeader>
@@ -46,38 +53,33 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-                 <ScrollArea className="h-72">
+                 <ScrollArea className="h-72 w-full">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Timestamp</TableHead>
-                                <TableHead colSpan={2}>Captured Data</TableHead>
+                                {headers.map(header => (
+                                    <TableHead key={header} className="capitalize">{header.replace(/([A-Z])/g, ' $1')}</TableHead>
+                                ))}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                              {credentials.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center">
+                                    <TableCell colSpan={headers.length} className="h-24 text-center">
                                          No credentials captured yet.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 credentials.slice().reverse().map((cred, index) => (
                                     <TableRow key={cred.timestamp + index}>
-                                        <TableCell>{new Date(cred.timestamp).toLocaleString()}</TableCell>
-                                        <TableCell colSpan={2}>
-                                            <div className="font-mono text-xs space-y-1">
-                                                {Object.entries(cred).map(([key, value]) => {
-                                                    if (key === 'timestamp') return null;
-                                                    return (
-                                                        <div key={key} className="truncate">
-                                                            <span className="text-muted-foreground">{key}: </span>
-                                                            <span className="text-foreground">{String(value)}</span>
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        </TableCell>
+                                       {headers.map(header => (
+                                           <TableCell key={header} className="font-mono text-xs max-w-[200px] truncate">
+                                                {header === 'timestamp' 
+                                                    ? new Date(cred[header]).toLocaleString() 
+                                                    : String(cred[header] ?? '')
+                                                }
+                                           </TableCell>
+                                       ))}
                                     </TableRow>
                                 ))
                             )}

