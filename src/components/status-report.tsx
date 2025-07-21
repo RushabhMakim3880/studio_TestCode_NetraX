@@ -25,7 +25,11 @@ const implementedFeatures = [
 ];
 
 const plannedFeatures: {title: string, description: string}[] = [
-    // All mandatory features are now implemented.
+    { title: 'Session Hijacking via Cookie Replay Tool', description: 'Generate replay commands (cURL, fetch) from stolen session cookies.' },
+    { title: 'JWT Analyzer & Manipulator', description: 'Decode, tamper, and brute-force HS256 JWTs to test for vulnerabilities.' },
+    { title: 'Clickjacking Page Builder', description: 'Visually build clickjacking PoC pages with a transparent iframe overlay.' },
+    { title: 'Passive Vulnerability Scanner', description: 'Analyze headers, JS libraries, and open APIs of a target URL to find weaknesses.' },
+    { title: 'AI-Generated XSS Payloads', description: 'Create context-aware XSS payloads designed to bypass common WAFs and filters.' },
 ];
 
 export function StatusReport() {
@@ -59,13 +63,13 @@ export function StatusReport() {
                 <CardHeader>
                     <div className="flex items-center gap-3">
                         <ListTodo className="h-6 w-6 text-amber-400" />
-                        <CardTitle>Development Complete</CardTitle>
+                        <CardTitle>Upcoming Implementation Plan</CardTitle>
                     </div>
                     <CardDescription>
-                        All mandatory features for this phase have been implemented.
+                        The next set of features planned for development based on stakeholder requirements.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 max-h-96 overflow-y-auto">
                      {plannedFeatures.length > 0 ? plannedFeatures.map((feature, index) => (
                         <div key={index}>
                             <p className="font-semibold">{feature.title}</p>
