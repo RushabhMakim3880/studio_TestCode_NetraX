@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText, Presentation, GitBranch, Server, Workflow } from 'lucide-react';
+import { CheckCircle2, ListTodo, Bot, Cookie, KeySquare, ShieldHalf, Binary, MousePointer2, GitFork, Syringe, Bug, Wand, FileText, Presentation, GitBranch, Server, Workflow, Users } from 'lucide-react';
 import Link from 'next/link';
 
 const implementedFeatures = [
@@ -21,10 +21,11 @@ const implementedFeatures = [
     { icon: GitBranch, title: 'MITRE ATT&CK Framework Integration', description: 'Map project tasks and findings directly to ATT&CK techniques.', path: '/project-management' },
     { icon: Server, title: 'Expanded C2 Channel Support', description: 'Generate custom malware concepts with configurable C2 channels (e.g., DoH, Telegram).', path: '/offensive' },
     { icon: Workflow, title: 'Automated Workflow Execution', description: 'Chain multiple tools together into automated attack or analysis workflows via an AI Exploit Chain Assistant.', path: '/vapt' },
+    { icon: Users, title: 'Team Collaboration Features', description: 'Enable shared notes, comments on tasks, and real-time notifications.', path: '/project-management' },
 ];
 
-const plannedFeatures = [
-    { title: 'Team Collaboration Features', description: 'Enable shared notes, comments on tasks, and real-time notifications.' },
+const plannedFeatures: {title: string, description: string}[] = [
+    // All mandatory features are now implemented.
 ];
 
 export function StatusReport() {
@@ -58,19 +59,23 @@ export function StatusReport() {
                 <CardHeader>
                     <div className="flex items-center gap-3">
                         <ListTodo className="h-6 w-6 text-amber-400" />
-                        <CardTitle>Next Up: Planned Features</CardTitle>
+                        <CardTitle>Development Complete</CardTitle>
                     </div>
                     <CardDescription>
-                        This is the development roadmap for the next implementation phase.
+                        All mandatory features for this phase have been implemented.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     {plannedFeatures.map((feature, index) => (
+                     {plannedFeatures.length > 0 ? plannedFeatures.map((feature, index) => (
                         <div key={index}>
                             <p className="font-semibold">{feature.title}</p>
                             <p className="text-sm text-muted-foreground">{feature.description}</p>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>No further features are planned for this development cycle.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
