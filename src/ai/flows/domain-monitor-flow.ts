@@ -16,11 +16,11 @@ const LookalikeDomainInputSchema = z.object({
 });
 export type LookalikeDomainInput = z.infer<typeof LookalikeDomainInputSchema>;
 
-export const LookalikeDomainSchema = z.object({
+const LookalikeDomainSchema = z.object({
     domainName: z.string().describe('The generated lookalike domain name.'),
     technique: z.string().describe('The technique used to generate this domain (e.g., "Typosquatting", "Homograph", "Subdomain").'),
 });
-export type LookalikeDomain = z.infer<typeof LookalikeDomainSchema>;
+type LookalikeDomain = z.infer<typeof LookalikeDomainSchema>;
 
 const LookalikeDomainOutputSchema = z.object({
   domains: z.array(LookalikeDomainSchema).describe('A list of 5-10 potential lookalike domains.'),
