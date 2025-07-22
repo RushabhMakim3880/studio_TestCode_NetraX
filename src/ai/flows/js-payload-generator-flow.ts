@@ -14,12 +14,12 @@ import {z} from 'genkit';
 const JsPayloadGeneratorInputSchema = z.object({
   prompt: z.string().describe('A natural language description of the desired payload actions.'),
 });
-export type JsPayloadGeneratorInput = z.infer<typeof JsPayloadGeneratorInputSchema>;
+type JsPayloadGeneratorInput = z.infer<typeof JsPayloadGeneratorInputSchema>;
 
 const JsPayloadGeneratorOutputSchema = z.object({
   payload: z.string().describe('The generated JavaScript payload.'),
 });
-export type JsPayloadGeneratorOutput = z.infer<typeof JsPayloadGeneratorOutputSchema>;
+type JsPayloadGeneratorOutput = z.infer<typeof JsPayloadGeneratorOutputSchema>;
 
 export async function generateJsPayload(input: JsPayloadGeneratorInput): Promise<JsPayloadGeneratorOutput> {
   return jsPayloadGeneratorFlow(input);
@@ -60,6 +60,6 @@ const jsPayloadGeneratorFlow = ai.defineFlow(
     if (finalPayload.startsWith('(function()') && finalPayload.endsWith('})();')) {
         return { payload: finalPayload };
     }
-    return { payload: `(function() {\\n${finalPayload}\\n})();` };
+    return { payload: `(function() {\n${finalPayload}\n})();` };
   }
 );
