@@ -38,6 +38,7 @@ import {
   GitBranch,
   Workflow,
   Rocket,
+  Radar,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -111,11 +112,12 @@ export const APP_MODULES: Module[] = [
       { name: 'Live Tracker', path: '/live-tracker', icon: Workflow, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
-  {
-    name: 'Analysis & Forensics',
-    icon: Dna,
+   {
+    name: 'Defensive Operations',
+    icon: ShieldCheck,
     roles: [ROLES.ADMIN, ROLES.ANALYST],
     subModules: [
+      { name: 'Phishing Defense', path: '/phishing-defense', icon: Radar, roles: [ROLES.ADMIN, ROLES.ANALYST] },
       { name: 'Vulnerability Analysis', path: '/vapt', icon: Syringe, roles: [ROLES.ADMIN, ROLES.ANALYST], },
       { name: 'Log Analysis', path: '/log-analysis', icon: GanttChartSquare, roles: [ROLES.ADMIN, ROLES.ANALYST], },
       { name: 'IoT Security', path: '/iot', icon: Cpu, roles: [ROLES.ADMIN, ROLES.ANALYST], },

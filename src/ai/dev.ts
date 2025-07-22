@@ -34,8 +34,5 @@ import '@/ai/flows/virustotal-scan-flow.ts';
 import '@/ai/flows/custom-malware-generator-flow.ts';
 import '@/ai/flows/intelx-search-flow.ts';
 import '@/ai/flows/header-analyzer-flow.ts';
-
-
-
-
-
+import '@/ai/flows/phishing-page-analyzer-flow.ts';
+import '@/ai/flows/domain-monitor-flow.ts';
