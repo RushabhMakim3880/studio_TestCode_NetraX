@@ -12,6 +12,7 @@ import { DataObfuscator } from '@/components/data-obfuscator';
 import { IocExtractor } from '@/components/ioc-extractor';
 import { ShodanDorkGenerator } from '@/components/shodan-dork-generator';
 import { DarkWebScanner } from '@/components/dark-web-scanner';
+import { VoicePhishingSimulator } from '@/components/voice-phishing-simulator';
 
 export default function OsintPage() {
   return (
@@ -22,6 +23,7 @@ export default function OsintPage() {
       </div>
       
       <DarkWebScanner />
+      <VoicePhishingSimulator />
       <WhoisLookup />
       <DnsLookup />
       <BreachDataChecker />
