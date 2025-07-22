@@ -3,10 +3,16 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, ShieldAlert, RefreshCw } from 'lucide-react';
+import { Trash2, ShieldAlert, RefreshCw, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export type CapturedCredential = {
     timestamp: string; // ISO String
@@ -44,6 +50,48 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
     
     // Fields to exclude from the main credentials loop
     const metaFields = ['timestamp', 'ipAddress', 'userAgent', 'city', 'country', 'latitude', 'longitude', 'source'];
+
+    const downloadFile = (content: string, fileName: string, contentType: string) => {
+        const a = document.createElement("a");
+        const file = new Blob([content], { type: contentType });
+        a.href = URL.createObjectURL(file);
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    };
+
+    const handleExport = (format: 'csv' | 'json' | 'txt') => {
+        if (credentials.length === 0) {
+            toast({ variant: 'destructive', title: 'No data to export.'});
+            return;
+        }
+
+        let content = '';
+        let fileName = `credentials-${new Date().toISOString().split('T')[0]}`;
+        const headers = Object.keys(credentials[0]);
+
+        switch (format) {
+            case 'csv':
+                content = [
+                    headers.join(','),
+                    ...credentials.map(row => headers.map(header => JSON.stringify(row[header])).join(','))
+                ].join('\r\n');
+                downloadFile(content, `${fileName}.csv`, 'text/csv;charset=utf-8;');
+                break;
+            case 'json':
+                content = JSON.stringify(credentials, null, 2);
+                downloadFile(content, `${fileName}.json`, 'application/json');
+                break;
+            case 'txt':
+                content = credentials.map(cred => {
+                    return Object.entries(cred).map(([key, value]) => `${key}: ${value}`).join('\n');
+                }).join('\n\n---\n\n');
+                downloadFile(content, `${fileName}.txt`, 'text/plain;charset=utf-8;');
+                break;
+        }
+        toast({ title: `Exported as ${format.toUpperCase()}`, description: `${fileName}.${format} has been downloaded.`})
+    };
+
 
     return (
         <Card className="flex flex-col h-full">
@@ -106,15 +154,27 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                     </div>
                 </ScrollArea>
             </CardContent>
-            <CardFooter className="border-t pt-6 justify-between">
+            <CardFooter className="border-t pt-6 justify-between items-center">
                 <Button variant="outline" onClick={onRefresh}>
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Refresh Log
                 </Button>
-                <Button variant="destructive" onClick={handleClear} disabled={credentials.length === 0}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Clear Log
-                </Button>
+                <div className="flex gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" disabled={credentials.length === 0}><FileDown className="mr-2 h-4 w-4"/>Export Credentials</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleExport('csv')}>as CSV</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport('json')}>as JSON</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport('txt')}>as TXT</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="destructive" onClick={handleClear} disabled={credentials.length === 0}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clear Log
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
     );

