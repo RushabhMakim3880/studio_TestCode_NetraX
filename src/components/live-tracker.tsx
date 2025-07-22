@@ -6,8 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Workflow, FileDown, Trash2 } from 'lucide-react';
+import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor } from 'lucide-react';
 
 type TrackedEvent = {
   sessionId: string;
@@ -16,6 +15,33 @@ type TrackedEvent = {
   timestamp: string;
   url: string;
   userAgent: string;
+};
+
+const getEventIcon = (type: TrackedEvent['type']) => {
+    switch (type) {
+        case 'keystroke': return <Keyboard className="h-4 w-4" />;
+        case 'click': return <MousePointer className="h-4 w-4" />;
+        case 'form-submit': return <FileInput className="h-4 w-4 text-destructive" />;
+        case 'connection': return <Monitor className="h-4 w-4" />;
+        default: return <CaseUpper className="h-4 w-4" />;
+    }
+};
+
+const formatEventData = (event: TrackedEvent) => {
+    switch (event.type) {
+        case 'connection':
+            return `Session started on ${event.url}`;
+        case 'keystroke':
+            return `Key '${event.data.key}' pressed in target <${event.data.target}>`;
+        case 'click':
+            return `Clicked on element <${event.data.target}> at (${event.data.x}, ${event.data.y})`;
+        case 'form-submit':
+            return `Form submitted with data: ${JSON.stringify(event.data.data)}`;
+        case 'mousemove':
+            return `Mouse moved to (${event.data.x}, ${event.data.y})`;
+        default:
+            return JSON.stringify(event.data);
+    }
 };
 
 export function LiveTracker() {
@@ -31,12 +57,12 @@ export function LiveTracker() {
         const newSessions = new Map(prevSessions);
         const sessionEvents = newSessions.get(newEvent.sessionId) || [];
         newSessions.set(newEvent.sessionId, [...sessionEvents, newEvent]);
+        // Auto-select the first session that appears
+        if (!selectedSessionId) {
+            setSelectedSessionId(newEvent.sessionId);
+        }
         return newSessions;
       });
-      // Auto-select the first session that appears
-      if (!selectedSessionId) {
-        setSelectedSessionId(newEvent.sessionId);
-      }
     };
 
     channel.addEventListener('message', handleMessage);
@@ -45,7 +71,7 @@ export function LiveTracker() {
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [selectedSessionId]);
+  }, [selectedSessionId]); // Add selectedSessionId as a dependency
 
   const selectedSessionEvents = selectedSessionId ? sessions.get(selectedSessionId) || [] : [];
   
@@ -66,7 +92,7 @@ export function LiveTracker() {
           const content = JSON.stringify(selectedSessionEvents, null, 2);
           downloadFile(content, `${fileName}.json`, 'application/json');
       } else {
-          const content = selectedSessionEvents.map(e => `[${e.timestamp}] [${e.type.toUpperCase()}] ${JSON.stringify(e.data)}`).join('\n');
+          const content = selectedSessionEvents.map(e => `[${e.timestamp}] [${e.type.toUpperCase()}] ${formatEventData(e)}`).join('\\n');
           downloadFile(content, `${fileName}.txt`, 'text/plain');
       }
   };
@@ -77,7 +103,7 @@ export function LiveTracker() {
   };
 
   return (
-    <div className="grid md:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
+    <div className="grid md:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[500px]">
       <Card className="md:col-span-1 flex flex-col">
         <CardHeader>
           <CardTitle>Active Sessions</CardTitle>
@@ -97,9 +123,9 @@ export function LiveTracker() {
                   className="w-full justify-start font-mono text-xs h-auto py-2"
                   onClick={() => setSelectedSessionId(sessionId)}
                 >
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-start text-left">
                      <span>{sessionId}</span>
-                     <span className="text-muted-foreground font-sans">
+                     <span className="text-muted-foreground font-sans truncate">
                        {sessions.get(sessionId)?.[0]?.url.split('//')[1].split('/')[0]}
                      </span>
                   </div>
@@ -119,7 +145,7 @@ export function LiveTracker() {
           <div className="flex justify-between items-center">
             <div>
               <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5"/> Activity Log</CardTitle>
-              <CardDescription>{selectedSessionId || 'No session selected'}</CardDescription>
+              <CardDescription className="truncate">{selectedSessionId || 'No session selected'}</CardDescription>
             </div>
             <div className="flex gap-2">
                  <Button onClick={() => handleExport('json')} variant="outline" size="sm" disabled={!selectedSessionId}><FileDown className="mr-2 h-4 w-4"/>Export JSON</Button>
@@ -127,28 +153,26 @@ export function LiveTracker() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-grow overflow-y-auto bg-primary/10 rounded-b-lg">
-          <ScrollArea className="h-full">
-            <div className="p-4 font-mono text-xs">
+        <CardContent className="flex-grow p-0 overflow-hidden">
+          <div className="h-full w-full bg-primary/10 overflow-y-auto p-4 font-mono text-xs">
               {selectedSessionEvents.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
+                <div className="flex h-full items-center justify-center text-muted-foreground font-sans">
                     {selectedSessionId ? 'No activity recorded for this session yet.' : 'Select a session to begin.'}
                 </div>
               ) : (
                 selectedSessionEvents.map((event, index) => (
-                  <div key={index} className="flex gap-4">
+                  <div key={index} className="flex gap-4 items-start mb-2">
                     <div className="text-muted-foreground/60">{event.timestamp.split('T')[1].replace('Z','')}</div>
-                    <div className="w-24">
-                       <Badge variant={event.type === 'form-submit' ? 'destructive' : 'secondary'} className="w-full justify-center">{event.type}</Badge>
+                    <div className="w-8 shrink-0 flex justify-center text-accent">
+                       {getEventIcon(event.type)}
                     </div>
-                    <div className="flex-1 text-muted-foreground break-all">
-                       <pre><code>{JSON.stringify(event.data)}</code></pre>
+                    <div className="flex-1 text-muted-foreground break-all whitespace-pre-wrap font-sans">
+                       {formatEventData(event)}
                     </div>
                   </div>
                 ))
               )}
-            </div>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
     </div>

