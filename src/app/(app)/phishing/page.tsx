@@ -21,6 +21,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
+import { Separator } from '@/components/ui/separator';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -481,6 +483,10 @@ export default function PhishingPage() {
           />
         </div>
       </div>
+      
+      <Separator className="my-8" />
+      
+      <AdvancedPageCloner />
     </div>
   );
 }
