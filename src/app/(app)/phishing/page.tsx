@@ -21,7 +21,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
 
@@ -486,8 +485,6 @@ export default function PhishingPage() {
       
       <Separator className="my-8" />
       <CredentialReplayer />
-      <Separator className="my-8" />
-      <AdvancedPageCloner />
     </div>
   );
 }

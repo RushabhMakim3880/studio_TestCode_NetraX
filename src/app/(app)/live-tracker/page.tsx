@@ -2,6 +2,8 @@
 'use client';
 
 import { LiveTracker } from '@/components/live-tracker';
+import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
+import { Separator } from '@/components/ui/separator';
 
 export default function LiveTrackerPage() {
   return (
@@ -12,6 +14,10 @@ export default function LiveTrackerPage() {
       </div>
       
       <LiveTracker />
+
+      <Separator className="my-8" />
+      
+      <AdvancedPageCloner />
 
     </div>
   );
