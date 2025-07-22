@@ -2,14 +2,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Rocket, MailOpen, MousePointerClick, ShieldX, CircleUserRound, Mail, Send, StopCircle, Trash2, ChevronRight, Check, ListChecks } from 'lucide-react';
+import { Rocket, MailOpen, MousePointerClick, ShieldX, CircleUserRound, Mail, Send, StopCircle, Trash2, ChevronRight, Check, ListChecks, PlusCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { logActivity } from '@/services/activity-log-service';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 type Profile = { id: string; fullName: string; email: string };
 type Template = { id:string; name: string, subject?: string, body: string, type: 'Email' | 'SMS' };
@@ -37,12 +38,20 @@ type Campaign = z.infer<typeof campaignSchema> & {
     launchedAt: Date;
 };
 
+const newTemplateSchema = z.object({
+  name: z.string().min(3, 'Name must be at least 3 characters.'),
+  subject: z.string().min(1, 'Subject is required for email templates.'),
+  body: z.string().min(10, 'Body must be at least 10 characters.'),
+});
+
 export default function CampaignsPage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [templates, setTemplates] = useState<Template[]>([]);
     const [currentCampaign, setCurrentCampaign] = useState<Campaign | null>(null);
     const { toast } = useToast();
     const { user } = useAuth();
+
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     
     const form = useForm<z.infer<typeof campaignSchema>>({
         resolver: zodResolver(campaignSchema),
@@ -53,9 +62,14 @@ export default function CampaignsPage() {
             templateId: ''
         }
     });
+
+     const newTemplateForm = useForm<z.infer<typeof newTemplateSchema>>({
+        resolver: zodResolver(newTemplateSchema),
+        defaultValues: { name: '', subject: '', body: '' },
+    });
     
-    useEffect(() => {
-        try {
+    const loadData = () => {
+         try {
             const storedProfiles = localStorage.getItem('netra-profiles');
             setProfiles(storedProfiles ? JSON.parse(storedProfiles) : []);
             const storedTemplates = localStorage.getItem('netra-templates');
@@ -64,6 +78,10 @@ export default function CampaignsPage() {
         } catch (error) {
             console.error('Failed to load data from localStorage', error);
         }
+    }
+
+    useEffect(() => {
+        loadData();
     }, []);
 
     const onSubmit = (values: z.infer<typeof campaignSchema>) => {
@@ -86,14 +104,52 @@ export default function CampaignsPage() {
             description: `The campaign "${campaign.name}" is now active. In a real scenario, emails would be sent now.`,
         });
         
-        // Reset for next campaign
         form.reset();
     };
     
+    const onNewTemplateSubmit = (values: z.infer<typeof newTemplateSchema>) => {
+        try {
+            const storedTemplates = localStorage.getItem('netra-templates') || '[]';
+            const allTemplates: Template[] = JSON.parse(storedTemplates);
+
+            const newTemplate: Template = {
+                id: `TPL-${crypto.randomUUID()}`,
+                name: values.name,
+                type: 'Email',
+                subject: values.subject,
+                body: values.body,
+            };
+
+            const updatedTemplates = [...allTemplates, newTemplate];
+            localStorage.setItem('netra-templates', JSON.stringify(updatedTemplates));
+            
+            toast({ title: 'Template Saved!', description: `"${newTemplate.name}" has been added.` });
+            
+            loadData(); // Reload templates from storage
+            form.setValue('templateId', newTemplate.id); // Auto-select the new template
+            
+            setIsTemplateModalOpen(false);
+            newTemplateForm.reset();
+        } catch (error) {
+            console.error("Failed to save template", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not save the new template.' });
+        }
+    };
+    
+    const handleTemplateChange = (value: string) => {
+        if (value === '__add_new__') {
+            newTemplateForm.reset();
+            setIsTemplateModalOpen(true);
+        } else {
+            form.setValue('templateId', value);
+        }
+    };
+
     const selectedTemplate = templates.find(t => t.id === form.watch('templateId'));
     const selectedProfiles = profiles.filter(p => form.watch('targetProfileIds').includes(p.id));
 
     return (
+        <>
         <div className="flex flex-col gap-6">
             <div>
                 <h1 className="font-headline text-3xl font-semibold">Phishing Campaigns</h1>
@@ -153,7 +209,12 @@ export default function CampaignsPage() {
                                     <h3 className="text-lg font-semibold">Select Template</h3>
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-4 pl-11">
-                                     <FormField control={form.control} name="templateId" render={({ field }) => ( <FormItem><FormLabel>Email Template</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choose a template..." /></SelectTrigger></FormControl><SelectContent><ScrollArea className="h-60">{templates.map(template => (<SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>))}</ScrollArea></SelectContent></Select><FormMessage /></FormItem> )}/>
+                                     <FormField control={form.control} name="templateId" render={({ field }) => ( <FormItem><FormLabel>Email Template</FormLabel>
+                                     <Select onValueChange={handleTemplateChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choose a template..." /></SelectTrigger></FormControl>
+                                     <SelectContent><ScrollArea className="h-60">
+                                        <SelectItem value="__add_new__" className="font-semibold text-accent"><PlusCircle className="inline-block mr-2 h-4 w-4"/>Add New Template...</SelectItem>
+                                        {templates.map(template => (<SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>))}
+                                     </ScrollArea></SelectContent></Select><FormMessage /></FormItem> )}/>
                                      <div className="space-y-2">
                                          <Label>Template Preview</Label>
                                          <div className="h-48 w-full rounded-md border bg-primary/10 p-3 text-xs overflow-auto">
@@ -237,5 +298,29 @@ export default function CampaignsPage() {
 
             </div>
         </div>
+
+        <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                    <DialogTitle>Create New Email Template</DialogTitle>
+                    <DialogDescription>
+                        This template will be saved and can be reused in other campaigns.
+                    </DialogDescription>
+                </DialogHeader>
+                 <Form {...newTemplateForm}>
+                    <form onSubmit={newTemplateForm.handleSubmit(onNewTemplateSubmit)} className="space-y-4 py-4">
+                      <FormField control={newTemplateForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Template Name</FormLabel><FormControl><Input placeholder="e.g., Q3 Security Alert" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                      <FormField control={newTemplateForm.control} name="subject" render={({ field }) => ( <FormItem><FormLabel>Subject</FormLabel><FormControl><Input placeholder="Email subject line" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                      <FormField control={newTemplateForm.control} name="body" render={({ field }) => ( <FormItem><FormLabel>Body</FormLabel><FormControl><Textarea placeholder="Email body content..." {...field} className="min-h-[150px]"/></FormControl><FormMessage /></FormItem> )}/>
+                       <p className="text-xs text-center text-muted-foreground pt-2">{'Use `{{variable_name}}` for personalization (e.g., `{{name}}`, `{{company}}`).'}</p>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsTemplateModalOpen(false)}>Cancel</Button>
+                        <Button type="submit">Save Template</Button>
+                      </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }
