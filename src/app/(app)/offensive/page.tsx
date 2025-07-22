@@ -13,6 +13,7 @@ import { SessionHijackingTool } from '@/components/session-hijacking-tool';
 import { JwtAnalyzer } from '@/components/jwt-analyzer';
 import { ClickjackingTool } from '@/components/clickjacking-tool';
 import { CredentialReplayer } from '@/components/credential-replayer';
+import { LolbinsPayloadGenerator } from '@/components/lolbins-payload-generator';
 
 
 export default function OffensivePage() {
@@ -24,6 +25,7 @@ export default function OffensivePage() {
       </div>
 
       <ReverseShellPayloadGenerator />
+      <LolbinsPayloadGenerator />
       <CredentialReplayer />
       <SessionHijackingTool />
       <ClickjackingTool />
