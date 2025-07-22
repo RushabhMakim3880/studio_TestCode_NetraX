@@ -17,7 +17,7 @@ const PhishingPageAnalysisInputSchema = z.object({
 });
 export type PhishingPageAnalysisInput = z.infer<typeof PhishingPageAnalysisInputSchema>;
 
-export const PhishingPageAnalysisSchema = z.object({
+const PhishingPageAnalysisSchema = z.object({
   riskLevel: z.enum(['Low', 'Medium', 'High']).describe('The overall estimated risk level of the page.'),
   summary: z.string().describe('A one-paragraph summary of the analysis and why the risk level was assigned.'),
   flags: z.array(z.string()).describe('A list of specific observations or red flags that led to the assessment (e.g., "Contains a login form but is not served over HTTPS").'),
