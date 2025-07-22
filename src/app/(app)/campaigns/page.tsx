@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { Separator } from '@/components/ui/separator';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
 
 type Profile = { id: string; fullName: string; email: string };
 type Template = { id:string; name: string, subject?: string, body: string, type: 'Email' | 'SMS' };
@@ -39,7 +41,6 @@ export default function CampaignsPage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [templates, setTemplates] = useState<Template[]>([]);
     const [currentCampaign, setCurrentCampaign] = useState<Campaign | null>(null);
-    const [step, setStep] = useState(1);
     const { toast } = useToast();
     const { user } = useAuth();
     
@@ -87,7 +88,6 @@ export default function CampaignsPage() {
         
         // Reset for next campaign
         form.reset();
-        setStep(1);
     };
     
     const selectedTemplate = templates.find(t => t.id === form.watch('templateId'));
@@ -134,13 +134,13 @@ export default function CampaignsPage() {
                                     {profiles.length > 0 ? profiles.map(profile => (
                                         <FormField key={profile.id} control={form.control} name="targetProfileIds" render={({ field }) => (
                                             <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-2">
-                                            <FormControl><Checkbox checked={field.value?.includes(profile.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...field.value, profile.id]) : field.onChange(field.value?.filter((value) => value !== profile.id))}} /></FormControl>
+                                            <FormControl><Checkbox checked={field.value?.includes(profile.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), profile.id]) : field.onChange(field.value?.filter((value) => value !== profile.id))}} /></FormControl>
                                             <div className="space-y-1 leading-none"><label className="font-medium">{profile.fullName}</label><p className="text-xs text-muted-foreground">{profile.email}</p></div>
                                             </FormItem>
                                         )} />
                                     )) : <p className="text-sm text-muted-foreground text-center py-4">No target profiles found. Please add profiles in the 'Target Profiling' module.</p>}
                                     </ScrollArea>
-                                    <FormMessage className="mt-2">{form.formState.errors.targetProfileIds?.message}</FormMessage>
+                                    <FormField control={form.control} name="targetProfileIds" render={() => <FormMessage className="mt-2" />} />
                                 </div>
                             </div>
                             
