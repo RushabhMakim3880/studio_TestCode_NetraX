@@ -154,11 +154,9 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
     setHostedUrl(null);
     
     try {
-        const pageId = crypto.randomUUID();
-        const pageStorageKey = `phishing-html-${pageId}`;
-        localStorage.setItem(pageStorageKey, modifiedHtml);
-
-        const finalUrl = `${window.location.origin}/phish/${pageId}`;
+        const blob = new Blob([modifiedHtml], { type: 'text/html' });
+        const finalUrl = URL.createObjectURL(blob);
+        
         setHostedUrl(finalUrl);
         toast({ title: "Local Link Generated!", description: "Your advanced attack page is ready." });
 

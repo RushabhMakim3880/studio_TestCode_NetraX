@@ -245,11 +245,9 @@ export default function PhishingPage() {
     setIsHosting(true);
     
     try {
-        const pageId = crypto.randomUUID();
-        const pageStorageKey = `phishing-html-${pageId}`;
-        localStorage.setItem(pageStorageKey, modifiedHtml);
+        const blob = new Blob([modifiedHtml], { type: 'text/html' });
+        const finalUrl = URL.createObjectURL(blob);
 
-        const finalUrl = `${window.location.origin}/phish/${pageId}`;
         setHostedUrl(finalUrl);
         toast({ title: "Local Link Generated!", description: "Your phishing page is ready to be used." });
 
