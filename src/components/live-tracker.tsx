@@ -7,8 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-type TrackedEvent = {
+export type TrackedEvent = {
   sessionId: string;
   type: 'connection' | 'keystroke' | 'click' | 'mousemove' | 'form-submit';
   data: any;
@@ -153,10 +159,11 @@ export function LiveTracker() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-grow p-0 overflow-hidden">
-          <div className="h-full w-full bg-primary/10 overflow-y-auto p-4 font-mono text-xs">
+        <CardContent className="flex-grow p-2 overflow-hidden">
+          <ScrollArea className="h-full w-full bg-primary/10 rounded-md">
+             <div className="p-4 font-mono text-xs">
               {selectedSessionEvents.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground font-sans">
+                <div className="flex h-full items-center justify-center text-muted-foreground font-sans min-h-60">
                     {selectedSessionId ? 'No activity recorded for this session yet.' : 'Select a session to begin.'}
                 </div>
               ) : (
@@ -172,9 +179,11 @@ export function LiveTracker() {
                   </div>
                 ))
               )}
-          </div>
+              </div>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>
   );
 }
+
