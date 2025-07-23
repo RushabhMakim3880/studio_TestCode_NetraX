@@ -28,7 +28,6 @@ export function NetworkStatus() {
     const fetchNetworkStatus = async () => {
        try {
         const startTime = Date.now();
-        // Add cache: 'no-store' to prevent some browser extensions from interfering.
         const response = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
         const endTime = Date.now();
         
@@ -45,8 +44,12 @@ export function NetworkStatus() {
 
       } catch (error) {
         console.error("Network check failed:", error);
-        // Provide a more helpful error message.
-        setStatus(prev => ({ ...prev, isOnline: false, ip: 'Blocked', ping: null }));
+        // Provide a more helpful error message when a browser extension is likely interfering.
+        let errorMessage = "Network check failed";
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            errorMessage = "Blocked by extension";
+        }
+        setStatus(prev => ({ ...prev, isOnline: false, ip: errorMessage, ping: null }));
       } finally {
         setIsLoading(false);
       }
