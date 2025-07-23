@@ -90,6 +90,19 @@ export function JavaScriptLibrary({ onSelectPayload }: JavaScriptLibraryProps) {
         toast({ title: "Payload Deleted" });
     }
 
+    const PayloadCard = ({ payload, onSelect, onDelete }: { payload: JsPayload, onSelect: (p: JsPayload) => void, onDelete?: (name: string) => void }) => (
+        <Card className="flex flex-col">
+            <CardHeader className="flex-grow">
+                <CardTitle className="text-base">{payload.name}</CardTitle>
+                <CardDescription className="text-xs">{payload.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center gap-2">
+                <Button size="sm" onClick={() => onSelect(payload)} className="w-full">Use Payload</Button>
+                {onDelete && <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onDelete(payload.name)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+            </CardContent>
+        </Card>
+    );
+
     return (
         <Card>
             <CardHeader>
@@ -111,13 +124,9 @@ export function JavaScriptLibrary({ onSelectPayload }: JavaScriptLibraryProps) {
                     
                     <TabsContent value="premade" className="mt-4">
                        <ScrollArea className="h-96">
-                           <div className="space-y-4 pr-4">
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pr-4">
                                {PREMADE_PAYLOADS.map(payload => (
-                                   <Card key={payload.name} className="p-4">
-                                       <h4 className="font-semibold">{payload.name}</h4>
-                                       <p className="text-sm text-muted-foreground mb-2">{payload.description}</p>
-                                       <Button size="sm" onClick={() => onSelectPayload(payload)}>Use Payload</Button>
-                                   </Card>
+                                   <PayloadCard key={payload.name} payload={payload} onSelect={onSelectPayload} />
                                ))}
                            </div>
                        </ScrollArea>
@@ -134,21 +143,10 @@ export function JavaScriptLibrary({ onSelectPayload }: JavaScriptLibraryProps) {
                                 </form>
                             </Form>
                             <ScrollArea className="h-96">
-                               <div className="space-y-4 pr-4">
-                                {customPayloads.length === 0 && <p className="text-sm text-center text-muted-foreground pt-10">No custom payloads saved yet.</p>}
+                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pr-4">
+                                {customPayloads.length === 0 && <p className="text-sm text-center text-muted-foreground pt-10 col-span-full">No custom payloads saved yet.</p>}
                                 {customPayloads.map(payload => (
-                                   <Card key={payload.name} className="p-4">
-                                       <div className="flex justify-between items-start">
-                                            <div>
-                                               <h4 className="font-semibold">{payload.name}</h4>
-                                               <p className="text-sm text-muted-foreground mb-2">{payload.description}</p>
-                                            </div>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteCustomPayload(payload.name)}>
-                                                <Trash2 className="h-4 w-4 text-destructive"/>
-                                            </Button>
-                                       </div>
-                                       <Button size="sm" onClick={() => onSelectPayload(payload)}>Use Payload</Button>
-                                   </Card>
+                                   <PayloadCard key={payload.name} payload={payload} onSelect={onSelectPayload} onDelete={handleDeleteCustomPayload} />
                                ))}
                                </div>
                            </ScrollArea>
