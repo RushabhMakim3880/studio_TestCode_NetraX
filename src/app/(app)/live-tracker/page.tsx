@@ -65,4 +65,7 @@ export default function LiveTrackerPage() {
         setSelectedSessionId={setSelectedSessionId}
       />
       <Separator className="my-4" />
-      <LocationTracker location={location}
+      <LocationTracker location={location} />
+    </div>
+  );
+}
