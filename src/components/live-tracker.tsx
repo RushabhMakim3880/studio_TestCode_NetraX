@@ -22,6 +22,7 @@ type LiveTrackerProps = {
     setSessions: (sessions: Map<string, TrackedEvent[]>) => void;
     selectedSessionId: string | null;
     setSelectedSessionId: React.Dispatch<React.SetStateAction<string | null>>;
+    resetState: () => void;
 }
 
 const getEventIcon = (type: TrackedEvent['type']) => {
@@ -70,13 +71,14 @@ const formatEventData = (event: TrackedEvent) => {
     }
 };
 
-export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelectedSessionId }: LiveTrackerProps) {
+export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelectedSessionId, resetState }: LiveTrackerProps) {
 
   useEffect(() => {
     const channel = new BroadcastChannel('netrax_c2_channel');
 
     const handleMessage = (event: MessageEvent<TrackedEvent>) => {
       const newEvent = event.data;
+      if (!newEvent.sessionId) return;
       const currentSessionEvents = sessions.get(newEvent.sessionId) || [];
       const updatedEvents = [...currentSessionEvents, newEvent];
       const newSessions = new Map(sessions.set(newEvent.sessionId, updatedEvents));
@@ -115,11 +117,6 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
       }
   };
   
-  const handleClear = () => {
-    setSessions(new Map());
-    setSelectedSessionId(null);
-  };
-
   return (
       <Card className="flex-grow flex flex-col">
         <CardHeader>
@@ -160,3 +157,4 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
       </Card>
   );
 }
+
