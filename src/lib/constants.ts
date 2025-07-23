@@ -111,7 +111,6 @@ export const APP_MODULES: Module[] = [
       { name: 'Web Vulnerabilities', path: '/web-vulns', icon: Binary, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Attack Surface', path: '/attack-surface', icon: GitFork, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Live Tracker', path: '/live-tracker', icon: Workflow, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Device Hijacking', path: '/device-hijacking', icon: Camera, roles: [ROLES.ADMIN, ROLES.OPERATOR]},
     ],
   },
    {
