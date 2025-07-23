@@ -7,21 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 export type TrackedEvent = {
   sessionId: string;
-  type: 'connection' | 'keystroke' | 'click' | 'mousemove' | 'form-submit';
+  type: 'connection' | 'keystroke' | 'click' | 'mousemove' | 'form-submit' | 'media-stream';
   data: any;
   timestamp: string;
   url: string;
   userAgent: string;
 };
+
+type LiveTrackerProps = {
+    sessions: Map<string, TrackedEvent[]>;
+    setSessions: React.Dispatch<React.SetStateAction<Map<string, TrackedEvent[]>>>;
+    selectedSessionId: string | null;
+    setSelectedSessionId: React.Dispatch<React.SetStateAction<string | null>>;
+}
 
 const getEventIcon = (type: TrackedEvent['type']) => {
     switch (type) {
@@ -29,6 +30,7 @@ const getEventIcon = (type: TrackedEvent['type']) => {
         case 'click': return <MousePointer className="h-4 w-4" />;
         case 'form-submit': return <FileInput className="h-4 w-4 text-destructive" />;
         case 'connection': return <Monitor className="h-4 w-4" />;
+        case 'media-stream': return <Monitor className="h-4 w-4 text-accent" />; // Added for media
         default: return <CaseUpper className="h-4 w-4" />;
     }
 };
@@ -45,14 +47,14 @@ const formatEventData = (event: TrackedEvent) => {
             return `Form submitted with data: ${JSON.stringify(event.data.data)}`;
         case 'mousemove':
             return `Mouse moved to (${event.data.x}, ${event.data.y})`;
+        case 'media-stream':
+            return `Received media stream chunk. Type: ${event.data.type}, Size: ${(event.data.size / 1024).toFixed(2)} KB`;
         default:
             return JSON.stringify(event.data);
     }
 };
 
-export function LiveTracker() {
-  const [sessions, setSessions] = useState<Map<string, TrackedEvent[]>>(new Map());
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelectedSessionId }: LiveTrackerProps) {
 
   useEffect(() => {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -63,7 +65,6 @@ export function LiveTracker() {
         const newSessions = new Map(prevSessions);
         const sessionEvents = newSessions.get(newEvent.sessionId) || [];
         newSessions.set(newEvent.sessionId, [...sessionEvents, newEvent]);
-        // Auto-select the first session that appears
         if (!selectedSessionId) {
             setSelectedSessionId(newEvent.sessionId);
         }
@@ -77,7 +78,7 @@ export function LiveTracker() {
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [selectedSessionId]); // Add selectedSessionId as a dependency
+  }, [selectedSessionId, setSessions, setSelectedSessionId]);
 
   const selectedSessionEvents = selectedSessionId ? sessions.get(selectedSessionId) || [] : [];
   
@@ -169,7 +170,7 @@ export function LiveTracker() {
               ) : (
                 selectedSessionEvents.map((event, index) => (
                   <div key={index} className="flex gap-4 items-start mb-2">
-                    <div className="text-muted-foreground/60">{event.timestamp.split('T')[1].replace('Z','')}</div>
+                    <div className="text-muted-foreground/60">{new Date(event.timestamp).toLocaleTimeString()}</div>
                     <div className="w-8 shrink-0 flex justify-center text-accent">
                        {getEventIcon(event.type)}
                     </div>
@@ -186,4 +187,3 @@ export function LiveTracker() {
     </div>
   );
 }
-
