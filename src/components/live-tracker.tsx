@@ -19,7 +19,7 @@ export type TrackedEvent = {
 
 type LiveTrackerProps = {
     sessions: Map<string, TrackedEvent[]>;
-    setSessions: React.Dispatch<React.SetStateAction<Map<string, TrackedEvent[]>>>;
+    setSessions: (sessions: Map<string, TrackedEvent[]>) => void;
     selectedSessionId: string | null;
     setSelectedSessionId: React.Dispatch<React.SetStateAction<string | null>>;
 }
@@ -61,15 +61,10 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
 
     const handleMessage = (event: MessageEvent<TrackedEvent>) => {
       const newEvent = event.data;
-      setSessions(prevSessions => {
-        const newSessions = new Map(prevSessions);
-        const sessionEvents = newSessions.get(newEvent.sessionId) || [];
-        newSessions.set(newEvent.sessionId, [...sessionEvents, newEvent]);
-        if (!selectedSessionId) {
+      setSessions(new Map(sessions.set(newEvent.sessionId, [...(sessions.get(newEvent.sessionId) || []), newEvent])));
+      if (!selectedSessionId) {
             setSelectedSessionId(newEvent.sessionId);
-        }
-        return newSessions;
-      });
+      }
     };
 
     channel.addEventListener('message', handleMessage);
@@ -78,7 +73,7 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [selectedSessionId, setSessions, setSelectedSessionId]);
+  }, [selectedSessionId, setSessions, setSelectedSessionId, sessions]);
 
   const selectedSessionEvents = selectedSessionId ? sessions.get(selectedSessionId) || [] : [];
   

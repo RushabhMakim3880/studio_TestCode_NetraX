@@ -132,6 +132,38 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
   return (
     <div className="grid md:grid-cols-2 gap-8">
       <div className="space-y-6">
+         <Card>
+            <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><History className="h-5 w-5"/> Session History</CardTitle>
+                <CardDescription>Select a session to interact with.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <ScrollArea className="h-40">
+                    <div className="space-y-2 pr-2">
+                     {sessions.size === 0 ? (
+                        <div className="text-center text-muted-foreground pt-10">No active sessions.</div>
+                     ) : (
+                        Array.from(sessions.keys()).map(sessionId => (
+                            <Button 
+                            key={sessionId} 
+                            variant={selectedSessionId === sessionId ? 'secondary' : 'ghost'}
+                            className="w-full justify-start font-mono text-xs h-auto py-2"
+                            onClick={() => setSelectedSessionId(sessionId)}
+                            >
+                            <div className="flex flex-col items-start text-left">
+                                <span>{sessionId}</span>
+                                <span className="text-muted-foreground font-sans truncate">
+                                    {sessions.get(sessionId)?.[0]?.url.split('//')[1].split('/')[0]}
+                                </span>
+                            </div>
+                            </Button>
+                        ))
+                     )}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+        
         <Card className="bg-primary/10">
             <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Video Feed</CardTitle>
@@ -172,44 +204,12 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
       </div>
       
       <div className="space-y-6">
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><History className="h-5 w-5"/> Session History</CardTitle>
-                <CardDescription>Select a session to interact with.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <ScrollArea className="h-40">
-                    <div className="space-y-2 pr-2">
-                     {sessions.size === 0 ? (
-                        <div className="text-center text-muted-foreground pt-10">No active sessions.</div>
-                     ) : (
-                        Array.from(sessions.keys()).map(sessionId => (
-                            <Button 
-                            key={sessionId} 
-                            variant={selectedSessionId === sessionId ? 'secondary' : 'ghost'}
-                            className="w-full justify-start font-mono text-xs h-auto py-2"
-                            onClick={() => setSelectedSessionId(sessionId)}
-                            >
-                            <div className="flex flex-col items-start text-left">
-                                <span>{sessionId}</span>
-                                <span className="text-muted-foreground font-sans truncate">
-                                    {sessions.get(sessionId)?.[0]?.url.split('//')[1].split('/')[0]}
-                                </span>
-                            </div>
-                            </Button>
-                        ))
-                     )}
-                    </div>
-                </ScrollArea>
-            </CardContent>
-        </Card>
-        
         <Card className="h-full flex flex-col min-h-[300px]">
              <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2"><FileArchive /> Exfiltrated Media Log</CardTitle>
             </CardHeader>
             <CardContent className="p-2 flex-grow">
-                <ScrollArea className="h-64">
+                <ScrollArea className="h-96">
                     <div className="p-2">
                      {capturedMedia.length === 0 ? (
                         <p className="text-center text-muted-foreground py-16">No media captured yet.</p>
@@ -240,4 +240,3 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
     </div>
   );
 }
-

