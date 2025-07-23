@@ -154,12 +154,10 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
     setHostedUrl(null);
 
     try {
-        const pageId = crypto.randomUUID();
-        const pageStorageKey = `phishing-html-${pageId}`;
-        localStorage.setItem(pageStorageKey, modifiedHtml);
-        
-        const finalUrl = `/phish/${pageId}`;
+        const blob = new Blob([modifiedHtml], { type: 'text/html' });
+        const finalUrl = URL.createObjectURL(blob);
         setHostedUrl(finalUrl);
+
         toast({ title: "Local Link Generated!", description: "Your attack page is ready." });
 
         logActivity({
@@ -230,17 +228,17 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
                     <div className="w-full flex items-center gap-2">
                         <Input readOnly value={hostedUrl} className="font-mono" />
                         <Button type="button" size="icon" variant="outline" onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}${hostedUrl}`);
+                            navigator.clipboard.writeText(hostedUrl);
                             toast({ title: 'Copied!'});
                         }}>
                             <Clipboard className="h-4 w-4" />
                         </Button>
                         <Button type="button" size="icon" variant="outline" asChild>
-                            <Link href={hostedUrl} target="_blank"><Globe className="h-4 w-4" /></Link>
+                            <a href={hostedUrl} target="_blank" rel="noopener noreferrer"><Globe className="h-4 w-4" /></a>
                         </Button>
                     </div>
                     <div className="flex justify-center pt-4">
-                         <QrCodeGenerator url={`${window.location.origin}${hostedUrl}`} />
+                         <QrCodeGenerator url={hostedUrl} />
                     </div>
                 </div>
             ) : (
