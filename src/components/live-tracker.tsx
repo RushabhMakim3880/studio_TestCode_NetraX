@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,11 +5,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor } from 'lucide-react';
+import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor, MapPin } from 'lucide-react';
 
 export type TrackedEvent = {
   sessionId: string;
-  type: 'connection' | 'keystroke' | 'click' | 'mousemove' | 'form-submit' | 'media-stream';
+  type: 'connection' | 'keystroke' | 'click' | 'mousemove' | 'form-submit' | 'media-stream' | 'location';
   data: any;
   timestamp: string;
   url: string;
@@ -30,7 +29,8 @@ const getEventIcon = (type: TrackedEvent['type']) => {
         case 'click': return <MousePointer className="h-4 w-4" />;
         case 'form-submit': return <FileInput className="h-4 w-4 text-destructive" />;
         case 'connection': return <Monitor className="h-4 w-4" />;
-        case 'media-stream': return <Monitor className="h-4 w-4 text-accent" />; // Added for media
+        case 'media-stream': return <Monitor className="h-4 w-4 text-accent" />;
+        case 'location': return <MapPin className="h-4 w-4 text-sky-400" />;
         default: return <CaseUpper className="h-4 w-4" />;
     }
 };
@@ -49,6 +49,8 @@ const formatEventData = (event: TrackedEvent) => {
             return `Mouse moved to (${event.data.x}, ${event.data.y})`;
         case 'media-stream':
             return `Received media stream chunk. Type: ${event.data.type}, Size: ${(event.data.size / 1024).toFixed(2)} KB`;
+        case 'location':
+            return `Location captured: Lat ${event.data.latitude?.toFixed(4)}, Lon ${event.data.longitude?.toFixed(4)} (Accuracy: ${event.data.accuracy}m)`;
         default:
             return JSON.stringify(event.data);
     }
