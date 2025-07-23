@@ -178,15 +178,6 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
                 </CardContent>
             </Card>
 
-          <Card className="border-amber-400/50 bg-amber-400/10">
-              <CardHeader className="flex flex-row items-center gap-3 space-y-0">
-                  <Info className="h-5 w-5 text-amber-400" />
-                  <CardTitle className="text-amber-400 text-base">Security Note</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-amber-400/80">
-                  It is not possible to access a device's camera or microphone without activating the hardware indicator light. This is a security feature at the OS level. This toolkit demonstrates exploiting user trust after they grant permission, not bypassing the light itself.
-              </CardContent>
-          </Card>
       </div>
       
       <div className="space-y-4">
