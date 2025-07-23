@@ -157,13 +157,13 @@ export default function LiveTrackerPage() {
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         <div className="xl:col-span-2 flex flex-col gap-6">
-          <LiveTracker sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetState}/>
+          <LiveTracker sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession}/>
           <JavaScriptLibrary onSelectPayload={handleSelectPayload}/>
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
-          <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetState} />
+          <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
           
-          {selectedSessionId && (
+          {selectedSessionId && (isCameraActive || isMicActive) && (
             <Card className="bg-primary/10">
               <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Media Control</CardTitle>
@@ -194,4 +194,3 @@ export default function LiveTrackerPage() {
     </div>
   );
 }
-
