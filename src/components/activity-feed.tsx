@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Loader2, History, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
@@ -15,7 +15,7 @@ export function ActivityFeed() {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchFeed = () => {
+  const fetchFeed = useCallback(() => {
     setIsLoading(true);
     // Simulate a short delay to feel like a fetch
     setTimeout(() => {
@@ -23,19 +23,18 @@ export function ActivityFeed() {
       setFeed(activities);
       setIsLoading(false);
     }, 200);
-  };
+  }, []);
 
   useEffect(() => {
     fetchFeed();
     
     // Listen for the custom event to refresh the feed
-    const handleActivityLogUpdate = () => fetchFeed();
-    window.addEventListener('activityLogUpdated', handleActivityLogUpdate);
+    window.addEventListener('activityLogUpdated', fetchFeed);
 
     return () => {
-        window.removeEventListener('activityLogUpdated', handleActivityLogUpdate);
+        window.removeEventListener('activityLogUpdated', fetchFeed);
     };
-  }, []);
+  }, [fetchFeed]);
 
   const handleClearLog = () => {
     clearActivities();
