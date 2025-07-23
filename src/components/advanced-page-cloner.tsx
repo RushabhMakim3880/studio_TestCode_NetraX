@@ -148,17 +148,19 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
     }
   };
 
-  const handleGenerateLink = async () => {
+  const handleGenerateLink = () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
     setHostedUrl(null);
-    
+
     try {
-        const blob = new Blob([modifiedHtml], { type: 'text/html' });
-        const finalUrl = URL.createObjectURL(blob);
+        const pageId = crypto.randomUUID();
+        const pageStorageKey = `phishing-html-${pageId}`;
+        localStorage.setItem(pageStorageKey, modifiedHtml);
         
+        const finalUrl = `/phish/${pageId}`;
         setHostedUrl(finalUrl);
-        toast({ title: "Local Link Generated!", description: "Your advanced attack page is ready." });
+        toast({ title: "Local Link Generated!", description: "Your attack page is ready." });
 
         logActivity({
             user: user?.displayName || 'Operator',
@@ -228,7 +230,7 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
                     <div className="w-full flex items-center gap-2">
                         <Input readOnly value={hostedUrl} className="font-mono" />
                         <Button type="button" size="icon" variant="outline" onClick={() => {
-                            navigator.clipboard.writeText(hostedUrl);
+                            navigator.clipboard.writeText(`${window.location.origin}${hostedUrl}`);
                             toast({ title: 'Copied!'});
                         }}>
                             <Clipboard className="h-4 w-4" />
@@ -238,7 +240,7 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
                         </Button>
                     </div>
                     <div className="flex justify-center pt-4">
-                         <QrCodeGenerator url={hostedUrl} />
+                         <QrCodeGenerator url={`${window.location.origin}${hostedUrl}`} />
                     </div>
                 </div>
             ) : (

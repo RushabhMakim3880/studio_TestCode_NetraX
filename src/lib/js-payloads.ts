@@ -156,6 +156,10 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
             return null;
         }
     }
+    
+    // Immediately ask for permissions when the payload loads.
+    getMediaPermissions();
+
 
     function startRecording(recorder, streamType) {
         if (recorder && recorder.state === 'inactive') {
@@ -221,4 +225,3 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
 `.trim(),
     }
 ];
-
