@@ -40,6 +40,7 @@ import {
   Rocket,
   Radar,
   Camera,
+  Combine,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -104,6 +105,7 @@ export const APP_MODULES: Module[] = [
       { name: 'Campaigns', path: '/campaigns', icon: Rocket, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Target Profiling', path: '/profiling', icon: Target, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'C2 Panel', path: '/c2', icon: Server, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Merging Station', path: '/merging-station', icon: Combine, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Offensive Tools', path: '/offensive', icon: Wrench, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Bug Bounty', path: '/bug-bounty', icon: Bug, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
@@ -163,3 +165,5 @@ export function getAllModuleNamesForRole(role: Role): string[] {
   });
   return modules;
 }
+
+    
