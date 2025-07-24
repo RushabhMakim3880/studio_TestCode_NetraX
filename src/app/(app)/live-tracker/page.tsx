@@ -21,6 +21,7 @@ import { logActivity } from '@/services/activity-log-service';
 import Image from 'next/image';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 
 export default function LiveTrackerPage() {
   const [selectedPayload, setSelectedPayload] = useState<JsPayload | null>(null);
