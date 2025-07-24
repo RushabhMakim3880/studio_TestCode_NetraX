@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { mergePayloads } from '@/actions/merge-payload-action';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '../ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
   payloadFiles: z.array(z.any()).refine(files => files?.length > 0 && files.every(f => f?.length === 1), "At least one payload file is required."),
