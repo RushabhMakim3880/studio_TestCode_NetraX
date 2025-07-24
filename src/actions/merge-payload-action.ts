@@ -206,7 +206,7 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
     
     const filledInput: Required<MergePayloadsInput> = {
         ...{
-            encryptionKey: '',
+            encryptionKey: 'netrax_default_key', // Ensure a default key if none is provided
             useFragmentation: false,
             executionDelay: '',
             fileless: false,

