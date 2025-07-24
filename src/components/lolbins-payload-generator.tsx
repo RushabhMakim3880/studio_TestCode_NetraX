@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -60,7 +59,7 @@ const formSchema = z.object({
 
 export function LolbinsPayloadGenerator() {
   const [generatedCommand, setGeneratedCommand] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { toast } } from '@/hooks/use-toast';
 
   const form = useForm({
     resolver: zodResolver(formSchema),

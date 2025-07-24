@@ -1,4 +1,3 @@
-
 'use client';
 
 import { RubberDuckyEditor } from '@/components/rubber-ducky-editor';
@@ -26,7 +25,6 @@ export default function OffensivePage() {
 
       <ReverseShellPayloadGenerator />
       <LolbinsPayloadGenerator />
-      <CredentialReplayer />
       <SessionHijackingTool />
       <ClickjackingTool />
       <JwtAnalyzer />

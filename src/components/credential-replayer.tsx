@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -110,7 +109,7 @@ export function CredentialReplayer() {
                       <Label>JavaScript Fetch Command</Label>
                       <div className="relative">
                           <Textarea readOnly value={commands.fetch} className="font-mono h-24 bg-primary/20 pr-10" />
-                          <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => handleCopy(commands.fetch)}>
+                          <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={()={() => handleCopy(commands.fetch)}>
                               <Clipboard className="h-4 w-4" />
                           </Button>
                       </div>

