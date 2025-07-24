@@ -14,7 +14,7 @@ import { ClipboardMonitor } from '@/components/clipboard-monitor';
 import { SessionHistory } from '@/components/session-history';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Webcam, Video, AudioLines, Mic } from 'lucide-react';
+import { Webcam, Video, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -118,6 +118,7 @@ export default function LiveTrackerPage() {
       const command = `start-${type}-record`;
       sendCommandToSession(command);
       setIsRecording(type);
+      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} Recording Started`});
   }
   
   const handleStopRecording = () => {
@@ -125,6 +126,7 @@ export default function LiveTrackerPage() {
       const command = `stop-${isRecording}-record`;
       sendCommandToSession(command);
       setIsRecording(null);
+      toast({ title: 'Recording Stopped' });
   }
   
   const currentSessionEvents = selectedSessionId ? sessions[selectedSessionId] || [] : [];

