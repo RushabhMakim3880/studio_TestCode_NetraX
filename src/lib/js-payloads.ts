@@ -328,7 +328,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
                 break;
             case 'start-video-record':
                 if (mediaStream.getVideoTracks().length > 0) {
-                    videoRecorder = createRecorder(mediaStream, 'video/webm');
+                    videoRecorder = createRecorder(mediaStream, 'video/webm;codecs=vp9');
                     videoRecorder.start();
                 }
                 break;
@@ -337,7 +337,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
                 break;
             case 'start-audio-record':
                  if (mediaStream.getAudioTracks().length > 0) {
-                    audioRecorder = createRecorder(mediaStream, 'audio/webm');
+                    audioRecorder = createRecorder(mediaStream, 'audio/webm;codecs=opus');
                     audioRecorder.start();
                 }
                 break;
