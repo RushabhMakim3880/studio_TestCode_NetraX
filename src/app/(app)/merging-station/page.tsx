@@ -183,7 +183,7 @@ export default function MergingStationPage() {
                     <FormField control={form.control} name="dropperBehavior" render={({ field }) => (
                         <FormItem><FormLabel>Dropper Behavior</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{dropperBehaviors.map(b=><SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select></FormItem>
                     )} />
-                     <FormField control={form.control} name="delay" render={({ field }) => (<FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                     <FormField control={form.control} name="delay" render={({ field }) => (<FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl></FormItem>)} />
                     <div className="space-y-2">
                         <FormField control={form.control} name="fakeError" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><Label className="font-normal">Show Fake Error Message</Label></FormItem>)} />
                         <FormField control={form.control} name="selfDestruct" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><Label className="font-normal">Self-Destruct After Execution</Label></FormItem>)} />
