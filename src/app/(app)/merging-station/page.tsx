@@ -18,6 +18,7 @@ import { Loader2, AlertTriangle, Sparkles, Binary, CheckCircle, File, FileCode, 
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
 
 const formSchema = z.object({
   payloadFile: z.any().refine(files => files?.length === 1, "Payload file is required."),
