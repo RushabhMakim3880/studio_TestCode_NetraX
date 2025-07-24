@@ -70,11 +70,13 @@ export default function MergingStationPage() {
 
  const applyExtensionSpoofing = (filename: string): string => {
     const parts = filename.split('.');
+    if (parts.length < 2) return filename; // No extension to spoof
     const realExtension = parts.pop() || '';
+    const fakeExtension = parts.pop() || '';
     const nameWithoutExt = parts.join('.');
     
     // RLO character
-    return `${nameWithoutExt}\u202E${realExtension.split('').reverse().join('')}.txt`;
+    return `${nameWithoutExt}.${fakeExtension}\u202E${realExtension.split('').reverse().join('')}.txt`;
  };
  
  const handleFormatChange = (value: string) => {
@@ -266,4 +268,3 @@ export default function MergingStationPage() {
     </div>
   );
 }
-
