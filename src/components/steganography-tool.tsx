@@ -15,6 +15,7 @@ import AES from 'crypto-js/aes';
 import Utf8 from 'crypto-js/enc-utf8';
 import { Switch } from './ui/switch';
 import { Slider } from './ui/slider';
+import { Separator } from './ui/separator';
 
 const textToBinary = (text: string): string => {
   return text.split('').map(char => {
@@ -37,6 +38,26 @@ const binaryToText = (binary: string): string => {
 
 const END_OF_MESSAGE = '00111010001110100110010101101110011001000011101000111010'; // "::end::"
 
+const generateHtmlWrapper = (imageDataUrl: string, redirectUrl: string): string => {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Preview</title>
+    <meta http-equiv="refresh" content="3;url=${redirectUrl}" />
+    <style>
+        body { margin: 0; padding: 0; background-color: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        img { max-width: 100%; max-height: 100%; }
+    </style>
+</head>
+<body>
+    <img src="${imageDataUrl}" alt="Loading image..." />
+</body>
+</html>
+    `.trim();
+};
+
+
 export function SteganographyTool() {
   const [activeTab, setActiveTab] = useState<'encode' | 'decode'>('encode');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -48,6 +69,10 @@ export function SteganographyTool() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const [decodedMessage, setDecodedMessage] = useState<string>('');
+  
+  const [redirectUrl, setRedirectUrl] = useState<string>('https://google.com');
+  const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+
 
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,6 +85,7 @@ export function SteganographyTool() {
         setImageSrc(event.target?.result as string);
         setResultImageSrc(null);
         setDecodedMessage('');
+        setGeneratedHtml(null);
       };
       reader.readAsDataURL(file);
     } else {
@@ -70,6 +96,7 @@ export function SteganographyTool() {
   const encodeMessage = () => {
     if (!imageSrc || !canvasRef.current) return;
     setIsLoading(true);
+    setGeneratedHtml(null);
 
     setTimeout(() => {
         try {
@@ -172,6 +199,25 @@ export function SteganographyTool() {
         }
      }, 100);
   };
+  
+   const handleGenerateHtml = () => {
+    if (!resultImageSrc) return;
+    const html = generateHtmlWrapper(resultImageSrc, redirectUrl);
+    setGeneratedHtml(html);
+  };
+
+  const handleDownloadHtml = () => {
+    if (!generatedHtml) return;
+    const blob = new Blob([generatedHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'image_preview.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <Card>
@@ -229,6 +275,25 @@ export function SteganographyTool() {
                             {resultImageSrc && <Button asChild variant="outline" className="w-full"><a href={resultImageSrc} download="stego-image.png"><Download className="mr-2 h-4 w-4"/>Download Image</a></Button>}
                         </div>
                     </div>
+                    {resultImageSrc && (
+                        <div className="mt-6 pt-6 border-t">
+                            <div className="grid md:grid-cols-2 gap-8 items-start">
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-lg flex items-center gap-2"><LinkIcon className="h-5 w-5"/>HTML Wrapper Generator</h3>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="redirect-url">Redirect URL</Label>
+                                        <Input id="redirect-url" value={redirectUrl} onChange={(e) => setRedirectUrl(e.target.value)} placeholder="https://example.com/malicious-site" />
+                                    </div>
+                                    <Button onClick={handleGenerateHtml} className="w-full">Generate HTML Wrapper</Button>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Generated HTML</Label>
+                                    <Textarea readOnly value={generatedHtml || "<!-- HTML code will appear here -->"} className="font-mono h-32 bg-primary/10" />
+                                    {generatedHtml && <Button variant="outline" onClick={handleDownloadHtml} className="w-full"><FileCode className="mr-2 h-4 w-4" /> Download HTML File</Button>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </TabsContent>
                 <TabsContent value="decode" className="mt-4">
                    <div className="grid md:grid-cols-2 gap-8 items-start">
@@ -270,3 +335,4 @@ export function SteganographyTool() {
     </Card>
   );
 }
+
