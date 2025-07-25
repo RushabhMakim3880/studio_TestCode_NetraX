@@ -28,7 +28,6 @@ export default function RatPage() {
   const [fileSystem, setFileSystem] = useState<any[]>([]);
 
   const channelRef = useRef<BroadcastChannel | null>(null);
-  const videoRef = useRef<HTMLImageElement>(null);
 
   const resetStateForSession = () => {
     setScreenStream(null);
@@ -84,13 +83,11 @@ export default function RatPage() {
       channelRef.current?.close();
     };
   }, [selectedSessionId, isStreaming, toast]);
-
-  useEffect(() => {
-    if (videoRef.current && screenStream) {
-        // This is a simple way to display a stream of JPEG Data URLs
-        videoRef.current.src = screenStream;
-    }
-  }, [screenStream]);
+  
+  const sessionsMap = new Map(Object.entries(sessions));
+  const setSessionsFromMap = (newMap: Map<string, TrackedEvent[]>) => {
+    setSessions(Object.fromEntries(newMap.entries()));
+  };
   
   const sendRatCommand = (command: string, data: any = {}) => {
     if (!selectedSessionId) {
@@ -135,7 +132,7 @@ export default function RatPage() {
               <CardContent>
                 <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center overflow-hidden">
                     {isStreaming && screenStream ? (
-                        <img ref={videoRef} alt="Live screen feed" className="w-full h-full object-contain" />
+                        <img src={screenStream} alt="Live screen feed" className="w-full h-full object-contain" />
                     ) : (
                         <p className="text-muted-foreground">Screen stream inactive.</p>
                     )}
@@ -169,7 +166,7 @@ export default function RatPage() {
         </div>
 
         <div className="space-y-6">
-            <SessionHistory sessions={sessions} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
+            <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
             <Card>
                 <CardHeader>
                    <div className="flex justify-between items-center">
