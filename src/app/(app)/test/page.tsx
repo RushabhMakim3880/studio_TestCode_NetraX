@@ -35,7 +35,7 @@ export default function TestPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      targetUrl: 'https://public-firing-range.appspot.com/address/location.html',
+      targetUrl: 'http://info.cern.ch/',
       jsPayload: `
 (function() {
     // Use BroadcastChannel to send data to the 'Live Tracker' UI.
