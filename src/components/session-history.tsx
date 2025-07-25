@@ -9,7 +9,7 @@ import { TrackedEvent } from './live-tracker';
 
 type SessionHistoryProps = {
     sessions: Map<string, TrackedEvent[]>;
-    setSessions: (sessions: Map<string, TrackedEvent[]>) => void;
+    setSessions: (sessions: Record<string, TrackedEvent[]>) => void;
     selectedSessionId: string | null;
     setSelectedSessionId: React.Dispatch<React.SetStateAction<string | null>>;
     resetState: () => void;
@@ -18,7 +18,7 @@ type SessionHistoryProps = {
 export function SessionHistory({ sessions, setSessions, selectedSessionId, setSelectedSessionId, resetState }: SessionHistoryProps) {
   
   const handleClearHistory = () => {
-    setSessions(new Map());
+    setSessions({}); // Use an empty object to clear
     setSelectedSessionId(null);
     resetState();
   };

@@ -8,7 +8,7 @@ import { History, Trash2 } from 'lucide-react';
 import { TrackedEvent } from '../live-tracker';
 
 type SessionHistoryProps = {
-    sessions: Record<string, TrackedEvent[]>;
+    sessions: Map<string, TrackedEvent[]>;
     setSessions: (sessions: Record<string, TrackedEvent[]>) => void;
     selectedSessionId: string | null;
     setSelectedSessionId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -28,7 +28,7 @@ export function SessionHistory({ sessions, setSessions, selectedSessionId, setSe
     setSelectedSessionId(sessionId);
   }
 
-  const sessionMap = new Map(Object.entries(sessions));
+  const sessionMap = sessions; // No need to convert if it's already a map
 
   return (
     <Card>

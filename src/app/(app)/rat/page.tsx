@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Monitor, Terminal, Folder, File as FileIcon, Download, RefreshCw, Video, StopCircle } from 'lucide-react';
 import { TrackedEvent } from '@/components/live-tracker';
-import { SessionHistory } from '@/components/live-tracker/session-history';
+import { SessionHistory } from '@/components/session-history';
 
 export default function RatPage() {
   const { toast } = useToast();
@@ -37,10 +37,7 @@ export default function RatPage() {
   };
   
   const sessionsMap = new Map(Object.entries(sessions));
-  const setSessionsFromMap = (newMap: Map<string, TrackedEvent[]>) => {
-    setSessions(Object.fromEntries(newMap.entries()));
-  };
-
+  
   useEffect(() => {
     channelRef.current = new BroadcastChannel('netrax_c2_channel');
 
@@ -158,7 +155,7 @@ export default function RatPage() {
                     {isStreaming && screenStream ? (
                         <img src={screenStream} alt="Live screen feed" className="w-full h-full object-contain" />
                     ) : (
-                        <p className="text-muted-foreground">Screen stream inactive.</p>
+                        <p className="text-sm text-muted-foreground">Screen stream inactive.</p>
                     )}
                 </div>
               </CardContent>
@@ -190,7 +187,7 @@ export default function RatPage() {
         </div>
 
         <div className="space-y-6">
-            <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
+            <SessionHistory sessions={sessionsMap} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
             <Card>
                 <CardHeader>
                    <div className="flex justify-between items-center">
