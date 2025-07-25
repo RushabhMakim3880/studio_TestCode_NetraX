@@ -46,7 +46,7 @@ export function NetworkStatus() {
         console.error("Network check failed:", error);
         // Provide a more helpful error message when a browser extension is likely interfering.
         let errorMessage = "Network check failed";
-        if (error instanceof TypeError && error.message.includes('fetch')) {
+        if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('CORS'))) {
             errorMessage = "Blocked by extension";
         }
         setStatus(prev => ({ ...prev, isOnline: false, ip: errorMessage, ping: null }));
