@@ -42,7 +42,14 @@ export function PageSettingsManager() {
   
   useEffect(() => {
     if (user?.pageSettings) {
-        setSettings(user.pageSettings);
+        // Merge with defaults to ensure new settings are not missing
+        setSettings(prev => ({
+            ...defaultPageSettings,
+            ...prev,
+            ...user.pageSettings,
+            sidebar: { ...defaultPageSettings.sidebar, ...user.pageSettings?.sidebar },
+            cveFeed: { ...defaultPageSettings.cveFeed, ...user.pageSettings?.cveFeed },
+        }));
     }
      if (user?.enabledModules) {
         setVisibleModules(user.enabledModules);

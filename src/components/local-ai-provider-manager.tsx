@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -10,51 +10,113 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, BrainCircuit, CheckCircle, Info } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
+import { saveLocalAiConfig, getLocalAiConfig, testLocalAiConnection } from '@/services/local-ai-service';
 
-type Provider = 'ollama' | 'google-cli' | 'generic';
+export type LocalAiProvider = 'ollama' | 'google-cli' | 'generic';
+export type LocalAiConfig = {
+  provider: LocalAiProvider;
+  ollama?: {
+    baseUrl: string;
+    model: string;
+  };
+  google_cli?: {
+    path: string;
+    model: string;
+  };
+  generic?: {
+    baseUrl: string;
+    model: string;
+    apiKey?: string;
+  };
+};
 
 export function LocalAiProviderManager() {
   const { toast } = useToast();
-  const [provider, setProvider] = useState<Provider>('ollama');
+  const [provider, setProvider] = useState<LocalAiProvider>('ollama');
   
-  // State for each provider
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
   const [ollamaModel, setOllamaModel] = useState('llama3');
   const [googleCliPath, setGoogleCliPath] = useState('/usr/local/bin/gemma');
   const [googleCliModel, setGoogleCliModel] = useState('gemma:2b');
   const [genericUrl, setGenericUrl] = useState('http://localhost:1234/v1');
-  const [genericModel, setGenericModel] = useState('lm-studio-model');
+  const [genericModel, setGenericModel] = useState('');
   const [genericApiKey, setGenericApiKey] = useState('');
 
-  
+  const [isLoading, setIsLoading] = useState(true);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+        setIsLoading(true);
+        try {
+            const config = await getLocalAiConfig();
+            if (config) {
+                setProvider(config.provider);
+                if(config.ollama) {
+                    setOllamaUrl(config.ollama.baseUrl);
+                    setOllamaModel(config.ollama.model);
+                }
+                 if(config.google_cli) {
+                    setGoogleCliPath(config.google_cli.path);
+                    setGoogleCliModel(config.google_cli.model);
+                }
+                 if(config.generic) {
+                    setGenericUrl(config.generic.baseUrl);
+                    setGenericModel(config.generic.model);
+                    setGenericApiKey(config.generic.apiKey || '');
+                }
+            }
+        } catch(e) {
+            console.error("Failed to load local AI config:", e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    loadConfig();
+  }, []);
+
+  const buildConfig = (): LocalAiConfig => {
+    const config: LocalAiConfig = { provider };
+    switch(provider) {
+        case 'ollama':
+            config.ollama = { baseUrl: ollamaUrl, model: ollamaModel };
+            break;
+        case 'google-cli':
+            config.google_cli = { path: googleCliPath, model: googleCliModel };
+            break;
+        case 'generic':
+            config.generic = { baseUrl: genericUrl, model: genericModel, apiKey: genericApiKey };
+            break;
+    }
+    return config;
+  }
 
   const handleTestConnection = async () => {
     setIsTesting(true);
     setTestResult(null);
-    
-    // This is a simulation. In a real app, this would make a server-side call.
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    if (provider === 'ollama' && ollamaUrl.includes('localhost')) {
-      setTestResult({ success: true, message: `Successfully connected to Ollama at ${ollamaUrl}. Model '${ollamaModel}' is assumed to be available.` });
-    } else if (provider === 'google-cli' && googleCliPath) {
-      setTestResult({ success: true, message: `Google AI CLI provider configured. Will attempt to use '${googleCliPath}' with model '${googleCliModel}'.` });
-    } else if (provider === 'generic' && genericUrl.includes('localhost')) {
-        setTestResult({ success: true, message: `Successfully connected to generic endpoint at ${genericUrl}.` });
+    try {
+        const config = buildConfig();
+        const result = await testLocalAiConnection(config);
+        setTestResult(result);
+    } catch(e) {
+        setTestResult({ success: false, message: e instanceof Error ? e.message : 'An unknown error occurred.' });
+    } finally {
+        setIsTesting(false);
     }
-    else {
-       setTestResult({ success: false, message: `Connection test failed. Please verify your settings and that the service is running.` });
-    }
-
-    setIsTesting(false);
   };
   
-  const handleSave = () => {
-    // In a real application, these settings would be saved to a user-specific config file on the server.
-    // For this simulation, we'll just show a success toast.
-    toast({ title: 'Local AI Settings Saved', description: 'The server will now attempt to use the configured local provider.' });
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+        const config = buildConfig();
+        await saveLocalAiConfig(config);
+        toast({ title: 'Local AI Settings Saved', description: 'The server will now attempt to use the configured local provider.' });
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Save Failed', description: e instanceof Error ? e.message : 'Could not save settings.' });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -67,7 +129,8 @@ export function LocalAiProviderManager() {
         <CardDescription>Integrate local LLMs to bypass cloud quotas and content restrictions.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={provider} onValueChange={(value) => setProvider(value as Provider)} className="w-full">
+        {isLoading ? <div className="flex items-center justify-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div> : (
+        <Tabs value={provider} onValueChange={(value) => setProvider(value as LocalAiProvider)} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="ollama">Ollama</TabsTrigger>
                 <TabsTrigger value="google-cli">Google AI CLI</TabsTrigger>
@@ -150,7 +213,7 @@ export function LocalAiProviderManager() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="generic-model">Model Name</Label>
-                            <Input id="generic-model" value={genericModel} onChange={(e) => setGenericModel(e.target.value)} placeholder="e.g., lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF" />
+                            <Input id="generic-model" value={genericModel} onChange={(e) => setGenericModel(e.target.value)} placeholder="e.g., lmstudio-community/Meta-Llama-3-8B" />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="generic-api-key">API Key (optional)</Label>
@@ -181,9 +244,11 @@ export function LocalAiProviderManager() {
                 </div>
             </TabsContent>
         </Tabs>
+        )}
       </CardContent>
        <CardFooter className="justify-end border-t pt-6">
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Settings
           </Button>
         </CardFooter>

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, KeyRound, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { Loader2, KeyRound, PlusCircle, Trash2, Edit, Info, Server } from 'lucide-react';
 import { getApiKeys, saveApiKeys, ApiKeySettings } from '@/services/api-key-service';
 import {
   Dialog,
@@ -30,6 +30,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 const addKeySchema = z.object({
     keyName: z.string().min(1, 'Key name is required.').refine(val => /^[A-Z0-9_]+$/.test(val), {
@@ -38,9 +39,51 @@ const addKeySchema = z.object({
     keyValue: z.string().min(1, 'Key value is required.'),
 });
 
+type ApiKeyEntryProps = {
+    keyName: string;
+    value: string;
+    isEnvVar?: boolean;
+    onEdit: () => void;
+    onDelete: () => void;
+};
+
+const ApiKeyEntry = ({ keyName, value, isEnvVar, onEdit, onDelete }: ApiKeyEntryProps) => (
+    <div className="flex items-center justify-between p-3 border rounded-md bg-primary/20">
+        <div>
+            <div className="flex items-center gap-2">
+                <p className="font-mono text-sm font-semibold">{keyName}</p>
+                {isEnvVar && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Server className="h-4 w-4 text-muted-foreground"/>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>This key is set via an environment variable and cannot be edited here.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
+            </div>
+            <p className="font-mono text-xs text-muted-foreground">{'*'.repeat(value.length)}</p>
+        </div>
+        {!isEnvVar && (
+            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={onEdit}>
+                    <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={onDelete}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        )}
+    </div>
+);
+
 export function ApiKeysManager() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<ApiKeySettings>({});
+  const [userDefinedKeys, setUserDefinedKeys] = useState<ApiKeySettings>({});
+  const [envKeys, setEnvKeys] = useState<ApiKeySettings>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -55,8 +98,9 @@ export function ApiKeysManager() {
   const loadKeys = async () => {
     setIsLoading(true);
     try {
-      const savedKeys = await getApiKeys();
-      setSettings(savedKeys);
+      const { userDefined, environment } = await getApiKeys();
+      setUserDefinedKeys(userDefined);
+      setEnvKeys(environment);
     } catch (e) {
       const error = e instanceof Error ? e.message : 'Could not load API keys.';
       toast({ variant: 'destructive', title: 'Loading Failed', description: error });
@@ -72,8 +116,10 @@ export function ApiKeysManager() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-        await saveApiKeys(settings);
-        toast({ title: 'API Keys Saved', description: 'Your API keys have been securely stored.' });
+        await saveApiKeys(userDefinedKeys);
+        toast({ title: 'API Keys Saved', description: 'Your custom API keys have been securely stored.' });
+        // After saving, reload to ensure state is consistent
+        await loadKeys();
     } catch(e) {
         const error = e instanceof Error ? e.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Save Failed', description: error });
@@ -83,20 +129,18 @@ export function ApiKeysManager() {
   };
 
   const handleAddNewKey = (values: z.infer<typeof addKeySchema>) => {
-    if (settings.hasOwnProperty(values.keyName)) {
+    if (userDefinedKeys.hasOwnProperty(values.keyName) || envKeys.hasOwnProperty(values.keyName)) {
         addKeyForm.setError('keyName', { message: 'This key name already exists.' });
         return;
     }
-    const newSettings = { ...settings, [values.keyName]: values.keyValue };
-    setSettings(newSettings);
+    setUserDefinedKeys(prev => ({ ...prev, [values.keyName]: values.keyValue }));
     setIsAddModalOpen(false);
     addKeyForm.reset();
   }
   
   const handleEditKey = () => {
       if (selectedKey) {
-          const newSettings = { ...settings, [selectedKey]: editValue };
-          setSettings(newSettings);
+          setUserDefinedKeys(prev => ({ ...prev, [selectedKey]: editValue }));
           setIsEditModalOpen(false);
           setSelectedKey(null);
           setEditValue('');
@@ -105,14 +149,15 @@ export function ApiKeysManager() {
   
   const handleDeleteKey = () => {
       if (selectedKey) {
-          const newSettings = { ...settings };
+          const newSettings = { ...userDefinedKeys };
           delete newSettings[selectedKey];
-          setSettings(newSettings);
+          setUserDefinedKeys(newSettings);
           setIsDeleteAlertOpen(false);
           setSelectedKey(null);
       }
   }
 
+  const allKeys = { ...envKeys, ...userDefinedKeys };
 
   return (
     <>
@@ -128,7 +173,7 @@ export function ApiKeysManager() {
                 Add New Key
             </Button>
         </div>
-        <CardDescription>Manage third-party API keys for platform integrations. Keys are stored securely on the server.</CardDescription>
+        <CardDescription>Manage third-party API keys. User-defined keys are stored in <code className="font-mono bg-primary/10 p-1 rounded-sm">.secrets.json</code> and will override any matching environment variables.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -137,22 +182,21 @@ export function ApiKeysManager() {
             </div>
         ) : (
             <div className="space-y-4">
-                {Object.keys(settings).length > 0 ? Object.entries(settings).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between p-3 border rounded-md bg-primary/20">
-                       <div>
-                         <p className="font-mono text-sm font-semibold">{key}</p>
-                         <p className="font-mono text-xs text-muted-foreground">{'*'.repeat(value.length)}</p>
-                       </div>
-                       <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => { setSelectedKey(key); setEditValue(value); setIsEditModalOpen(true);}}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { setSelectedKey(key); setIsDeleteAlertOpen(true);}}>
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                       </div>
-                    </div>
-                )) : (
+                {Object.keys(allKeys).length > 0 ? (
+                    Object.entries(allKeys).map(([key, value]) => {
+                        const isEnv = envKeys.hasOwnProperty(key);
+                        return (
+                            <ApiKeyEntry 
+                                key={key}
+                                keyName={key}
+                                value={value}
+                                isEnvVar={isEnv}
+                                onEdit={() => { setSelectedKey(key); setEditValue(value); setIsEditModalOpen(true); }}
+                                onDelete={() => { setSelectedKey(key); setIsDeleteAlertOpen(true); }}
+                            />
+                        );
+                    })
+                ) : (
                     <p className="text-sm text-center text-muted-foreground py-8">No API keys configured. Click "Add New Key" to get started.</p>
                 )}
             </div>
@@ -161,7 +205,7 @@ export function ApiKeysManager() {
        <CardFooter className="justify-end border-t pt-6">
           <Button onClick={handleSave} disabled={isSaving || isLoading}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save All Changes
+            Save Changes
           </Button>
         </CardFooter>
     </Card>

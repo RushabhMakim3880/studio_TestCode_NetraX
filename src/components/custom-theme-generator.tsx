@@ -13,7 +13,7 @@ import { generateThemeFromColor, type CustomTheme } from '@/lib/colors';
 
 export function CustomThemeGenerator() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const { data: color, loading: colorLoading } = useColor(imageSrc, 'rgbArray', { crossOrigin: 'anonymous', quality: 10 });
+  const { data: color, loading: colorLoading } = useColor(imageSrc || '', 'rgbArray', { crossOrigin: 'anonymous', quality: 10 });
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -29,9 +29,11 @@ export function CustomThemeGenerator() {
   }, [color, imageSrc]);
 
   const applyCustomTheme = (theme: CustomTheme) => {
-    document.body.className = "custom-theme"; // A generic class to denote a custom theme is active
+    const body = document.body;
+    body.classList.remove(...body.classList); // Remove all existing classes
+    body.classList.add("custom-theme"); // Add a generic class
     for (const [key, value] of Object.entries(theme.colors)) {
-      document.body.style.setProperty(`--${key}`, value);
+      body.style.setProperty(`--${key}`, value);
     }
   }
 
@@ -74,7 +76,7 @@ export function CustomThemeGenerator() {
             <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">Select an image, and we'll extract its dominant color to create a unique theme. Your new theme will be applied instantly.</p>
                 <Input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
-                <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading || colorLoading}>
                     {(isLoading || colorLoading) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageUp className="mr-2 h-4 w-4" />}
                     Upload Theme Image
                 </Button>

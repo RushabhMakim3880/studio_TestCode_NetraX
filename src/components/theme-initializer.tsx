@@ -9,15 +9,19 @@ export function ThemeInitializer() {
     useEffect(() => {
         try {
             const customThemeString = localStorage.getItem('netra-custom-theme');
+            const body = document.body;
+
             if (customThemeString) {
                 const customTheme: CustomTheme = JSON.parse(customThemeString);
-                document.body.className = "custom-theme"; // A generic class
+                body.className = "custom-theme"; // A generic class
                  for (const [key, value] of Object.entries(customTheme.colors)) {
-                    document.body.style.setProperty(`--${key}`, value);
+                    body.style.setProperty(`--${key}`, value);
                 }
             } else {
                  const savedColorTheme = localStorage.getItem('netra-color-theme') || 'theme-default';
-                 document.body.className = savedColorTheme;
+                 // Ensure no inline styles are left over from a previous custom theme
+                 body.style.cssText = "";
+                 body.className = savedColorTheme;
             }
         } catch (error) {
             console.error("Failed to apply custom theme from localStorage", error);
