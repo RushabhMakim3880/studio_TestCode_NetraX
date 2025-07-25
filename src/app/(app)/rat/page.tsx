@@ -41,7 +41,20 @@ export default function RatPage() {
 
     const handleC2Message = (event: MessageEvent) => {
       const newEvent = event.data;
-      if (!newEvent.sessionId || newEvent.sessionId !== selectedSessionId) return;
+      if (!newEvent.sessionId) return;
+      
+      // Update all sessions in storage
+      setSessions(prevSessions => {
+        const currentSessionEvents = prevSessions[newEvent.sessionId] || [];
+        const updatedEvents = [...currentSessionEvents, newEvent];
+        return {
+          ...prevSessions,
+          [newEvent.sessionId]: updatedEvents
+        };
+      });
+
+      // Handle UI updates only for the currently selected session
+      if (newEvent.sessionId !== selectedSessionId) return;
 
       if (newEvent.type === 'webrat-c2') {
         const { sub_type, data } = newEvent.data;
@@ -82,12 +95,23 @@ export default function RatPage() {
       channelRef.current?.removeEventListener('message', handleC2Message);
       channelRef.current?.close();
     };
-  }, [selectedSessionId, isStreaming, toast]);
+  }, [selectedSessionId, isStreaming, toast, setSessions]);
   
   const sessionsMap = new Map(Object.entries(sessions));
   const setSessionsFromMap = (newMap: Map<string, TrackedEvent[]>) => {
     setSessions(Object.fromEntries(newMap.entries()));
   };
+
+  useEffect(() => {
+    if (!selectedSessionId && sessionsMap.size > 0) {
+      const firstSessionId = sessionsMap.keys().next().value;
+      setSelectedSessionId(firstSessionId);
+    }
+    if (selectedSessionId && !sessionsMap.has(selectedSessionId)) {
+        setSelectedSessionId(sessionsMap.size > 0 ? sessionsMap.keys().next().value : null);
+        resetStateForSession();
+    }
+  }, [sessions, selectedSessionId]);
   
   const sendRatCommand = (command: string, data: any = {}) => {
     if (!selectedSessionId) {
