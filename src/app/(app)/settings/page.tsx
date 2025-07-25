@@ -14,6 +14,9 @@ import { OffensiveSettings } from '@/components/settings/offensive-settings';
 import { ScanningSettings } from '@/components/settings/scanning-settings';
 import { ReportingSettings } from '@/components/settings/reporting-settings';
 import { GlobalAppSettings } from '@/components/settings/global-app-settings';
+import { SecuritySettings } from '@/components/settings/security-settings';
+import { DataPrivacySettings } from '@/components/settings/data-privacy-settings';
+import { NotificationsSettings } from '@/components/settings/notifications-settings';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -28,12 +31,15 @@ export default function SettingsPage() {
       </div>
       
       <Accordion type="multiple" className="w-full space-y-4">
+        {user.role === 'Admin' && <SecuritySettings />}
         <PageSettingsManager />
         <AppearanceSettings />
         <OffensiveSettings />
         <ScanningSettings />
         <ReportingSettings />
         <GlobalAppSettings />
+        <DataPrivacySettings />
+        <NotificationsSettings />
         <ApiKeysManager />
         <LocalAiProviderManager />
         <EmailSettings />

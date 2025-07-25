@@ -15,15 +15,17 @@ export type User = {
   displayName: string;
   avatarUrl: string | null;
   role: Role;
-  password?: string; // Should be hashed in a real app
+  password?: string; 
   lastLogin?: string;
   enabledModules?: string[];
   dashboardLayout?: string[];
   pageSettings?: PageSettings;
   userSettings?: UserSettings;
+  isTwoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
 };
 
-type LoginCredentials = Pick<User, 'username' | 'password'>;
+type LoginCredentials = Pick<User, 'username' | 'password'> & { twoFactorCode?: string };
 type RegisterCredentials = Required<Pick<User, 'username' | 'password' | 'role' | 'displayName'>>;
 type PasswordChangeCredentials = {
     currentPassword: any;
@@ -33,22 +35,24 @@ type PasswordChangeCredentials = {
 type AuthContextType = {
   user: User | null;
   users: User[];
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<{ twoFactorRequired: boolean }>;
   logout: () => void;
   register: (credentials: RegisterCredentials) => Promise<void>;
   updateUser: (username: string, data: Partial<User>) => void;
   deleteUser: (username: string) => void;
   changePassword: (credentials: PasswordChangeCredentials) => Promise<void>;
   isLoading: boolean;
+  exportAllData: () => Record<string, any>;
+  importAllData: (data: Record<string, any>) => void;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const seedUsers: User[] = [
-    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
-    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
-    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
-    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
+    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
+    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
+    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
+    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
 ];
 
 
@@ -65,6 +69,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('netra-users', JSON.stringify(updatedUsers));
   }, []);
 
+  const mergeDeep = (target: any, source: any) => {
+    for (const key in source) {
+        if (source[key] instanceof Object && key in target) {
+            Object.assign(source[key], mergeDeep(target[key], source[key]));
+        }
+    }
+    Object.assign(target || {}, source);
+    return target;
+  };
+  
+  const migrateUserObject = (u: any) => {
+      let needsUpdate = false;
+      if (!u.enabledModules) { u.enabledModules = getAllModuleNamesForRole(u.role); needsUpdate = true; }
+      if (!u.dashboardLayout) { u.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; needsUpdate = true; }
+      if (!u.pageSettings) { u.pageSettings = defaultPageSettings; needsUpdate = true; }
+      if (u.sidebarSettings) { delete u.sidebarSettings; needsUpdate = true; }
+      if (!u.userSettings) { u.userSettings = defaultUserSettings; needsUpdate = true; }
+      if (u.isTwoFactorEnabled === undefined) { u.isTwoFactorEnabled = false; needsUpdate = true; }
+      // Deep merge to add new sub-properties like 'security' to userSettings
+      u.userSettings = mergeDeep(JSON.parse(JSON.stringify(defaultUserSettings)), u.userSettings);
+
+      return { user: u as User, needsUpdate };
+  }
+
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -75,67 +103,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const storedUsersJSON = localStorage.getItem('netra-users');
       let allUsers: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : seedUsers;
+      let anyUserUpdated = false;
 
-      // Data migration for users in localStorage that don't have new properties
-      const migratedUsers = allUsers.map((u: any) => { // Use any to handle old structure
-          let needsUpdate = false;
-          if (!u.enabledModules) { u.enabledModules = getAllModuleNamesForRole(u.role); needsUpdate = true; }
-          if (!u.dashboardLayout) { u.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; needsUpdate = true; }
-          
-          if (!u.pageSettings) {
-            u.pageSettings = defaultPageSettings;
-            if (u.sidebarSettings) {
-                u.pageSettings.sidebar = u.sidebarSettings;
-            }
-            needsUpdate = true;
-          }
-          if (u.sidebarSettings) {
-            delete u.sidebarSettings;
-            needsUpdate = true;
-          }
-          
-          if (!u.userSettings) {
-            u.userSettings = defaultUserSettings;
-            needsUpdate = true;
-          }
-          
-          return u as User;
+      const migratedUsers = allUsers.map((u: any) => {
+          const { user: migratedUser, needsUpdate } = migrateUserObject(u);
+          if (needsUpdate) anyUserUpdated = true;
+          return migratedUser;
       });
-
+      
       setUsers(migratedUsers);
-
-      if (!storedUsersJSON || JSON.stringify(allUsers) !== JSON.stringify(migratedUsers)) {
-          localStorage.setItem('netra-users', JSON.stringify(migratedUsers));
+      if (!storedUsersJSON || anyUserUpdated) {
+          syncUsers(migratedUsers);
       }
 
       const storedCurrentUserJSON = localStorage.getItem('netra-currentUser');
       if (storedCurrentUserJSON) {
         let currentUser: any = JSON.parse(storedCurrentUserJSON);
-        let currentUserNeedsUpdate = false;
-        if (!currentUser.enabledModules) { currentUser.enabledModules = getAllModuleNamesForRole(currentUser.role); currentUserNeedsUpdate = true; }
-        if (!currentUser.dashboardLayout) { currentUser.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; currentUserNeedsUpdate = true; }
-        
-        if (!currentUser.pageSettings) {
-            currentUser.pageSettings = defaultPageSettings;
-             if (currentUser.sidebarSettings) {
-                currentUser.pageSettings.sidebar = currentUser.sidebarSettings;
-            }
-            currentUserNeedsUpdate = true;
+        const { user: migratedUser, needsUpdate } = migrateUserObject(currentUser);
+        if (needsUpdate) {
+            localStorage.setItem('netra-currentUser', JSON.stringify(migratedUser));
         }
-        if (currentUser.sidebarSettings) {
-           delete currentUser.sidebarSettings;
-           currentUserNeedsUpdate = true;
-        }
-
-        if (!currentUser.userSettings) {
-          currentUser.userSettings = defaultUserSettings;
-          currentUserNeedsUpdate = true;
-        }
-        
-        if(currentUserNeedsUpdate) {
-            localStorage.setItem('netra-currentUser', JSON.stringify(currentUser));
-        }
-        setUser(currentUser);
+        setUser(migratedUser);
       }
     } catch (error) {
       console.error('Failed to parse data from localStorage', error);
@@ -148,24 +136,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (credentials: LoginCredentials) => {
     const foundUser = users.find(u => u.username === credentials.username);
-
-    // In a real app, you'd compare hashed passwords
-    if (foundUser && foundUser.password === credentials.password) {
-      const loggedInUser = { ...foundUser, lastLogin: new Date().toISOString() };
-      const updatedUsers = users.map(u => u.username === loggedInUser.username ? loggedInUser : u);
-      
-      syncUsers(updatedUsers);
-      setUser(loggedInUser);
-      localStorage.setItem('netra-currentUser', JSON.stringify(loggedInUser));
-
-      toast({
-        title: `Login Successful`,
-        description: `Welcome back, ${loggedInUser.displayName}.`,
-      });
-      router.push('/dashboard');
-    } else {
+    if (!foundUser || foundUser.password !== credentials.password) {
       throw new Error('Invalid username or password.');
     }
+
+    if (foundUser.isTwoFactorEnabled) {
+        if (!credentials.twoFactorCode) {
+            return { twoFactorRequired: true };
+        }
+        // In a real app, this would be a server-side check.
+        const { verify2faToken } = await import('@/actions/2fa-actions');
+        const isValid = await verify2faToken({ secret: foundUser.twoFactorSecret!, token: credentials.twoFactorCode });
+        if (!isValid) {
+            throw new Error('Invalid Two-Factor code.');
+        }
+    }
+    
+    const loggedInUser = { ...foundUser, lastLogin: new Date().toISOString() };
+    const updatedUsers = users.map(u => u.username === loggedInUser.username ? loggedInUser : u);
+    syncUsers(updatedUsers);
+    setUser(loggedInUser);
+    localStorage.setItem('netra-currentUser', JSON.stringify(loggedInUser));
+    toast({ title: `Login Successful`, description: `Welcome back, ${loggedInUser.displayName}.` });
+    router.push('/dashboard');
+    return { twoFactorRequired: false };
   };
 
   const register = async (credentials: RegisterCredentials) => {
@@ -180,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
         pageSettings: defaultPageSettings,
         userSettings: defaultUserSettings,
+        isTwoFactorEnabled: false,
     };
     const updatedUsers = [...users, newUser];
     
@@ -187,10 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
     localStorage.setItem('netra-currentUser', JSON.stringify(newUser));
 
-    toast({
-        title: `Successfully registered!`,
-        description: `Welcome to NETRA-X, ${credentials.displayName}.`,
-    });
+    toast({ title: `Successfully registered!`, description: `Welcome to NETRA-X, ${credentials.displayName}.` });
     router.push('/dashboard');
   };
 
@@ -225,14 +217,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteUser = (username: string) => {
     if(user && user.username === username) {
-        // This case is handled in the UI, but as a safeguard
         logout();
     }
     const updatedUsers = users.filter(u => u.username !== username);
     syncUsers(updatedUsers);
   };
+  
+  const exportAllData = () => {
+      const data: Record<string, any> = {};
+      for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('netra-')) {
+              data[key] = JSON.parse(localStorage.getItem(key)!);
+          }
+      }
+      return data;
+  };
+  
+  const importAllData = (data: Record<string, any>) => {
+      Object.keys(data).forEach(key => {
+          if (key.startsWith('netra-')) {
+              localStorage.setItem(key, JSON.stringify(data[key]));
+          }
+      });
+  };
 
-  const value = { user, users, login, logout, register, updateUser, deleteUser, changePassword, isLoading };
+  const value = { user, users, login, logout, register, updateUser, deleteUser, changePassword, isLoading, exportAllData, importAllData };
 
   if (!isClient) {
       return null;

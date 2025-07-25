@@ -18,8 +18,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, Palette } from 'lucide-react';
+import { Loader2, User, KeyRound, Palette, Shield } from 'lucide-react';
 import { AvatarManager } from '@/components/avatar-manager';
+import { TwoFactorAuthSetup } from '@/components/two-factor-auth-setup';
 
 const passwordFormSchema = z.object({
   currentPassword: z.string().min(1, { message: 'Current password is required.' }),
@@ -134,6 +135,19 @@ export default function ProfilePage() {
                         </Button>
                     </form>
                 </Form>
+            </CardContent>
+          </Card>
+
+           <Card>
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    <Shield className="h-6 w-6" />
+                    <CardTitle>Two-Factor Authentication (2FA)</CardTitle>
+                </div>
+                 <CardDescription>Add an extra layer of security to your account.</CardDescription>
+            </CardHeader>
+             <CardContent>
+                <TwoFactorAuthSetup />
             </CardContent>
           </Card>
 
