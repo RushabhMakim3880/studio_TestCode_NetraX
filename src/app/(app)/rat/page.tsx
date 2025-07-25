@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Monitor, Terminal, Folder, File as FileIcon, Download, Trash2, Video, StopCircle, RefreshCw } from 'lucide-react';
+import { Monitor, Terminal, Folder, File as FileIcon, Download, RefreshCw, Video, StopCircle } from 'lucide-react';
 import { TrackedEvent } from '@/components/live-tracker';
 import { SessionHistory } from '@/components/live-tracker/session-history';
 
@@ -34,6 +34,11 @@ export default function RatPage() {
     setIsStreaming(false);
     setCommandHistory([]);
     setFileSystem([]);
+  };
+  
+  const sessionsMap = new Map(Object.entries(sessions));
+  const setSessionsFromMap = (newMap: Map<string, TrackedEvent[]>) => {
+    setSessions(Object.fromEntries(newMap.entries()));
   };
 
   useEffect(() => {
@@ -96,11 +101,6 @@ export default function RatPage() {
       channelRef.current?.close();
     };
   }, [selectedSessionId, isStreaming, toast, setSessions]);
-  
-  const sessionsMap = new Map(Object.entries(sessions));
-  const setSessionsFromMap = (newMap: Map<string, TrackedEvent[]>) => {
-    setSessions(Object.fromEntries(newMap.entries()));
-  };
 
   useEffect(() => {
     if (!selectedSessionId && sessionsMap.size > 0) {
