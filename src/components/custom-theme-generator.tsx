@@ -13,7 +13,6 @@ import { generateThemeFromColor, type CustomTheme } from '@/lib/colors';
 
 export function CustomThemeGenerator() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  // Pass a skip property to the hook to prevent it from running when imageSrc is null
   const { data: color, loading: colorLoading } = useColor(imageSrc, 'rgbArray', { crossOrigin: 'anonymous', quality: 10, skip: !imageSrc });
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,9 +30,9 @@ export function CustomThemeGenerator() {
 
   const applyCustomTheme = (theme: CustomTheme) => {
     const body = document.body;
-    body.className = "dark"; // Ensure dark mode base class is present
-    for (const [key, value] of Object.entries(theme.colors)) {
-      body.style.setProperty(`--${key}`, value);
+    body.className = "custom-theme"; // A generic class
+     for (const [key, value] of Object.entries(theme.colors)) {
+        body.style.setProperty(`--${key}`, value);
     }
     // Set a flag to indicate a custom theme is active
     localStorage.setItem('netra-custom-theme-active', 'true');

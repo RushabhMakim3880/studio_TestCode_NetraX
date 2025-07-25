@@ -9,7 +9,7 @@ import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 
 const colorThemes = [
-    { name: 'Default', id: 'theme-default', colors: { primary: 'hsl(220 12% 12%)', accent: 'hsl(200 100% 70%)' } },
+    { name: 'Default', id: 'theme-default', colors: { primary: 'hsl(var(--primary))', accent: 'hsl(var(--accent))' } },
     { name: 'Matrix', id: 'theme-matrix', colors: { primary: 'hsl(120 60% 30%)', accent: 'hsl(120 100% 50%)' } },
     { name: 'Crimson', id: 'theme-crimson', colors: { primary: 'hsl(0 60% 30%)', accent: 'hsl(0 80% 55%)' } },
     { name: 'Cyberpunk', id: 'theme-cyberpunk', colors: { primary: 'hsl(320 50% 30%)', accent: 'hsl(320 100% 60%)' } },
@@ -25,12 +25,11 @@ export function AppearanceSettings() {
 
     useEffect(() => {
         // Only apply theme on client
-        const savedColorTheme = localStorage.getItem('netra-color-theme') || 'theme-default';
-        const customTheme = localStorage.getItem('netra-custom-theme');
-
-        if(customTheme) {
+        const isCustomThemeActive = localStorage.getItem('netra-custom-theme-active') === 'true';
+        if (isCustomThemeActive) {
             setColorTheme('custom');
         } else {
+            const savedColorTheme = localStorage.getItem('netra-color-theme') || 'theme-default';
             setColorTheme(savedColorTheme);
             document.body.className = savedColorTheme;
         }
@@ -39,6 +38,7 @@ export function AppearanceSettings() {
     const handleColorThemeChange = (themeId: string) => {
         // Clear custom theme if a preset is chosen
         localStorage.removeItem('netra-custom-theme');
+        localStorage.removeItem('netra-custom-theme-active');
         document.body.style.cssText = ""; // Clear inline styles
 
         document.body.className = themeId;
@@ -71,7 +71,7 @@ export function AppearanceSettings() {
 
                 <div>
                     <Label>Color Scheme</Label>
-                    <CardDescription className="mb-4">Select a color palette.</CardDescription>
+                    <CardDescription className="mb-4">Select a color palette. This will override any custom theme.</CardDescription>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {colorThemes.map(ct => (
                             <button
