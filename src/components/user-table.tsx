@@ -164,7 +164,7 @@ export function UserTable() {
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Enabled Modules</TableHead>
-                <TableHead>Last Login</TableHead>
+                <TableHead className="hidden md:table-cell">Last Login</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
             </TableHeader>
@@ -185,7 +185,7 @@ export function UserTable() {
                 </TableCell>
                 <TableCell><Badge variant="outline">{user.role}</Badge></TableCell>
                 <TableCell className="text-sm text-muted-foreground">{user.enabledModules?.length || 0} modules</TableCell>
-                <TableCell>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</TableCell>
+                <TableCell className="hidden md:table-cell">{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</TableCell>
                 <TableCell className="text-right">
                     <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -254,7 +254,7 @@ export function UserTable() {
                                                         checked={editableModules.includes(sub.name)}
                                                         onCheckedChange={(checked) => handleModuleToggle(sub.name, !!checked)}
                                                     />
-                                                    <label htmlFor={`${module.name}-${sub.name}`} className="text-sm font-normal">{sub.name}</label>
+                                                    <label htmlFor={`${module.name}-${sub.name}`} className="text-sm font-normal cursor-pointer">{sub.name}</label>
                                                 </div>
                                             )) : (
                                                 <div className="flex items-center space-x-2">
@@ -263,7 +263,7 @@ export function UserTable() {
                                                         checked={editableModules.includes(module.name)}
                                                         onCheckedChange={(checked) => handleModuleToggle(module.name, !!checked)}
                                                     />
-                                                    <label htmlFor={module.name} className="text-sm font-normal">Enable Base Module</label>
+                                                    <label htmlFor={module.name} className="text-sm font-normal cursor-pointer">Enable Base Module</label>
                                                 </div>
                                             )}
                                         </AccordionContent>

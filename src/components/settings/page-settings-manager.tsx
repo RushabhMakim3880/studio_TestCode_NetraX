@@ -13,6 +13,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { APP_MODULES } from '@/lib/constants';
 import { Checkbox } from '../ui/checkbox';
 import { ScrollArea } from '../ui/scroll-area';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+
 
 export type SidebarSettings = {
   collapsible: 'icon' | 'offcanvas' | 'none';
@@ -75,7 +77,7 @@ export function PageSettingsManager() {
     setIsSaving(true);
     try {
       updateUser(user.username, { pageSettings: settings, enabledModules: visibleModules });
-      toast({ title: 'Settings Saved', description: 'Your preferences have been updated.' });
+      toast({ title: 'Settings Saved', description: 'Your preferences have been updated. Refresh may be required for some changes.' });
     } catch (e) {
       const error = e instanceof Error ? e.message : "An unknown error occurred.";
       toast({ variant: 'destructive', title: 'Save Failed', description: error });
@@ -87,77 +89,81 @@ export function PageSettingsManager() {
   if (!user) return null;
 
   return (
-    <Card>
-      <CardHeader>
+    <AccordionItem value="page-settings">
+       <AccordionTrigger>
         <div className="flex items-center gap-3">
-          <Cog className="h-6 w-6" />
-          <CardTitle>Page & Module Settings</CardTitle>
+            <Cog className="h-6 w-6" />
+            <div className="text-left">
+                <p className="font-semibold">Page & Module Settings</p>
+                <p className="text-sm text-muted-foreground font-normal">Customize the behavior and visibility of application components.</p>
+            </div>
         </div>
-        <CardDescription>Customize the behavior and visibility of application components.</CardDescription>
-      </CardHeader>
-      <CardContent>
-         <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-                <div className="space-y-2">
-                    <Label className="font-semibold">General Settings</Label>
-                    <div className="p-4 border rounded-lg space-y-4">
-                        <div className="space-y-1">
-                            <Label>Sidebar Behavior</Label>
-                             <Select value={settings.sidebar.collapsible} onValueChange={handleSidebarChange}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="icon">Icon Only</SelectItem>
-                                    <SelectItem value="offcanvas">Off-canvas (Hidden)</SelectItem>
-                                    <SelectItem value="none">None (Always Open)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1">
-                            <Label>CVE Feed Results</Label>
-                            <Input 
-                                type="number" 
-                                value={settings.cveFeed.resultsPerPage}
-                                onChange={e => handleCveFeedChange(e.target.value)}
-                                min="5"
-                                max="50"
-                            />
-                            <p className="text-xs text-muted-foreground">Number of CVEs to show on the Threat Intel page (5-50).</p>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="p-4 border-t">
+            <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <Label className="font-semibold">General Settings</Label>
+                        <div className="p-4 border rounded-lg space-y-4">
+                            <div className="space-y-1">
+                                <Label>Sidebar Behavior</Label>
+                                <Select value={settings.sidebar.collapsible} onValueChange={handleSidebarChange}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="icon">Icon Only (collapsible)</SelectItem>
+                                        <SelectItem value="offcanvas">Off-canvas (hidden)</SelectItem>
+                                        <SelectItem value="none">None (always open)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <Label>CVE Feed Results</Label>
+                                <Input 
+                                    type="number" 
+                                    value={settings.cveFeed.resultsPerPage}
+                                    onChange={e => handleCveFeedChange(e.target.value)}
+                                    min="5"
+                                    max="50"
+                                />
+                                <p className="text-xs text-muted-foreground">Number of CVEs to show on the Threat Intel page (5-50).</p>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div className="space-y-2">
+                    <Label className="font-semibold">Module Visibility</Label>
+                    <Card className="h-full">
+                        <CardContent className="p-0">
+                            <ScrollArea className="h-72 p-4">
+                                <p className="text-sm text-muted-foreground mb-4">Choose which modules are visible in your sidebar. This does not change your role permissions.</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                    {APP_MODULES.flatMap(m => m.subModules ? m.subModules : [m])
+                                        .filter(m => m.roles.includes(user.role))
+                                        .map(module => (
+                                        <div key={module.name} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`vis-${module.name}`}
+                                                checked={visibleModules.includes(module.name)}
+                                                onCheckedChange={(checked) => handleModuleToggle(module.name, !!checked)}
+                                            />
+                                            <label htmlFor={`vis-${module.name}`} className="text-sm font-normal cursor-pointer">{module.name}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-            <div className="space-y-2">
-                <Label className="font-semibold">Module Visibility</Label>
-                 <Card className="h-full">
-                    <CardContent className="p-0">
-                        <ScrollArea className="h-72 p-4">
-                            <p className="text-sm text-muted-foreground mb-4">Choose which modules are visible in your sidebar. This does not change your role permissions.</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                                {APP_MODULES.flatMap(m => m.subModules ? m.subModules : [m])
-                                    .filter(m => m.roles.includes(user.role))
-                                    .map(module => (
-                                    <div key={module.name} className="flex items-center space-x-2">
-                                        <Checkbox
-                                            id={`vis-${module.name}`}
-                                            checked={visibleModules.includes(module.name)}
-                                            onCheckedChange={(checked) => handleModuleToggle(module.name, !!checked)}
-                                        />
-                                        <label htmlFor={`vis-${module.name}`} className="text-sm font-normal">{module.name}</label>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
+             <div className="flex justify-end mt-6">
+                <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Page Settings
+                </Button>
             </div>
-         </div>
-      </CardContent>
-      <CardFooter className="justify-end border-t pt-6">
-        <Button onClick={handleSave} disabled={isSaving}>
-          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save All Settings
-        </Button>
-      </CardFooter>
-    </Card>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

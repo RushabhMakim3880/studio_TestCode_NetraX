@@ -75,7 +75,7 @@ export function DashboardLayoutManager() {
                             className="mt-1"
                             />
                             <div className="grid gap-1">
-                            <label htmlFor={card.id} className="font-semibold flex items-center gap-2">
+                            <label htmlFor={card.id} className="font-semibold flex items-center gap-2 cursor-pointer">
                                 <Icon className="h-4 w-4" />
                                 {card.title}
                             </label>
