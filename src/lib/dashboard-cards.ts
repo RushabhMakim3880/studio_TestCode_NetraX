@@ -30,7 +30,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'Displays basic system and session information.',
     icon: Server,
     component: SystemInfo,
-    className: 'md:col-span-1',
   },
   {
     id: 'network-status',
@@ -38,7 +37,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'Shows live network connectivity and speed data.',
     icon: Wifi,
     component: NetworkStatus,
-    className: 'md:col-span-1',
   },
   {
     id: 'user-stats',
@@ -46,7 +44,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'Provides a quick link to user management.',
     icon: Users,
     component: UserStats,
-    className: 'md:col-span-1',
   },
   {
     id: 'threat-intel',
@@ -54,7 +51,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'A summary of the latest high-priority CVEs.',
     icon: Rss,
     component: ThreatIntelSummary,
-    className: 'md:col-span-1',
   },
   {
     id: 'project-progress',
@@ -70,7 +66,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'Pie chart of all tasks by their current status.',
     icon: ClipboardList,
     component: TaskStatusChart,
-    className: 'md:col-span-1',
   },
   {
     id: 'user-roles',
@@ -78,7 +73,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'Pie chart showing the breakdown of user roles.',
     icon: UserCog,
     component: UserRoleChart,
-    className: 'md:col-span-1',
   },
   {
     id: 'user-performance',
@@ -94,7 +88,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'A live feed of recent user actions on the platform.',
     icon: History,
     component: ActivityFeed,
-    className: 'md:col-span-2 xl:col-span-1',
   },
 ];
 
@@ -146,8 +139,9 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
     'system-info',
     'network-status',
     'threat-intel',
-    'shortcut-phishing',
     'project-progress',
     'task-status',
     'activity-feed',
+    'user-roles',
+    'user-performance'
 ];

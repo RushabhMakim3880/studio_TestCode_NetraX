@@ -5,9 +5,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { AVAILABLE_WIDGET_CARDS, getShortcutCardInfo } from '@/lib/dashboard-cards';
 import { DashboardLayoutManager } from '@/components/dashboard/dashboard-layout-manager';
 import { LayoutGrid } from 'lucide-react';
-import { ShortcutCard } from '@/components/dashboard/shortcut-card';
-import { APP_MODULES } from '@/lib/constants';
-import { StatusReport } from '@/components/status-report';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -19,13 +16,6 @@ export default function DashboardPage() {
   const visibleCardIds = user.dashboardLayout || [];
   
   const visibleWidgets = AVAILABLE_WIDGET_CARDS.filter(card => visibleCardIds.includes(card.id));
-  const visibleShortcuts = visibleCardIds
-    .map(id => getShortcutCardInfo(id, APP_MODULES))
-    .filter(Boolean);
-
-
-  const mainWidgets = visibleWidgets.filter(card => card.id !== 'activity-feed');
-  const activityFeedCard = visibleWidgets.find(card => card.id === 'activity-feed');
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -37,27 +27,30 @@ export default function DashboardPage() {
         <DashboardLayoutManager />
       </div>
       
-      <StatusReport />
-
-      {visibleWidgets.length > 0 || visibleShortcuts.length > 0 ? (
-         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                 {mainWidgets.map(card => {
+      {visibleWidgets.length > 0 ? (
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* Main column for larger charts */}
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {visibleWidgets.filter(c => c.className?.includes('col-span-2')).map(card => {
                     const CardComponent = card.component;
                     return (
-                        <div key={card.id} className={card.className || ''}>
-                            <CardComponent />
+                        <div key={card.id} className="md:col-span-2">
+                           {CardComponent && <CardComponent />}
                         </div>
                     );
-                })}
-                {visibleShortcuts.map(shortcut => (
-                  <div key={shortcut.id}>
-                      <ShortcutCard module={shortcut.module} />
-                  </div>
-                ))}
+                 })}
             </div>
-             <div className="xl:col-span-1">
-                {activityFeedCard && <activityFeedCard.component />}
+
+            {/* Right sidebar for smaller widgets and activity feed */}
+             <div className="lg:col-span-1 flex flex-col gap-6">
+                {visibleWidgets.filter(c => !c.className?.includes('col-span-2')).map(card => {
+                    const CardComponent = card.component;
+                    return (
+                        <div key={card.id}>
+                           {CardComponent && <CardComponent />}
+                        </div>
+                    );
+                 })}
              </div>
         </div>
       ) : (
