@@ -1,5 +1,4 @@
 
-
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
@@ -43,6 +42,7 @@ import {
   Combine,
   EyeOff,
   Radio,
+  TestTube,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -149,6 +149,14 @@ export const APP_MODULES: Module[] = [
     subModules: [
       { name: 'User Management', path: '/user-management', icon: UserCog, roles: [ROLES.ADMIN] },
       { name: 'Compliance', path: '/compliance', icon: ShieldCheck, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
+    ],
+  },
+  {
+    name: 'Development',
+    icon: TestTube,
+    roles: ALL_ROLES, // Or just Admin
+    subModules: [
+      { name: 'Link Tester', path: '/test', icon: TestTube, roles: ALL_ROLES },
     ],
   },
 ];

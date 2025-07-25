@@ -42,6 +42,17 @@ export function AppSidebar() {
       sm => sm.roles.includes(user.role) && (user.enabledModules || []).includes(sm.name)
     );
   };
+  
+  const allModules = [
+    ...APP_MODULES,
+    // Add the test page module dynamically only in development
+    ...(process.env.NODE_ENV === 'development' ? [{
+        name: 'Test Page',
+        path: '/test',
+        icon: Wrench, // Using Wrench icon as an example
+        roles: ALL_ROLES,
+    }] : [])
+  ];
 
   return (
     <>
