@@ -10,8 +10,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Monitor, Terminal, Folder, File as FileIcon, Download, Trash2, Video, StopCircle, RefreshCw } from 'lucide-react';
-import { TrackedEvent, SessionHistory } from '@/components/live-tracker/session-history';
+import { TrackedEvent } from '@/components/live-tracker';
+import { SessionHistory } from '@/components/live-tracker/session-history';
 import { JsPayload } from '@/components/javascript-library';
 
 export default function RatPage() {
@@ -27,7 +29,7 @@ export default function RatPage() {
   const [fileSystem, setFileSystem] = useState<any[]>([]);
 
   const channelRef = useRef<BroadcastChannel | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLImageElement>(null);
 
   const resetStateForSession = () => {
     setScreenStream(null);
@@ -168,7 +170,7 @@ export default function RatPage() {
         </div>
 
         <div className="space-y-6">
-            <SessionHistory sessions={sessions} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
+            <SessionHistory sessions={new Map(Object.entries(sessions))} setSessions={(map) => setSessions(Object.fromEntries(map))} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
             <Card>
                 <CardHeader>
                    <div className="flex justify-between items-center">
@@ -201,4 +203,3 @@ export default function RatPage() {
     </div>
   );
 }
-
