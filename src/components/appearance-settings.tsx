@@ -2,13 +2,14 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Check, Moon, Sun, Palette } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Check, Moon, Sun, Palette, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Input } from './ui/input';
 import convert from 'color-convert';
+import { Button } from './ui/button';
 
 const colorThemes = [
     { name: 'Default', id: 'theme-default', colors: { primary: 'hsl(var(--primary))', accent: 'hsl(var(--accent))' } },
@@ -47,7 +48,8 @@ export function AppearanceSettings() {
         } else {
             const savedColorTheme = localStorage.getItem('netra-color-theme') || 'theme-default';
             setColorTheme(savedColorTheme);
-            document.body.className = savedColorTheme;
+            document.body.className = document.body.className.replace(/theme-[\w-]+/g, '').trim();
+            document.body.classList.add(savedColorTheme);
         }
         
         const savedAccent = localStorage.getItem('netra-manual-accent');
@@ -76,6 +78,9 @@ export function AppearanceSettings() {
         
         // Save manual accent color
         localStorage.setItem('netra-manual-accent', newColorHex);
+        
+        // Clear preset theme classes from body
+        document.body.className = document.body.className.replace(/theme-[\w-]+/g, '').trim();
 
         // Apply new colors via inline styles
         document.body.style.setProperty('--accent', `${h} ${s}% ${l}%`);
@@ -90,11 +95,33 @@ export function AppearanceSettings() {
         localStorage.removeItem('netra-manual-accent');
         document.body.style.cssText = ""; // Clear all inline styles
 
-        document.body.className = themeId;
+        document.body.className = document.body.className.replace(/theme-[\w-]+/g, '').trim();
+        document.body.classList.add(themeId);
+        
         localStorage.setItem('netra-color-theme', themeId);
         setColorTheme(themeId);
         
         // Update the color picker to reflect the new theme's accent color
+        setTimeout(() => setAccentColor(getAccentFromCss()), 100);
+    };
+
+    const handleResetToDefault = () => {
+        // Clear all theme-related storage
+        localStorage.removeItem('netra-custom-theme');
+        localStorage.removeItem('netra-custom-theme-active');
+        localStorage.removeItem('netra-color-theme');
+        localStorage.removeItem('netra-manual-accent');
+        
+        // Clear inline styles from body
+        document.body.style.cssText = "";
+
+        // Remove any theme classes, preserving the dark/light mode class
+        document.body.className = document.body.className.replace(/theme-[\w-]+/g, '').trim();
+        document.body.classList.add('theme-default');
+
+        setColorTheme('theme-default');
+        
+        // Force re-evaluation of CSS variables to update the color picker
         setTimeout(() => setAccentColor(getAccentFromCss()), 100);
     };
 
@@ -171,6 +198,12 @@ export function AppearanceSettings() {
                     </div>
                 </div>
             </CardContent>
+             <CardFooter className="justify-end border-t pt-6">
+                <Button variant="outline" onClick={handleResetToDefault}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset to Default
+                </Button>
+            </CardFooter>
         </Card>
     )
 }
