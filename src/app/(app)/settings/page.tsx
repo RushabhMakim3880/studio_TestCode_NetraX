@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -22,13 +21,13 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your application preferences and modules.</p>
       </div>
 
-      <ApiKeysManager />
-      <LocalAiProviderManager />
-      <EmailSettings />
       <PageSettingsManager />
       <AppearanceSettings />
       <CustomThemeGenerator />
       <CompanyProfileManager />
+      <ApiKeysManager />
+      <LocalAiProviderManager />
+      <EmailSettings />
       
     </div>
   );
