@@ -131,9 +131,7 @@ export function PageSettingsManager() {
                                     checked={visibleModules.includes(module.name)}
                                     onCheckedChange={(checked) => handleModuleToggle(module.name, !!checked)}
                                 />
-                                <label htmlFor={`vis-${module.name}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                    {module.name}
-                                </label>
+                                <label htmlFor={`vis-${module.name}`} className="text-sm font-normal">{module.name}</label>
                             </div>
                         ))}
                     </div>

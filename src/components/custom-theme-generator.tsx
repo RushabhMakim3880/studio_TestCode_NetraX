@@ -13,7 +13,7 @@ import { generateThemeFromColor, type CustomTheme } from '@/lib/colors';
 
 export function CustomThemeGenerator() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const { data: color, loading: colorLoading } = useColor(imageSrc || '', 'rgbArray', { crossOrigin: 'anonymous', quality: 10 });
+  const { data: color, loading: colorLoading, error: colorError } = useColor(imageSrc || '', 'rgbArray', { crossOrigin: 'anonymous', quality: 10 });
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -26,15 +26,25 @@ export function CustomThemeGenerator() {
       setIsLoading(false);
       toast({ title: 'Custom Theme Applied!', description: 'UI colors have been updated based on your image.' });
     }
-  }, [color, imageSrc]);
+  }, [color, imageSrc, toast]);
+
+  useEffect(() => {
+      if (colorError) {
+          setIsLoading(false);
+          toast({ variant: 'destructive', title: 'Color Extraction Failed', description: 'Could not process the image. Please try a different one.' });
+          console.error(colorError);
+      }
+  }, [colorError, toast]);
 
   const applyCustomTheme = (theme: CustomTheme) => {
     const body = document.body;
-    body.classList.remove(...body.classList); // Remove all existing classes
-    body.classList.add("custom-theme"); // Add a generic class
+    body.className = "dark"; // Ensure dark mode base class is present
     for (const [key, value] of Object.entries(theme.colors)) {
       body.style.setProperty(`--${key}`, value);
     }
+    // Set a flag to indicate a custom theme is active
+    localStorage.setItem('netra-custom-theme-active', 'true');
+    localStorage.removeItem('netra-color-theme'); // Invalidate preset theme
   }
 
   const saveCustomTheme = (imageDataUrl: string, theme: CustomTheme) => {
@@ -42,8 +52,7 @@ export function CustomThemeGenerator() {
         imageDataUrl,
         ...theme
     };
-    localStorage.setItem('netra-custom-theme', JSON.stringify(themeToStore));
-    localStorage.removeItem('netra-color-theme'); // Remove preset theme
+    localStorage.setItem('netra-custom-theme-styles', JSON.stringify(themeToStore));
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

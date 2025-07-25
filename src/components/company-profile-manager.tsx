@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building } from 'lucide-react';
 import { Textarea } from './ui/textarea';
+import { useAuth } from '@/hooks/use-auth';
 
 export type CompanyProfile = {
   name: string;
@@ -20,6 +21,7 @@ export type CompanyProfile = {
 
 export function CompanyProfileManager() {
   const { toast } = useToast();
+  const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState<CompanyProfile>({ name: 'NETRA-X Security', address: '123 Cyber Street, Suite 404\nDigital City, DC 54321', contact: 'contact@netrax.local', logoDataUrl: null });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -57,26 +59,37 @@ export function CompanyProfileManager() {
   const handleSave = () => {
     setIsSaving(true);
     localStorage.setItem('netra-company-profile', JSON.stringify(profile));
+    
+    // Also update the current admin user's display name if it matches the old company name
+    if (user && user.role === 'Admin' && user.displayName === profile.name) {
+        updateUser(user.username, { displayName: profile.name });
+    }
+
     setTimeout(() => {
       toast({ title: 'Company Profile Saved' });
       setIsSaving(false);
+      // Force a reload to update components like the header logo
+      window.location.reload();
     }, 500);
   };
+  
+  // This component should only be used by Admins
+  if (user?.role !== 'Admin') return null;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
           <Building className="h-6 w-6" />
-          <CardTitle>Company Profile & Letterhead</CardTitle>
+          <CardTitle>Company Branding & Letterhead</CardTitle>
         </div>
-        <CardDescription>Customize details that will appear on generated documents.</CardDescription>
+        <CardDescription>Customize the application name, logo, and details that will appear on generated documents.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name</Label>
+              <Label htmlFor="companyName">Application / Company Name</Label>
               <Input id="companyName" name="name" value={profile.name} onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
@@ -89,7 +102,7 @@ export function CompanyProfileManager() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="companyLogo">Company Logo</Label>
+            <Label htmlFor="companyLogo">Application Logo</Label>
             <Input id="companyLogo" type="file" accept="image/png, image/jpeg" onChange={handleLogoChange} />
             <CardDescription>Recommended: PNG with transparent background, under 5MB.</CardDescription>
             {profile.logoDataUrl && (
@@ -102,7 +115,7 @@ export function CompanyProfileManager() {
         <div className="flex justify-end pt-4 border-t mt-4">
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Profile
+            Save Branding
           </Button>
         </div>
       </CardContent>

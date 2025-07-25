@@ -59,16 +59,12 @@ export async function getApiKeys(): Promise<{ userDefined: ApiKeySettings, envir
  * This is what other server actions and flows should use.
  */
 export async function getApiKey(key: string): Promise<string | undefined> {
-    const { userDefined, environment } = await getApiKeys();
+    const { userDefined } = await getApiKeys();
     // User-defined keys from secrets.json take precedence
     if (userDefined[key]) {
         return userDefined[key];
     }
     // Then check environment variables
-    if (environment[key]) {
-        return environment[key];
-    }
-    // Also check process.env directly for keys not exposed in the UI
     return process.env[key];
 }
 
