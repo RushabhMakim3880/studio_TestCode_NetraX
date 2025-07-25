@@ -13,7 +13,8 @@ import { generateThemeFromColor, type CustomTheme } from '@/lib/colors';
 
 export function CustomThemeGenerator() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const { data: color, loading: colorLoading, error: colorError } = useColor(imageSrc || '', 'rgbArray', { crossOrigin: 'anonymous', quality: 10 });
+  // Pass a skip property to the hook to prevent it from running when imageSrc is null
+  const { data: color, loading: colorLoading } = useColor(imageSrc, 'rgbArray', { crossOrigin: 'anonymous', quality: 10, skip: !imageSrc });
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -27,14 +28,6 @@ export function CustomThemeGenerator() {
       toast({ title: 'Custom Theme Applied!', description: 'UI colors have been updated based on your image.' });
     }
   }, [color, imageSrc, toast]);
-
-  useEffect(() => {
-      if (colorError) {
-          setIsLoading(false);
-          toast({ variant: 'destructive', title: 'Color Extraction Failed', description: 'Could not process the image. Please try a different one.' });
-          console.error(colorError);
-      }
-  }, [colorError, toast]);
 
   const applyCustomTheme = (theme: CustomTheme) => {
     const body = document.body;
@@ -52,7 +45,7 @@ export function CustomThemeGenerator() {
         imageDataUrl,
         ...theme
     };
-    localStorage.setItem('netra-custom-theme-styles', JSON.stringify(themeToStore));
+    localStorage.setItem('netra-custom-theme', JSON.stringify(themeToStore));
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
