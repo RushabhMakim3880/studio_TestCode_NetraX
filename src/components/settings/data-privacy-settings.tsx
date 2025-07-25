@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Database, Loader2 } from 'lucide-react';
 import { Label } from '../ui/label';
+import { Input } from '../ui/input';
 import { getUserSettings, UserSettingsSchema, type UserSettings } from '@/services/user-settings-service';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
