@@ -7,6 +7,7 @@ import { ROLES, type Role, getAllModuleNamesForRole } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboard-cards';
 import { defaultPageSettings, type PageSettings } from '@/components/settings/page-settings-manager';
+import { defaultUserSettings, type UserSettings } from '@/services/user-settings-service';
 
 
 export type User = {
@@ -19,6 +20,7 @@ export type User = {
   enabledModules?: string[];
   dashboardLayout?: string[];
   pageSettings?: PageSettings;
+  userSettings?: UserSettings;
 };
 
 type LoginCredentials = Pick<User, 'username' | 'password'>;
@@ -43,10 +45,10 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const seedUsers: User[] = [
-    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
-    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
-    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
-    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings },
+    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
+    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
+    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
+    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings },
 ];
 
 
@@ -82,15 +84,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (!u.pageSettings) {
             u.pageSettings = defaultPageSettings;
-            // if old sidebarSettings exist, migrate them
             if (u.sidebarSettings) {
                 u.pageSettings.sidebar = u.sidebarSettings;
             }
             needsUpdate = true;
           }
-          // Remove the old sidebarSettings property
           if (u.sidebarSettings) {
             delete u.sidebarSettings;
+            needsUpdate = true;
+          }
+          
+          if (!u.userSettings) {
+            u.userSettings = defaultUserSettings;
             needsUpdate = true;
           }
           
@@ -120,6 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentUser.sidebarSettings) {
            delete currentUser.sidebarSettings;
            currentUserNeedsUpdate = true;
+        }
+
+        if (!currentUser.userSettings) {
+          currentUser.userSettings = defaultUserSettings;
+          currentUserNeedsUpdate = true;
         }
         
         if(currentUserNeedsUpdate) {
@@ -169,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         enabledModules: getAllModuleNamesForRole(credentials.role),
         dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
         pageSettings: defaultPageSettings,
+        userSettings: defaultUserSettings,
     };
     const updatedUsers = [...users, newUser];
     

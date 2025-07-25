@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,7 @@ import { Loader2, Terminal, Sparkles, Clipboard, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { getUserSettings } from '@/services/user-settings-service';
 
 const formSchema = z.object({
   payloadType: z.string().min(1, { message: 'Please select a payload type.' }),
@@ -56,10 +57,19 @@ export function ReverseShellPayloadGenerator() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       payloadType: 'Bash -i',
-      lhost: '10.10.10.1',
-      lport: '4444',
+      lhost: '',
+      lport: '',
     },
   });
+  
+  useEffect(() => {
+    async function loadDefaults() {
+      const settings = await getUserSettings();
+      form.setValue('lhost', settings.offensive.defaultLhost);
+      form.setValue('lport', settings.offensive.defaultLport);
+    }
+    loadDefaults();
+  }, [form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);

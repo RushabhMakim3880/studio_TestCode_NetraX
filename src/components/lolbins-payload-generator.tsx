@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Terminal, Code, Clipboard, Sparkles, Binary } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { getUserSettings } from '@/services/user-settings-service';
 
 const lolbins = {
   certutil: {
@@ -69,6 +70,16 @@ export function LolbinsPayloadGenerator() {
       params: { url: '', output: '' },
     },
   });
+  
+  useEffect(() => {
+    async function loadDefaults() {
+      const settings = await getUserSettings();
+      if(settings.lolbins.default) {
+        form.setValue('lolbin', settings.lolbins.default);
+      }
+    }
+    loadDefaults();
+  }, [form]);
 
   const selectedLolbinKey = form.watch('lolbin') as LolbinKey;
   const selectedLolbin = lolbins[selectedLolbinKey];
@@ -118,7 +129,7 @@ export function LolbinsPayloadGenerator() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Living-off-the-Land Binary</FormLabel>
-                  <Select onValueChange={handleLolbinChange} defaultValue={field.value}>
+                  <Select onValueChange={handleLolbinChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       {Object.entries(lolbins).map(([key, value]) => (
