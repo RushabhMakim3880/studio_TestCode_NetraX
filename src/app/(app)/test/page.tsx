@@ -17,6 +17,7 @@ import { hostTestPage } from '@/actions/host-test-page-action';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { QrCodeGenerator } from '@/components/qr-code-generator';
 
 const formSchema = z.object({
   targetUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -105,10 +106,12 @@ export default function TestPage() {
     
     try {
       toast({ title: "Hosting Page...", description: "Writing file to public directory on the server." });
-      const { url } = await hostTestPage(modifiedHtml);
+      const { url: relativeUrl } = await hostTestPage(modifiedHtml);
 
-      if (url) {
-        setHostedUrl(url);
+      if (relativeUrl) {
+        // Construct the full absolute URL
+        const absoluteUrl = `${window.location.origin}${relativeUrl}`;
+        setHostedUrl(absoluteUrl);
         toast({ title: "Public Link Generated!", description: "Your attack page is now live." });
 
         logActivity({
@@ -159,16 +162,23 @@ export default function TestPage() {
         {hostedUrl && (
           <CardFooter className="flex-col items-start gap-4 border-t pt-6">
             <h3 className="font-semibold">Live Attack URL</h3>
-            <div className="w-full flex items-center gap-2">
-              <Input readOnly value={hostedUrl} className="font-mono" />
-              <Button type="button" size="icon" variant="outline" onClick={() => { navigator.clipboard.writeText(hostedUrl); toast({ title: 'Copied!'}); }}>
-                <Clipboard className="h-4 w-4" />
-              </Button>
-              <Button type="button" size="icon" variant="outline" asChild>
-                <Link href={hostedUrl} target="_blank"><Globe className="h-4 w-4" /></Link>
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">Send this link to a device on another network. When opened, it should execute the alert. Check the "Live Tracker" page for the 'connection' event.</p>
+             <div className="grid md:grid-cols-2 gap-6 w-full items-center">
+                <div className="space-y-2">
+                    <div className="w-full flex items-center gap-2">
+                      <Input readOnly value={hostedUrl} className="font-mono" />
+                      <Button type="button" size="icon" variant="outline" onClick={() => { navigator.clipboard.writeText(hostedUrl); toast({ title: 'Copied!'}); }}>
+                        <Clipboard className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" size="icon" variant="outline" asChild>
+                        <Link href={hostedUrl} target="_blank"><Globe className="h-4 w-4" /></Link>
+                      </Button>
+                    </div>
+                     <p className="text-sm text-muted-foreground">Send this link to a device on another network. When opened, it should execute the alert. Check the "Live Tracker" page for the 'connection' event.</p>
+                </div>
+                <div className="flex justify-center">
+                    <QrCodeGenerator url={hostedUrl} />
+                </div>
+             </div>
           </CardFooter>
         )}
       </Card>
