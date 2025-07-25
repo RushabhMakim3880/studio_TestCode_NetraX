@@ -42,6 +42,7 @@ import {
   Camera,
   Combine,
   EyeOff,
+  Radio,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -106,6 +107,7 @@ export const APP_MODULES: Module[] = [
       { name: 'Campaigns', path: '/campaigns', icon: Rocket, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Target Profiling', path: '/profiling', icon: Target, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'C2 Panel', path: '/c2', icon: Server, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Remote Access Toolkit', path: '/rat', icon: Radio, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Merging Station', path: '/merging-station', icon: Combine, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Steganography', path: '/steganography', icon: EyeOff, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Offensive Tools', path: '/offensive', icon: Wrench, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
