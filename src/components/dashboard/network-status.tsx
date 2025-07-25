@@ -28,7 +28,8 @@ export function NetworkStatus() {
     const fetchNetworkStatus = async () => {
        try {
         const startTime = Date.now();
-        const response = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
+        // Use a cache-busting query parameter
+        const response = await fetch(`https://api.ipify.org?format=json&cb=${new Date().getTime()}`, { cache: 'no-store' });
         const endTime = Date.now();
         
         if (!response.ok) throw new Error('Failed to fetch IP');
@@ -44,9 +45,9 @@ export function NetworkStatus() {
 
       } catch (error) {
         console.error("Network check failed:", error);
-        // Provide a more helpful error message when a browser extension is likely interfering.
         let errorMessage = "Network check failed";
-        if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('CORS'))) {
+        // A TypeError during a fetch is often due to a browser extension (like an ad-blocker) interfering.
+        if (error instanceof TypeError) {
             errorMessage = "Blocked by extension";
         }
         setStatus(prev => ({ ...prev, isOnline: false, ip: errorMessage, ping: null }));
