@@ -89,7 +89,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     }
 
     channel.addEventListener('message', async (event) => {
-        if (event.data.type !== 'webrat-command' || (event.data.sessionId && event.data.sessionId !== sessionId)) return;
+        if (event.data.type !== 'webrat-command' || event.data.sessionId !== sessionId) return;
         
         const { command, data } = event.data;
         switch(command) {
