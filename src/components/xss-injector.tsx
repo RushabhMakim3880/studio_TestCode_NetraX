@@ -17,6 +17,7 @@ import { startNgrokTunnel } from '@/services/ngrok-service';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { hostTestPage } from '@/actions/host-test-page-action';
 
 const formSchema = z.object({
   targetUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -50,10 +51,12 @@ export function XssInjector() {
       const response = await clonePageFromUrl({ url: values.targetUrl });
       let html = response.htmlContent;
       
+      const scriptToInject = values.xssPayload;
+      
       if (html.includes('</body>')) {
-          html = html.replace(/<\/body>/i, `${values.xssPayload}</body>`);
+          html = html.replace(/<\/body>/i, `${scriptToInject}</body>`);
       } else {
-          html += values.xssPayload;
+          html += scriptToInject;
       }
       
       setModifiedHtml(html);
@@ -72,16 +75,11 @@ export function XssInjector() {
     setHostedUrl(null);
     
     try {
-      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
-      const { url } = await startNgrokTunnel();
+      toast({ title: "Hosting Page...", description: "Writing file to public directory..." });
+      const { url } = await hostTestPage(modifiedHtml);
 
       if (url) {
-        const pageId = crypto.randomUUID();
-        const pageStorageKey = `phishing-html-${pageId}`; // Reuse the same mechanism as phishing pages
-        localStorage.setItem(pageStorageKey, modifiedHtml);
-
-        const finalUrl = `${url}/phish/${pageId}`;
-        setHostedUrl(finalUrl);
+        setHostedUrl(url);
         toast({ title: "Public Link Generated!", description: "Your attack page is now live." });
 
         logActivity({
@@ -90,7 +88,7 @@ export function XssInjector() {
             details: `Target: ${form.getValues('targetUrl')}`,
         });
       } else {
-         throw new Error("Ngrok did not return a URL.");
+         throw new Error("Hosting action did not return a URL.");
       }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";

