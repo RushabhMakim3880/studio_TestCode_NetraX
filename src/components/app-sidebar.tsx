@@ -13,7 +13,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
-import { APP_MODULES, Module } from '@/lib/constants';
+import { APP_MODULES, Module, ALL_ROLES } from '@/lib/constants';
 import { useAuth } from '@/hooks/use-auth';
 import {
   Collapsible,
@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Wrench } from 'lucide-react';
 
 export function AppSidebar() {
   const pathname = usePathname();
