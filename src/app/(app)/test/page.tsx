@@ -105,11 +105,11 @@ export default function TestPage() {
     setHostedUrl(null);
     
     try {
-      toast({ title: "Hosting Page...", description: "Writing file to public directory on the server." });
+      toast({ title: "Hosting Page...", description: "Writing file to server directory..." });
       const { url: relativeUrl } = await hostTestPage(modifiedHtml);
 
       if (relativeUrl) {
-        // Construct the full absolute URL
+        // Construct the full absolute URL for sharing
         const absoluteUrl = `${window.location.origin}${relativeUrl}`;
         setHostedUrl(absoluteUrl);
         toast({ title: "Public Link Generated!", description: "Your attack page is now live." });

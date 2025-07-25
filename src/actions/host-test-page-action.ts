@@ -12,8 +12,8 @@ import path from 'path';
  */
 export async function hostTestPage(htmlContent: string): Promise<{ url: string }> {
   try {
-    // Ensure the public directory for hosted pages exists.
-    const hostedDir = path.join(process.cwd(), 'public', 'hosted');
+    // Ensure the directory for hosted pages exists. This is now a private directory.
+    const hostedDir = path.join(process.cwd(), 'hosted_pages');
     await fs.mkdir(hostedDir, { recursive: true });
 
     const filename = `${crypto.randomUUID()}.html`;
@@ -22,7 +22,7 @@ export async function hostTestPage(htmlContent: string): Promise<{ url: string }
     // Write the HTML content to the file.
     await fs.writeFile(filePath, htmlContent, 'utf-8');
 
-    // The URL is relative to the public root.
+    // The URL now points to our new public route handler.
     const publicUrl = `/hosted/${filename}`;
     
     return { url: publicUrl };
