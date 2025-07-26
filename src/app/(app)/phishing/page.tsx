@@ -497,5 +497,4 @@ export default function PhishingPage() {
       <CredentialReplayer />
     </div>
   );
-
-    
+}
