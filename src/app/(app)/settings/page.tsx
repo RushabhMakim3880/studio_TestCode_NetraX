@@ -34,7 +34,24 @@ export default function SettingsPage() {
       <Accordion type="multiple" className="w-full space-y-4">
         {user.role === 'Admin' && <SecuritySettings />}
         <PageSettingsManager />
-        <AppearanceSettings />
+        
+        <AccordionItem value="appearance-settings">
+            <AccordionTrigger>
+                <div className="flex items-center gap-3">
+                    <Palette className="h-6 w-6" />
+                    <div className="text-left">
+                        <p className="font-semibold">Appearance</p>
+                        <p className="text-sm text-muted-foreground font-normal">Choose your visual theme for the interface.</p>
+                    </div>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent>
+                <div className="p-4 border-t">
+                    <AppearanceSettings />
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+
         <OffensiveSettings />
         <ScanningSettings />
         <ReportingSettings />
@@ -64,7 +81,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <BrainCircuit className="h-6 w-6" />
               <div className="text-left">
-                <p className="font-semibold">Local AI Provider (Ollama)</p>
+                <p className="font-semibold">Local Ollama Manager</p>
                 <p className="text-sm text-muted-foreground font-normal">Manage and configure a local Ollama instance.</p>
               </div>
             </div>
