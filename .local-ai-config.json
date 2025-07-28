@@ -2,6 +2,6 @@
   "provider": "ollama",
   "ollama": {
     "baseUrl": "http://localhost:11434",
-    "model": "llama3"
+    "model": "llama2-uncensored:latest"
   }
 }

@@ -17,7 +17,7 @@ import { GlobalAppSettings } from '@/components/settings/global-app-settings';
 import { SecuritySettings } from '@/components/settings/security-settings';
 import { DataPrivacySettings } from '@/components/settings/data-privacy-settings';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, KeyRound, Mail, Palette, Building } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -41,14 +41,31 @@ export default function SettingsPage() {
         <GlobalAppSettings />
         <DataPrivacySettings />
         <NotificationsSettings />
-        <ApiKeysManager />
+        
+        <AccordionItem value="api-keys">
+            <AccordionTrigger>
+                <div className="flex items-center gap-3">
+                    <KeyRound className="h-6 w-6" />
+                    <div className="text-left">
+                        <p className="font-semibold">API Key Management</p>
+                        <p className="text-sm text-muted-foreground font-normal">Manage third-party API keys for integrated tools.</p>
+                    </div>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent>
+                <div className="p-4 border-t">
+                    <ApiKeysManager />
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+        
         <AccordionItem value="local-ai-settings">
           <AccordionTrigger>
             <div className="flex items-center gap-3">
               <BrainCircuit className="h-6 w-6" />
               <div className="text-left">
-                <p className="font-semibold">Local AI Provider</p>
-                <p className="text-sm text-muted-foreground font-normal">Integrate local LLMs like Ollama.</p>
+                <p className="font-semibold">Local AI Provider (Ollama)</p>
+                <p className="text-sm text-muted-foreground font-normal">Manage and configure a local Ollama instance.</p>
               </div>
             </div>
           </AccordionTrigger>
@@ -58,9 +75,59 @@ export default function SettingsPage() {
             </div>
           </AccordionContent>
         </AccordionItem>
-        <EmailSettings />
-        <CustomThemeGenerator />
-        <CompanyProfileManager />
+
+        <AccordionItem value="email-settings">
+            <AccordionTrigger>
+                <div className="flex items-center gap-3">
+                    <Mail className="h-6 w-6" />
+                    <div className="text-left">
+                        <p className="font-semibold">Email SMTP Settings</p>
+                        <p className="text-sm text-muted-foreground font-normal">Configure SMTP for sending email invites and reports.</p>
+                    </div>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent>
+                <div className="p-4 border-t">
+                    <EmailSettings />
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+        
+        <AccordionItem value="theme-generator">
+            <AccordionTrigger>
+                <div className="flex items-center gap-3">
+                    <Palette className="h-6 w-6" />
+                    <div className="text-left">
+                        <p className="font-semibold">Custom Theme Generator</p>
+                        <p className="text-sm text-muted-foreground font-normal">Generate a UI theme from an image palette.</p>
+                    </div>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent>
+                <div className="p-4 border-t">
+                    <CustomThemeGenerator />
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+
+        {user.role === 'Admin' && (
+          <AccordionItem value="company-branding">
+              <AccordionTrigger>
+                  <div className="flex items-center gap-3">
+                      <Building className="h-6 w-6" />
+                      <div className="text-left">
+                          <p className="font-semibold">Company Branding & Letterhead</p>
+                          <p className="text-sm text-muted-foreground font-normal">Customize the app name and logo for reports.</p>
+                      </div>
+                  </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                  <div className="p-4 border-t">
+                      <CompanyProfileManager />
+                  </div>
+              </AccordionContent>
+          </AccordionItem>
+        )}
       </Accordion>
       
     </div>
