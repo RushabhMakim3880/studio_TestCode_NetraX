@@ -4,10 +4,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 const OllamaConfigSchema = z.object({
   baseUrl: z.string().url(),
@@ -61,34 +57,24 @@ export async function getLocalAiConfig(): Promise<LocalAiConfig | null> {
 }
 
 export async function testLocalAiConnection(config: LocalAiConfig): Promise<{ success: boolean; message: string }> {
+  // This function now acts as a client to our own proxy endpoint.
+  // It gets the NEXT_PUBLIC_HOST_URL which should be the address of the Next.js server itself.
+  const hostUrl = process.env.NEXT_PUBLIC_HOST_URL || 'http://localhost:3000';
+  
   try {
-    switch (config.provider) {
-      case 'ollama':
-        if (!config.ollama) throw new Error("Ollama config is missing.");
-        const ollamaResponse = await fetch(`${config.ollama.baseUrl}/api/tags`);
-        if (!ollamaResponse.ok) throw new Error(`Ollama API returned status ${ollamaResponse.status}`);
-        const ollamaData = await ollamaResponse.json();
-        const hasModel = ollamaData.models.some((m: any) => m.name.startsWith(config.ollama!.model));
-        if (!hasModel) return { success: false, message: `Ollama is running, but model '${config.ollama.model}' was not found.` };
-        return { success: true, message: "Successfully connected to Ollama and model is available." };
+    const response = await fetch(`${hostUrl}/api/local-ai-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+    });
 
-      case 'google-cli':
-         if (!config.google_cli) throw new Error("Google AI CLI config is missing.");
-         // Check if the file exists and is executable
-         await fs.access(config.google_cli.path, fs.constants.X_OK);
-         return { success: true, message: `Google AI CLI executable found at '${config.google_cli.path}'.`};
-
-      case 'generic':
-        if (!config.generic) throw new Error("Generic endpoint config is missing.");
-        const genericResponse = await fetch(`${config.generic.baseUrl}/models`, {
-            headers: config.generic.apiKey ? { 'Authorization': `Bearer ${config.generic.apiKey}` } : {}
-        });
-        if (!genericResponse.ok) throw new Error(`Generic endpoint returned status ${genericResponse.status}`);
-        return { success: true, message: "Successfully connected to the generic OpenAI-compatible endpoint." };
-        
-      default:
-        throw new Error("Unknown provider specified.");
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Proxy request failed with status ${response.status}`);
     }
+
+    return await response.json();
+
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { success: false, message: `Connection test failed: ${message}` };
