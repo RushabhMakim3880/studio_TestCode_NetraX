@@ -84,7 +84,10 @@ export default function LiveTrackerPage() {
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null);
   const [hostedUrlForEmail, setHostedUrlForEmail] = useState<string>('');
   
-  const emailForm = useForm<z.infer<typeof emailFormSchema>>({ resolver: zodResolver(emailFormSchema) });
+  const emailForm = useForm<z.infer<typeof emailFormSchema>>({ 
+    resolver: zodResolver(emailFormSchema),
+    defaultValues: { recipientEmail: '' },
+  });
   const newTemplateForm = useForm<z.infer<typeof newTemplateSchema>>({ resolver: zodResolver(newTemplateSchema), defaultValues: { name: '', subject: '', body: '' } });
   const aiTemplateForm = useForm<z.infer<typeof aiTemplateSchema>>({ resolver: zodResolver(aiTemplateSchema), defaultValues: { scenario: 'A critical security alert requiring immediate action.' } });
 
