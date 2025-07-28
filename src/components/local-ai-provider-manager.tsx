@@ -44,8 +44,8 @@ export function LocalAiProviderManager() {
   const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
   const [appOrigin, setAppOrigin] = useState('');
   
-  const [downloadedModels, setDownloadedModels] = useLocalStorage<string[]>('netra-ollama-models', []);
-  const [activeModel, setActiveModel] = useLocalStorage<string | null>('netra-ollama-active-model', null);
+  const { value: downloadedModels, setValue: setDownloadedModels } = useLocalStorage<string[]>('netra-ollama-models', []);
+  const { value: activeModel, setValue: setActiveModel } = useLocalStorage<string | null>('netra-ollama-active-model', null);
 
 
   useEffect(() => {
