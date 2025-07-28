@@ -28,12 +28,13 @@ import { logActivity } from '@/services/activity-log-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
-import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
-import { FileSystemNode } from '../file-browser';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { FileSystemNode } from '@/components/file-browser';
+import { ProjectGanttChart } from '@/components/project-gantt-chart';
 
 type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
-type Project = {
+export type Project = {
   id: string;
   name: string;
   target: string;
@@ -389,9 +390,10 @@ export default function ProjectManagementPage() {
         </div>
 
         <Tabs defaultValue="projects" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="planner">AI Project Planner</TabsTrigger>
                 <TabsTrigger value="projects">Projects & Tasks</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline View</TabsTrigger>
             </TabsList>
             <TabsContent value="planner" className="mt-4">
                 <CampaignPlanner />
@@ -466,7 +468,7 @@ export default function ProjectManagementPage() {
                                                           <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
                                                         </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
                                                         {assignee && (
-                                                            <TooltipProvider><Tooltip><TooltipTrigger>
+                                                            <TooltipProvider><Tooltip><TooltipTrigger asChild>
                                                                <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
                                                             </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
                                                         )}
@@ -475,7 +477,7 @@ export default function ProjectManagementPage() {
                                                                <Link href={`https://attack.mitre.org/techniques/${task.mitreTtp.replace('.', '/')}`} target="_blank">
                                                                     <Badge variant="destructive" className="font-mono text-xs">{task.mitreTtp}</Badge>
                                                                </Link>
-                                                            </TooltipTrigger><TooltipContent><p>View MITRE ATT&amp;CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
+                                                            </TooltipTrigger><TooltipContent><p>View MITRE ATT&CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
                                                         )}
                                                     </div>
                                                     {task.type === 'Phishing' && (
@@ -530,6 +532,9 @@ export default function ProjectManagementPage() {
                     <CardHeader><CardTitle>No projects found with status "{filter}"</CardTitle><CardDescription>Try selecting a different filter.</CardDescription></CardHeader>
                 </Card>
                 )}
+            </TabsContent>
+            <TabsContent value="timeline" className="mt-4">
+                <ProjectGanttChart projects={projects} />
             </TabsContent>
         </Tabs>
       </div>
@@ -628,7 +633,7 @@ export default function ProjectManagementPage() {
                                                     field.onChange(isSelected ? selected.filter(id => id !== file.id) : [...selected, file.id]);
                                                 }}
                                             >
-                                                <CheckCircle className={cn("mr-2 h-4 w-4", (field.value || []).includes(file.id) ? "opacity-100" : "opacity-0")}/>
+                                                <CheckCircle2 className={cn("mr-2 h-4 w-4", (field.value || []).includes(file.id) ? "opacity-100" : "opacity-0")}/>
                                                 {file.name}
                                             </CommandItem>
                                         ))}
@@ -706,7 +711,3 @@ export default function ProjectManagementPage() {
     </>
   );
 }
-
-    
-
-    
