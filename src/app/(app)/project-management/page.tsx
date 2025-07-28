@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -28,6 +28,9 @@ import { logActivity } from '@/services/activity-log-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
+import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import { FileSystemNode } from '../file-browser';
 
 type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
 type Project = {
@@ -54,6 +57,7 @@ type Task = {
   targetProfileId?: string;
   templateId?: string;
   mitreTtp?: string;
+  evidenceIds?: string[];
 };
 
 type Profile = { 
@@ -74,10 +78,10 @@ const initialProjects: Project[] = [
 ];
 
 const initialTasks: Task[] = [
-  { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon', priority: 'High', assignedTo: 'analyst', mitreTtp: 'T1595' },
+  { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon', priority: 'High', assignedTo: 'analyst', mitreTtp: 'T1595', evidenceIds: ['3-2'] },
   { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001', priority: 'Medium', assignedTo: 'operator', mitreTtp: 'T1566.001' },
   { id: 'TSK-003', projectId: 'PROJ-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload', priority: 'High' },
-  { id: 'TSK-004', projectId: 'PROJ-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon', priority: 'Medium', assignedTo: 'analyst' },
+  { id: 'TSK-004', projectId: 'PROJ-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon', priority: 'Medium', assignedTo: 'analyst', evidenceIds: ['3-3'] },
   { id: 'TSK-005', projectId: 'PROJ-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload', priority: 'Critical', assignedTo: 'operator' },
 ];
 
@@ -97,6 +101,7 @@ const taskSchema = z.object({
     targetProfileId: z.string().optional(),
     templateId: z.string().optional(),
     mitreTtp: z.string().optional(),
+    evidenceIds: z.array(z.string()).optional(),
 });
 
 const profileSchema = z.object({
@@ -133,6 +138,7 @@ export default function ProjectManagementPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [allFiles, setAllFiles] = useState<FileSystemNode[]>([]);
   const [filter, setFilter] = useState<ProjectStatus | 'All'>('All');
 
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
@@ -177,6 +183,9 @@ export default function ProjectManagementPage() {
 
           const storedTemplates = localStorage.getItem('netra-templates');
           setTemplates(storedTemplates ? JSON.parse(storedTemplates) : []);
+          
+          const storedFiles = localStorage.getItem('netra-fs');
+          setAllFiles(storedFiles ? JSON.parse(storedFiles) : []);
         } catch (error) {
           console.error('Failed to load data from localStorage', error);
         }
@@ -302,7 +311,7 @@ export default function ProjectManagementPage() {
   const handleAddTaskClick = (projectId: string) => {
     setEditingTask(null);
     setCurrentProjectIdForTask(projectId);
-    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '', mitreTtp: '' });
+    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '', mitreTtp: '', evidenceIds: [] });
     setIsTaskFormOpen(true);
   }
 
@@ -362,6 +371,7 @@ export default function ProjectManagementPage() {
   
   const getProfileName = (profileId?: string) => profiles.find(p => p.id === profileId)?.fullName || 'N/A';
   const getTemplateName = (templateId?: string) => templates.find(t => t.id === templateId)?.name || 'N/A';
+  const getFileName = (fileId?: string) => allFiles.find(f => f.id === fileId)?.name || 'N/A';
   
   const getInitials = (name?: string) => {
     if (!name) return '??';
@@ -474,6 +484,16 @@ export default function ProjectManagementPage() {
                                                         <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
                                                       </>
                                                     )}
+                                                    {task.evidenceIds && task.evidenceIds.length > 0 && (
+                                                        <div className="flex items-start gap-1.5 pt-1">
+                                                            <Paperclip className="h-3 w-3 mt-0.5" />
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {task.evidenceIds.map(id => (
+                                                                    <Badge key={id} variant="secondary">{getFileName(id)}</Badge>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <DropdownMenu>
@@ -557,98 +577,75 @@ export default function ProjectManagementPage() {
       
       {/* Task Form Dialog */}
       <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
             <DialogHeader>
                 <DialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
                 <DialogDescription>{editingTask ? 'Update the details for this task.' : 'Fill in the details for the new task.'}</DialogDescription>
             </DialogHeader>
+            <Form {...taskForm}>
             <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="task-description">Description</Label>
-                    <Textarea id="task-description" {...taskForm.register('description')} />
-                    {taskForm.formState.errors.description && <p className="text-sm text-destructive">{taskForm.formState.errors.description.message}</p>}
+                <FormField control={taskForm.control} name="description" render={({ field }) => ( <FormItem><Label>Description</Label><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )} />
+                 <div className="grid grid-cols-2 gap-4">
+                    <FormField control={taskForm.control} name="type" render={({ field }) => ( <FormItem><Label>Task Type</Label><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="General">General</SelectItem><SelectItem value="Recon">Recon</SelectItem><SelectItem value="Phishing">Phishing</SelectItem><SelectItem value="Payload">Payload</SelectItem><SelectItem value="Post-Exploitation">Post-Exploitation</SelectItem></SelectContent></Select><FormMessage /></FormItem> )} />
+                    <FormField control={taskForm.control} name="priority" render={({ field }) => ( <FormItem><Label>Priority</Label><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem></SelectContent></Select><FormMessage /></FormItem> )} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="task-type">Task Type</Label>
-                        <Select onValueChange={(v) => taskForm.setValue('type', v)} defaultValue={taskForm.getValues('type')}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="General">General</SelectItem>
-                                <SelectItem value="Recon">Recon</SelectItem>
-                                <SelectItem value="Phishing">Phishing</SelectItem>
-                                <SelectItem value="Payload">Payload</SelectItem>
-                                <SelectItem value="Post-Exploitation">Post-Exploitation</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="task-priority">Priority</Label>
-                        <Select onValueChange={(v) => taskForm.setValue('priority', v)} defaultValue={taskForm.getValues('priority')}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Low">Low</SelectItem>
-                                <SelectItem value="Medium">Medium</SelectItem>
-                                <SelectItem value="High">High</SelectItem>
-                                <SelectItem value="Critical">Critical</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                 <div className="grid grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                        <Label htmlFor="task-assignee">Assign To</Label>
-                        <Select onValueChange={(v) => taskForm.setValue('assignedTo', v === 'unassigned' ? '' : v)} defaultValue={taskForm.getValues('assignedTo')}>
-                            <SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="unassigned">Unassigned</SelectItem>
-                                {teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="task-mitre">MITRE ATT&amp;CK TTP</Label>
-                        <Input id="task-mitre" placeholder="e.g., T1566.001" {...taskForm.register('mitreTtp')} className="font-mono" />
-                    </div>
+                    <FormField control={taskForm.control} name="assignedTo" render={({ field }) => ( <FormItem><Label>Assign To</Label><Select onValueChange={(v) => field.onChange(v === 'unassigned' ? '' : v)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger></FormControl><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}</SelectContent></Select></FormItem> )} />
+                    <FormField control={taskForm.control} name="mitreTtp" render={({ field }) => ( <FormItem><Label>MITRE ATT&amp;CK TTP</Label><FormControl><Input placeholder="e.g., T1566.001" {...field} className="font-mono" /></FormControl></FormItem> )}/>
                  </div>
                 {watchedTaskType === 'Phishing' && (
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="task-profile">Target Profile</Label>
-                            <Select
-                                onValueChange={(v) => {
-                                    if (v === '__add_new__') {
-                                        profileForm.reset();
-                                        setIsProfileFormOpen(true);
-                                    } else {
-                                        taskForm.setValue('targetProfileId', v);
-                                    }
-                                }}
-                                value={taskForm.getValues('targetProfileId')}
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select Profile..." /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="__add_new__" className="text-accent">＋ Add New Profile...</SelectItem>
-                                    {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.fullName}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="task-template">Message Template</Label>
-                             <Select onValueChange={(v) => taskForm.setValue('templateId', v)} defaultValue={taskForm.getValues('templateId')}>
-                                <SelectTrigger><SelectValue placeholder="Select Template..." /></SelectTrigger>
-                                <SelectContent>
-                                    {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <FormField control={taskForm.control} name="targetProfileId" render={({ field }) => ( <FormItem><Label>Target Profile</Label><Select onValueChange={(v) => { if (v === '__add_new__') { profileForm.reset(); setIsProfileFormOpen(true); } else { field.onChange(v); } }} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Profile..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="__add_new__" className="text-accent">＋ Add New Profile...</SelectItem>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.fullName}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
+                        <FormField control={taskForm.control} name="templateId" render={({ field }) => ( <FormItem><Label>Message Template</Label><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Template..." /></SelectTrigger></FormControl><SelectContent>{templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
                     </div>
                 )}
+                 <FormField
+                    control={taskForm.control}
+                    name="evidenceIds"
+                    render={({ field }) => (
+                    <FormItem>
+                        <Label>Link Evidence</Label>
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="w-full justify-between">
+                                {field.value && field.value.length > 0 ? `${field.value.length} file(s) selected` : "Select files..."}
+                                <Paperclip className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search files..." />
+                                <CommandEmpty>No files found.</CommandEmpty>
+                                <CommandGroup>
+                                    <CommandList>
+                                        {allFiles.filter(f => f.type === 'file').map((file) => (
+                                            <CommandItem
+                                                key={file.id}
+                                                value={file.name}
+                                                onSelect={() => {
+                                                    const selected = field.value || [];
+                                                    const isSelected = selected.includes(file.id);
+                                                    field.onChange(isSelected ? selected.filter(id => id !== file.id) : [...selected, file.id]);
+                                                }}
+                                            >
+                                                <CheckCircle className={cn("mr-2 h-4 w-4", (field.value || []).includes(file.id) ? "opacity-100" : "opacity-0")}/>
+                                                {file.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandList>
+                                </CommandGroup>
+                            </Command>
+                        </PopoverContent>
+                        </Popover>
+                    </FormItem>
+                    )}
+                />
                  <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsTaskFormOpen(false)}>Cancel</Button>
                     <Button type="submit">Save Task</Button>
                 </DialogFooter>
             </form>
+            </Form>
         </DialogContent>
       </Dialog>
       
