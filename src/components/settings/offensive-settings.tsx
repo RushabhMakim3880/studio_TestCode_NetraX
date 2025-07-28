@@ -11,7 +11,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { getUserSettings, UserSettingsSchema, type UserSettings } from '@/services/user-settings-service';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Checkbox } from '../ui/checkbox';
+import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export function OffensiveSettings() {
@@ -100,7 +100,7 @@ export function OffensiveSettings() {
                <div className="space-y-2">
                  {['enableSandboxDetection', 'selfDestruct', 'fileless', 'useFragmentation'].map((id) => (
                     <div className="flex items-center space-x-2" key={id}>
-                        <Checkbox 
+                        <Switch 
                             id={`ms-${id}`}
                             checked={settings.mergingStation.defaultEvasion.includes(id)}
                             onCheckedChange={(checked) => {

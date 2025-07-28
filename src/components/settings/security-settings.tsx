@@ -10,7 +10,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { getUserSettings, UserSettingsSchema, type UserSettings } from '@/services/user-settings-service';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Checkbox } from '../ui/checkbox';
+import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
 
 export function SecuritySettings() {
@@ -97,19 +97,19 @@ export function SecuritySettings() {
               <div className="space-y-2">
                   <p className="text-sm font-medium">Require characters:</p>
                    <div className="flex items-center space-x-2">
-                        <Checkbox id="req-upper" checked={settings.passwordPolicy.requiredChars.includes('uppercase')} onCheckedChange={(c) => handlePasswordPolicyToggle('uppercase', !!c)} />
+                        <Switch id="req-upper" checked={settings.passwordPolicy.requiredChars.includes('uppercase')} onCheckedChange={(c) => handlePasswordPolicyToggle('uppercase', !!c)} />
                         <Label htmlFor="req-upper" className="font-normal">Uppercase (A-Z)</Label>
                    </div>
                    <div className="flex items-center space-x-2">
-                        <Checkbox id="req-lower" checked={settings.passwordPolicy.requiredChars.includes('lowercase')} onCheckedChange={(c) => handlePasswordPolicyToggle('lowercase', !!c)} />
+                        <Switch id="req-lower" checked={settings.passwordPolicy.requiredChars.includes('lowercase')} onCheckedChange={(c) => handlePasswordPolicyToggle('lowercase', !!c)} />
                         <Label htmlFor="req-lower" className="font-normal">Lowercase (a-z)</Label>
                    </div>
                    <div className="flex items-center space-x-2">
-                        <Checkbox id="req-number" checked={settings.passwordPolicy.requiredChars.includes('number')} onCheckedChange={(c) => handlePasswordPolicyToggle('number', !!c)} />
+                        <Switch id="req-number" checked={settings.passwordPolicy.requiredChars.includes('number')} onCheckedChange={(c) => handlePasswordPolicyToggle('number', !!c)} />
                         <Label htmlFor="req-number" className="font-normal">Number (0-9)</Label>
                    </div>
                    <div className="flex items-center space-x-2">
-                        <Checkbox id="req-special" checked={settings.passwordPolicy.requiredChars.includes('special')} onCheckedChange={(c) => handlePasswordPolicyToggle('special', !!c)} />
+                        <Switch id="req-special" checked={settings.passwordPolicy.requiredChars.includes('special')} onCheckedChange={(c) => handlePasswordPolicyToggle('special', !!c)} />
                         <Label htmlFor="req-special" className="font-normal">Special Character (!@#$...)</Label>
                    </div>
               </div>
@@ -118,7 +118,7 @@ export function SecuritySettings() {
             <div className="space-y-4">
                <Label className="font-semibold">Access Control</Label>
                <div className="flex items-center space-x-2">
-                  <Checkbox id="force2fa" checked={settings.force2FA} onCheckedChange={(c) => handleNestedChange('force2FA', !!c)} />
+                  <Switch id="force2fa" checked={settings.force2FA} onCheckedChange={(c) => handleNestedChange('force2FA', !!c)} />
                   <Label htmlFor="force2fa" className="font-normal">Force Two-Factor Authentication for all users</Label>
                </div>
                <div className="space-y-2">

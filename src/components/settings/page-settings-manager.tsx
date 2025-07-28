@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_MODULES } from '@/lib/constants';
-import { Checkbox } from '../ui/checkbox';
+import { Switch } from '../ui/switch';
 import { ScrollArea } from '../ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 
@@ -142,7 +142,7 @@ export function PageSettingsManager() {
                                         .filter(m => m.roles.includes(user.role))
                                         .map(module => (
                                         <div key={module.name} className="flex items-center space-x-2">
-                                            <Checkbox
+                                            <Switch
                                                 id={`vis-${module.name}`}
                                                 checked={visibleModules.includes(module.name)}
                                                 onCheckedChange={(checked) => handleModuleToggle(module.name, !!checked)}

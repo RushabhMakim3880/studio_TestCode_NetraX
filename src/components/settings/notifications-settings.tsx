@@ -10,7 +10,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { getUserSettings, UserSettingsSchema, type UserSettings } from '@/services/user-settings-service';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Checkbox } from '../ui/checkbox';
+import { Switch } from '../ui/switch';
 import { sendWebhookNotification } from '@/actions/notification-actions';
 
 export function NotificationsSettings() {
@@ -111,7 +111,7 @@ export function NotificationsSettings() {
                 <p className="font-medium text-sm">Notify on these events:</p>
                 {['credential_captured', 'honeytrap_triggered', 'admin_login'].map((id) => (
                     <div className="flex items-center space-x-2" key={id}>
-                        <Checkbox 
+                        <Switch 
                             id={`event-${id}`}
                             checked={settings.webhookEvents.includes(id)}
                             onCheckedChange={(checked) => handleEventToggle(id, !!checked)}
@@ -129,7 +129,7 @@ export function NotificationsSettings() {
             <div className="space-y-4">
                <Label className="font-semibold">Email Alerts</Label>
                <div className="flex items-center space-x-2">
-                    <Checkbox id="email-on-assign" checked={settings.emailOnTaskAssignment} onCheckedChange={(c) => handleNestedChange('emailOnTaskAssignment', !!c)} />
+                    <Switch id="email-on-assign" checked={settings.emailOnTaskAssignment} onCheckedChange={(c) => handleNestedChange('emailOnTaskAssignment', !!c)} />
                     <Label htmlFor="email-on-assign" className="font-normal">Send email when a task is assigned to me</Label>
                 </div>
                  <p className="text-xs text-muted-foreground">This requires SMTP settings to be configured correctly.</p>

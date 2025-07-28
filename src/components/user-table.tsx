@@ -38,7 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { generateInviteEmail, type InviteUserOutput } from '@/ai/flows/invite-user-flow';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { logActivity } from '@/services/activity-log-service';
 
@@ -249,7 +249,7 @@ export function UserTable() {
                                         <AccordionContent className="pl-4 space-y-2">
                                             {module.subModules ? module.subModules.map(sub => (
                                                 <div key={sub.name} className="flex items-center space-x-2">
-                                                    <Checkbox
+                                                    <Switch
                                                         id={`${module.name}-${sub.name}`}
                                                         checked={editableModules.includes(sub.name)}
                                                         onCheckedChange={(checked) => handleModuleToggle(sub.name, !!checked)}
@@ -258,7 +258,7 @@ export function UserTable() {
                                                 </div>
                                             )) : (
                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox
+                                                    <Switch
                                                         id={module.name}
                                                         checked={editableModules.includes(module.name)}
                                                         onCheckedChange={(checked) => handleModuleToggle(module.name, !!checked)}

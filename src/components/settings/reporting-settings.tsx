@@ -11,7 +11,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { getUserSettings, UserSettingsSchema, type UserSettings } from '@/services/user-settings-service';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Checkbox } from '../ui/checkbox';
+import { Switch } from '../ui/switch';
 
 export function ReportingSettings() {
   const { user, updateUser } = useAuth();
@@ -83,7 +83,7 @@ export function ReportingSettings() {
                 <Input id="defaultAuthor" value={settings.defaultAuthor} onChange={(e) => handleNestedChange('defaultAuthor', e.target.value)} />
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox 
+                <Switch 
                   id="includeTimestamp" 
                   checked={settings.includeTimestamp} 
                   onCheckedChange={(checked) => handleNestedChange('includeTimestamp', !!checked)}
