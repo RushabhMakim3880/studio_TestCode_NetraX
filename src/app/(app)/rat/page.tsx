@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Monitor, Terminal, Folder, File as FileIcon, Download, RefreshCw, Video, StopCircle } from 'lucide-react';
 import { TrackedEvent } from '@/components/live-tracker';
-import { SessionHistory } from '@/components/session-history';
+import { SessionHistory } from '@/components/live-tracker/session-history';
 
 export default function RatPage() {
   const { toast } = useToast();

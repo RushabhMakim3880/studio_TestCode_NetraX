@@ -13,6 +13,7 @@ import { SessionHijackingTool } from '@/components/session-hijacking-tool';
 import { JwtAnalyzer } from '@/components/jwt-analyzer';
 import { ClickjackingTool } from '@/components/clickjacking-tool';
 import { useAuth } from '@/hooks/use-auth';
+import { RubberDuckyEditor } from '@/components/rubber-ducky-editor';
 
 
 export default function OffensivePage() {
