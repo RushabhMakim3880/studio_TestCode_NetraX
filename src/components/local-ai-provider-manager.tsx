@@ -30,22 +30,27 @@ export type LocalAiConfig = {
   };
 };
 
-// This function now calls our internal proxy instead of the Ollama server directly.
+// This function now runs entirely on the client.
 async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{ success: boolean; message: string }> {
    try {
     switch (config.provider) {
       case 'ollama':
         if (!config.ollama) throw new Error("Ollama config is missing.");
-        const proxyResponse = await fetch('/api/ollama-proxy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ollamaUrl: config.ollama.baseUrl, model: config.ollama.model }),
-        });
-        const result = await proxyResponse.json();
-        if (!proxyResponse.ok) {
-            throw new Error(result.message || 'Proxy request failed.');
+        // Direct fetch from browser to local Ollama. This requires Ollama to have correct CORS config.
+        const ollamaResponse = await fetch(`${config.ollama.baseUrl}/api/tags`);
+        
+        if (!ollamaResponse.ok) {
+           throw new Error(`Ollama API returned status ${ollamaResponse.status}. Is it running and is OLLAMA_ORIGINS configured correctly?`);
         }
-        return result;
+        
+        const ollamaData = await ollamaResponse.json();
+        const hasModel = ollamaData.models.some((m: any) => m.name.startsWith(config.ollama!.model));
+        
+        if (!hasModel) {
+            return { success: false, message: `Ollama is running, but model '${config.ollama!.model}' was not found.` };
+        }
+        return { success: true, message: "Successfully connected to Ollama and model is available." };
+
 
       case 'google-cli':
          // This check can only be done on the server, so we still use the server action for it.
@@ -65,6 +70,9 @@ async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+     if (message.includes('Failed to fetch')) {
+        return { success: false, message: 'Connection failed. This is likely a CORS issue. Please see the setup guide and ensure Ollama is started with the correct OLLAMA_ORIGINS environment variable.' };
+    }
     return { success: false, message: `Connection test failed: ${message}` };
   }
 }
@@ -85,8 +93,14 @@ export function LocalAiProviderManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
+  const [appOrigin, setAppOrigin] = useState('');
 
   useEffect(() => {
+    // Get the app's origin URL on the client side
+    if (typeof window !== 'undefined') {
+      setAppOrigin(window.location.origin);
+    }
+    
     const loadConfig = async () => {
         setIsLoading(true);
         try {
@@ -203,10 +217,11 @@ export function LocalAiProviderManager() {
                         <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2">
                             <li>Download and install Ollama from <Link href="https://ollama.com" target="_blank" className="text-accent underline">ollama.com</Link>.</li>
                             <li>Pull a model via terminal: <code className="font-mono bg-background px-1 py-0.5 rounded">ollama run llama3</code>.</li>
-                            <li>This application now uses a server-side proxy to connect to Ollama, so you do not need to worry about CORS settings.</li>
-                             <li>Start the Ollama server.</li>
-                            <li>Enter the API endpoint (default is usually correct) and the exact model name you pulled (e.g., <code className="font-mono bg-background px-1 py-0.5 rounded">llama3</code>).</li>
-                            <li>Click "Save Settings".</li>
+                            <li>**Crucially**, to fix the CORS error, you must set an environment variable **before** starting Ollama. Add this to your shell profile (`.zshrc`, `.bashrc`, etc.) or run it in your terminal before starting Ollama:
+                                <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono break-all">export OLLAMA_ORIGINS="{appOrigin}"</pre>
+                            </li>
+                             <li>Restart the Ollama server for the new variable to take effect.</li>
+                            <li>Click "Test Connection". If it succeeds, click "Save Settings".</li>
                         </ol>
                     </div>
                 </div>
