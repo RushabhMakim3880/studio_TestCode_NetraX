@@ -9,7 +9,7 @@ import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
 import { PageSettingsManager } from '@/components/settings/page-settings-manager';
 import { LocalAiProviderManager } from '@/components/local-ai-provider-manager';
-import { Accordion } from '@/components/ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { OffensiveSettings } from '@/components/settings/offensive-settings';
 import { ScanningSettings } from '@/components/settings/scanning-settings';
 import { ReportingSettings } from '@/components/settings/reporting-settings';
@@ -17,6 +17,7 @@ import { GlobalAppSettings } from '@/components/settings/global-app-settings';
 import { SecuritySettings } from '@/components/settings/security-settings';
 import { DataPrivacySettings } from '@/components/settings/data-privacy-settings';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
+import { BrainCircuit } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
