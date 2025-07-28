@@ -8,7 +8,7 @@ import { CustomThemeGenerator } from '@/components/custom-theme-generator';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
 import { PageSettingsManager } from '@/components/settings/page-settings-manager';
-import { LocalAiProviderManager } from '@/components/local-ai-provider-manager';
+import { LocalAiSettings } from '@/components/local-ai-settings';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { OffensiveSettings } from '@/components/settings/offensive-settings';
 import { ScanningSettings } from '@/components/settings/scanning-settings';
@@ -81,14 +81,14 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <BrainCircuit className="h-6 w-6" />
               <div className="text-left">
-                <p className="font-semibold">Local Ollama Manager</p>
-                <p className="text-sm text-muted-foreground font-normal">Manage and configure a local Ollama instance.</p>
+                <p className="font-semibold">Local AI Provider</p>
+                <p className="text-sm text-muted-foreground font-normal">Configure a local Ollama instance for AI tasks.</p>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <div className="p-4 border-t">
-              <LocalAiProviderManager />
+              <LocalAiSettings />
             </div>
           </AccordionContent>
         </AccordionItem>
