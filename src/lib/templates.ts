@@ -25,7 +25,7 @@ export const initialTemplates: Template[] = [
     id: 'TPL-003',
     name: 'Invoice Overdue',
     type: 'Email',
-    subject: 'Action Needed: Invoice {{invoice_number}} is Overdue',
+    subject: 'Action Needed: Invoice #{{invoice_number}} is Overdue',
     body: 'Hi {{name}},\n\nThis is a reminder that invoice #{{invoice_number}} for ${{amount}} is now overdue. Please make a payment as soon as possible to avoid service interruption.\n\nYou can view and pay the invoice here:\n[Link]\n\nRegards,\n{{company}} Billing Team'
   },
   {
