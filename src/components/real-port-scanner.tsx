@@ -17,6 +17,7 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   target: z.string().min(3, { message: 'Please enter a valid target.' }),
