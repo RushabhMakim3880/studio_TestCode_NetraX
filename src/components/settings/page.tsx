@@ -7,9 +7,8 @@ import { CompanyProfileManager } from '@/components/company-profile-manager';
 import { CustomThemeGenerator } from '@/components/custom-theme-generator';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
-import { SidebarSettings } from '../sidebar-settings';
-import { DashboardLayoutManager } from '../dashboard/dashboard-layout-manager';
-import { PageSettingsManager } from './page-settings-manager';
+import { PageSettingsManager } from '@/components/settings/page-settings-manager';
+import { LocalAiSettings } from '@/components/local-ai-settings';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -23,12 +22,13 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your application preferences and modules.</p>
       </div>
 
+      {user.role === 'Admin' && <PageSettingsManager />}
       <ApiKeysManager />
       <EmailSettings />
-      <PageSettingsManager />
+      <LocalAiSettings />
       <AppearanceSettings />
       <CustomThemeGenerator />
-      <CompanyProfileManager />
+      {user.role === 'Admin' && <CompanyProfileManager />}
       
     </div>
   );
