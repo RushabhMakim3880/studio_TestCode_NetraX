@@ -30,6 +30,41 @@ export type LocalAiConfig = {
   };
 };
 
+// This function runs in the browser and can access localhost.
+async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{ success: boolean; message: string }> {
+   try {
+    switch (config.provider) {
+      case 'ollama':
+        if (!config.ollama) throw new Error("Ollama config is missing.");
+        const ollamaResponse = await fetch(`${config.ollama.baseUrl}/api/tags`);
+        if (!ollamaResponse.ok) throw new Error(`Ollama API returned status ${ollamaResponse.status}. Is it running and CORS enabled?`);
+        const ollamaData = await ollamaResponse.json();
+        const hasModel = ollamaData.models.some((m: any) => m.name.startsWith(config.ollama!.model));
+        if (!hasModel) return { success: false, message: `Ollama is running, but model '${config.ollama.model}' was not found.` };
+        return { success: true, message: "Successfully connected to Ollama and model is available." };
+
+      case 'google-cli':
+         // This check can only be done on the server, so we still use the server action for it.
+         return await testLocalAiConnection(config);
+
+      case 'generic':
+        if (!config.generic) throw new Error("Generic endpoint config is missing.");
+        const genericResponse = await fetch(`${config.generic.baseUrl}/models`, {
+            headers: config.generic.apiKey ? { 'Authorization': `Bearer ${config.generic.apiKey}` } : {}
+        });
+        if (!genericResponse.ok) throw new Error(`Generic endpoint returned status ${genericResponse.status}.`);
+        return { success: true, message: "Successfully connected to the generic OpenAI-compatible endpoint." };
+        
+      default:
+        throw new Error("Unknown provider specified.");
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { success: false, message: `Connection test failed: ${message}` };
+  }
+}
+
+
 export function LocalAiProviderManager() {
   const { toast } = useToast();
   const [provider, setProvider] = useState<LocalAiProvider>('ollama');
@@ -97,7 +132,7 @@ export function LocalAiProviderManager() {
     setTestResult(null);
     try {
         const config = buildConfig();
-        const result = await testLocalAiConnection(config);
+        const result = await performClientSideConnectionTest(config);
         setTestResult(result);
     } catch(e) {
         setTestResult({ success: false, message: e instanceof Error ? e.message : 'An unknown error occurred.' });

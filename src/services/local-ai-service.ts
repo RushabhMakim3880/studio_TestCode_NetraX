@@ -56,25 +56,18 @@ export async function getLocalAiConfig(): Promise<LocalAiConfig | null> {
   }
 }
 
+// This function only handles server-side validatable providers now (e.g., file paths)
 export async function testLocalAiConnection(config: LocalAiConfig): Promise<{ success: boolean; message: string }> {
-  // This function now acts as a client to our own proxy endpoint.
-  // It gets the NEXT_PUBLIC_HOST_URL which should be the address of the Next.js server itself.
-  const hostUrl = process.env.NEXT_PUBLIC_HOST_URL || 'http://localhost:3000';
-  
-  try {
-    const response = await fetch(`${hostUrl}/api/local-ai-proxy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Proxy request failed with status ${response.status}`);
+   try {
+    switch (config.provider) {
+      case 'google-cli':
+         if (!config.google_cli) throw new Error("Google AI CLI config is missing.");
+         await fs.access(config.google_cli.path, fs.constants.X_OK);
+         return { success: true, message: `Google AI CLI executable found at '${config.google_cli.path}'.`};
+      default:
+        // Client-side providers are tested in the browser, so we just return a neutral message here.
+        return { success: true, message: 'This provider is tested on the client-side. Click Save and test functionality in the app.' };
     }
-
-    return await response.json();
-
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { success: false, message: `Connection test failed: ${message}` };
