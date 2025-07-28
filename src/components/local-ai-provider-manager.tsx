@@ -30,29 +30,29 @@ export type LocalAiConfig = {
   };
 };
 
-// This function runs in the browser and can access localhost.
+// This function now calls our internal proxy instead of the Ollama server directly.
 async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{ success: boolean; message: string }> {
    try {
     switch (config.provider) {
       case 'ollama':
         if (!config.ollama) throw new Error("Ollama config is missing.");
-        const ollamaResponse = await fetch(`${config.ollama.baseUrl}/api/tags`);
-        if (!ollamaResponse.ok) {
-            if(ollamaResponse.status === 0 || ollamaResponse.type === 'opaque') {
-                 throw new Error(`Ollama API request failed due to a CORS error. Please see the setup guide.`);
-            }
-            throw new Error(`Ollama API returned status ${ollamaResponse.status}. Is it running?`);
+        const proxyResponse = await fetch('/api/ollama-proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ollamaUrl: config.ollama.baseUrl, model: config.ollama.model }),
+        });
+        const result = await proxyResponse.json();
+        if (!proxyResponse.ok) {
+            throw new Error(result.message || 'Proxy request failed.');
         }
-        const ollamaData = await ollamaResponse.json();
-        const hasModel = ollamaData.models.some((m: any) => m.name.startsWith(config.ollama!.model));
-        if (!hasModel) return { success: false, message: `Ollama is running, but model '${config.ollama.model}' was not found.` };
-        return { success: true, message: "Successfully connected to Ollama and model is available." };
+        return result;
 
       case 'google-cli':
          // This check can only be done on the server, so we still use the server action for it.
          return await testLocalAiConnection(config);
 
       case 'generic':
+        // The generic endpoint is expected to be public and have CORS configured, so direct fetch is fine.
         if (!config.generic) throw new Error("Generic endpoint config is missing.");
         const genericResponse = await fetch(`${config.generic.baseUrl}/models`, {
             headers: config.generic.apiKey ? { 'Authorization': `Bearer ${config.generic.apiKey}` } : {}
@@ -203,9 +203,7 @@ export function LocalAiProviderManager() {
                         <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2">
                             <li>Download and install Ollama from <Link href="https://ollama.com" target="_blank" className="text-accent underline">ollama.com</Link>.</li>
                             <li>Pull a model via terminal: <code className="font-mono bg-background px-1 py-0.5 rounded">ollama run llama3</code>.</li>
-                            <li><strong>Important:</strong> To fix CORS errors, you must set an environment variable before starting the Ollama server.
-                                <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">export OLLAMA_ORIGINS='*'</pre>
-                            </li>
+                            <li>This application now uses a server-side proxy to connect to Ollama, so you do not need to worry about CORS settings.</li>
                              <li>Start the Ollama server.</li>
                             <li>Enter the API endpoint (default is usually correct) and the exact model name you pulled (e.g., <code className="font-mono bg-background px-1 py-0.5 rounded">llama3</code>).</li>
                             <li>Click "Save Settings".</li>
