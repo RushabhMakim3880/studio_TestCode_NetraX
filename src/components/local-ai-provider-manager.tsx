@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, BrainCircuit, CheckCircle, Info, Download, Trash2 } from 'lucide-react';
+import { Loader2, BrainCircuit, CheckCircle, Info, Download, Trash2, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { saveLocalAiConfig, getLocalAiConfig } from '@/services/local-ai-service';
 import type { LocalAiProvider, LocalAiConfig } from '@/services/local-ai-service';
@@ -46,6 +46,7 @@ export function LocalAiProviderManager() {
   
   const { value: downloadedModels, setValue: setDownloadedModels } = useLocalStorage<string[]>('netra-ollama-models', []);
   const { value: activeModel, setValue: setActiveModel } = useLocalStorage<string | null>('netra-ollama-active-model', null);
+  const [customModelName, setCustomModelName] = useState('');
 
 
   useEffect(() => {
@@ -91,6 +92,15 @@ export function LocalAiProviderManager() {
       if (!activeModel) {
           handleSetActive(modelId);
       }
+  }
+  
+  const handleAddCustomModel = () => {
+      if (!customModelName.trim()) {
+          toast({ variant: 'destructive', title: 'Invalid Name', description: 'Please enter a model name.'});
+          return;
+      }
+      handleMarkAsDownloaded(customModelName);
+      setCustomModelName('');
   }
 
   const handleSetActive = async (modelId: string) => {
@@ -152,38 +162,46 @@ export function LocalAiProviderManager() {
         
         <div className="space-y-2">
             <Label>Step 3: Manage & Select Models</Label>
-            <div className="grid md:grid-cols-2 gap-4">
-                {AVAILABLE_MODELS.map(model => {
-                    const isDownloaded = downloadedModels.includes(model.id);
-                    const isActive = activeModel === model.id;
-                    return (
-                        <Card key={model.id} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="text-base">{model.name}</CardTitle>
-                                <CardDescription className="text-xs">{model.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow"/>
-                            <CardFooter className="flex flex-col gap-2">
-                                {!isDownloaded ? (
-                                    <>
-                                        <Button variant="outline" className="w-full" onClick={() => handleCopyCommand(model.id)}>Copy Download Command</Button>
-                                        <Button variant="secondary" className="w-full" onClick={() => handleMarkAsDownloaded(model.id)}>Mark as Downloaded</Button>
-                                    </>
-                                ) : (
-                                     <>
-                                        <Button className="w-full" onClick={() => handleSetActive(model.id)} disabled={isActive}>
-                                            {isActive ? <><CheckCircle className="mr-2 h-4 w-4"/>Active</> : 'Set as Active'}
-                                        </Button>
-                                         <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => handleForgetModel(model.id)}>
-                                            <Trash2 className="mr-1 h-3 w-3"/> Forget
-                                        </Button>
-                                     </>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    )
-                })}
-            </div>
+            <Card className="p-4">
+              <CardTitle className="text-base mb-2">Recommended Models</CardTitle>
+              <div className="grid md:grid-cols-2 gap-4">
+                  {AVAILABLE_MODELS.map(model => {
+                      const isDownloaded = downloadedModels.includes(model.id);
+                      const isActive = activeModel === model.id;
+                      return (
+                          <Card key={model.id} className="flex flex-col bg-primary/20">
+                              <CardHeader>
+                                  <CardTitle className="text-base">{model.name}</CardTitle>
+                                  <CardDescription className="text-xs">{model.description}</CardDescription>
+                              </CardHeader>
+                              <CardContent className="flex-grow"/>
+                              <CardFooter className="flex flex-col gap-2">
+                                  {!isDownloaded ? (
+                                      <>
+                                          <Button variant="outline" className="w-full" onClick={() => handleCopyCommand(model.id)}>Copy Download Command</Button>
+                                          <Button variant="secondary" className="w-full" onClick={() => handleMarkAsDownloaded(model.id)}>Mark as Downloaded</Button>
+                                      </>
+                                  ) : (
+                                      <>
+                                          <Button className="w-full" onClick={() => handleSetActive(model.id)} disabled={isActive}>
+                                              {isActive ? <><CheckCircle className="mr-2 h-4 w-4"/>Active</> : 'Set as Active'}
+                                          </Button>
+                                          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => handleForgetModel(model.id)}>
+                                              <Trash2 className="mr-1 h-3 w-3"/> Forget
+                                          </Button>
+                                      </>
+                                  )}
+                              </CardFooter>
+                          </Card>
+                      )
+                  })}
+              </div>
+              <CardTitle className="text-base mt-6 mb-2">Custom Models</CardTitle>
+              <div className="flex gap-2">
+                  <Input value={customModelName} onChange={(e) => setCustomModelName(e.target.value)} placeholder="e.g., llama2-uncensored" />
+                  <Button onClick={handleAddCustomModel} variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Add Model</Button>
+              </div>
+            </Card>
         </div>
 
       </CardContent>
