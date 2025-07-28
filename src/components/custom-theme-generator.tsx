@@ -11,41 +11,43 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageUp, Loader2, Palette } from 'lucide-react';
 import { generateThemeFromColor, type CustomTheme } from '@/lib/colors';
 
+function ColorThiefComponent({ imageSrc }: { imageSrc: string }) {
+    const { toast } = useToast();
+    const { data: color } = useColor(imageSrc, 'rgbArray', { crossOrigin: 'anonymous', quality: 10 });
+
+    useEffect(() => {
+        if (color) {
+            const customTheme = generateThemeFromColor(color);
+            applyCustomTheme(customTheme);
+            saveCustomTheme(imageSrc, customTheme);
+            toast({ title: 'Custom Theme Applied!', description: 'UI colors have been updated based on your image.' });
+        }
+    }, [color, imageSrc, toast]);
+
+    const applyCustomTheme = (theme: CustomTheme) => {
+        const body = document.body;
+        body.className = "custom-theme"; // A generic class
+        for (const [key, value] of Object.entries(theme.colors)) {
+            body.style.setProperty(`--${key}`, value);
+        }
+        localStorage.setItem('netra-custom-theme-active', 'true');
+        localStorage.removeItem('netra-color-theme');
+    }
+
+    const saveCustomTheme = (imageDataUrl: string, theme: CustomTheme) => {
+        const themeToStore = { imageDataUrl, ...theme };
+        localStorage.setItem('netra-custom-theme', JSON.stringify(themeToStore));
+    }
+
+    return null; // This component does not render anything itself
+}
+
+
 export function CustomThemeGenerator() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const { data: color, loading: colorLoading } = useColor(imageSrc, 'rgbArray', { crossOrigin: 'anonymous', quality: 10, skip: !imageSrc });
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  
-  useEffect(() => {
-    if (color && imageSrc) {
-      const customTheme = generateThemeFromColor(color);
-      applyCustomTheme(customTheme);
-      saveCustomTheme(imageSrc, customTheme);
-      setIsLoading(false);
-      toast({ title: 'Custom Theme Applied!', description: 'UI colors have been updated based on your image.' });
-    }
-  }, [color, imageSrc, toast]);
-
-  const applyCustomTheme = (theme: CustomTheme) => {
-    const body = document.body;
-    body.className = "custom-theme"; // A generic class
-     for (const [key, value] of Object.entries(theme.colors)) {
-        body.style.setProperty(`--${key}`, value);
-    }
-    // Set a flag to indicate a custom theme is active
-    localStorage.setItem('netra-custom-theme-active', 'true');
-    localStorage.removeItem('netra-color-theme'); // Invalidate preset theme
-  }
-
-  const saveCustomTheme = (imageDataUrl: string, theme: CustomTheme) => {
-    const themeToStore = {
-        imageDataUrl,
-        ...theme
-    };
-    localStorage.setItem('netra-custom-theme', JSON.stringify(themeToStore));
-  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +60,7 @@ export function CustomThemeGenerator() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImageSrc(reader.result as string);
+        setIsLoading(false);
       };
       reader.readAsDataURL(file);
     }
@@ -77,8 +80,8 @@ export function CustomThemeGenerator() {
             <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">Select an image, and we'll extract its dominant color to create a unique theme. Your new theme will be applied instantly.</p>
                 <Input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
-                <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading || colorLoading}>
-                    {(isLoading || colorLoading) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageUp className="mr-2 h-4 w-4" />}
+                <Button onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageUp className="mr-2 h-4 w-4" />}
                     Upload Theme Image
                 </Button>
             </div>
@@ -90,6 +93,7 @@ export function CustomThemeGenerator() {
                 )}
              </div>
         </div>
+        {imageSrc && <ColorThiefComponent imageSrc={imageSrc} />}
       </CardContent>
     </Card>
   );

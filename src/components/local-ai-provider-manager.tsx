@@ -37,7 +37,12 @@ async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{
       case 'ollama':
         if (!config.ollama) throw new Error("Ollama config is missing.");
         const ollamaResponse = await fetch(`${config.ollama.baseUrl}/api/tags`);
-        if (!ollamaResponse.ok) throw new Error(`Ollama API returned status ${ollamaResponse.status}. Is it running and CORS enabled?`);
+        if (!ollamaResponse.ok) {
+            if(ollamaResponse.status === 0 || ollamaResponse.type === 'opaque') {
+                 throw new Error(`Ollama API request failed due to a CORS error. Please see the setup guide.`);
+            }
+            throw new Error(`Ollama API returned status ${ollamaResponse.status}. Is it running?`);
+        }
         const ollamaData = await ollamaResponse.json();
         const hasModel = ollamaData.models.some((m: any) => m.name.startsWith(config.ollama!.model));
         if (!hasModel) return { success: false, message: `Ollama is running, but model '${config.ollama.model}' was not found.` };
@@ -197,10 +202,13 @@ export function LocalAiProviderManager() {
                         <h4 className="font-semibold">Ollama Setup Guide</h4>
                         <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2">
                             <li>Download and install Ollama from <Link href="https://ollama.com" target="_blank" className="text-accent underline">ollama.com</Link>.</li>
-                            <li>Pull your desired model via terminal: <code className="font-mono bg-background px-1 py-0.5 rounded">ollama run llama3</code>.</li>
-                            <li>Ensure the Ollama server is running in the background.</li>
-                            <li>Enter the API endpoint (default is correct for local installs) and the exact model name you pulled (e.g., <code className="font-mono bg-background px-1 py-0.5 rounded">llama3</code>).</li>
-                            <li>Click "Save Settings". NETRA-X will then proxy AI requests to your local Ollama instance.</li>
+                            <li>Pull a model via terminal: <code className="font-mono bg-background px-1 py-0.5 rounded">ollama run llama3</code>.</li>
+                            <li><strong>Important:</strong> To fix CORS errors, you must set an environment variable before starting the Ollama server.
+                                <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">export OLLAMA_ORIGINS='*'</pre>
+                            </li>
+                             <li>Start the Ollama server.</li>
+                            <li>Enter the API endpoint (default is usually correct) and the exact model name you pulled (e.g., <code className="font-mono bg-background px-1 py-0.5 rounded">llama3</code>).</li>
+                            <li>Click "Save Settings".</li>
                         </ol>
                     </div>
                 </div>
