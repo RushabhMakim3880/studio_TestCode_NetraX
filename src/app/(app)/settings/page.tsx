@@ -41,7 +41,22 @@ export default function SettingsPage() {
         <DataPrivacySettings />
         <NotificationsSettings />
         <ApiKeysManager />
-        <LocalAiProviderManager />
+        <AccordionItem value="local-ai-settings">
+          <AccordionTrigger>
+            <div className="flex items-center gap-3">
+              <BrainCircuit className="h-6 w-6" />
+              <div className="text-left">
+                <p className="font-semibold">Local AI Provider</p>
+                <p className="text-sm text-muted-foreground font-normal">Integrate local LLMs like Ollama.</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="p-4 border-t">
+              <LocalAiProviderManager />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
         <EmailSettings />
         <CustomThemeGenerator />
         <CompanyProfileManager />
