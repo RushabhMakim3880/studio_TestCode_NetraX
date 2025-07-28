@@ -16,12 +16,15 @@ export type SmtpConfig = z.infer<typeof SmtpConfigSchema>;
 
 const TestEmailInputSchema = SmtpConfigSchema.extend({
   recipientEmail: z.string().email(),
+  subject: z.string().optional(),
+  text: z.string().optional(),
+  html: z.string().optional(),
 });
 
 type TestEmailInput = z.infer<typeof TestEmailInputSchema>;
 
 export async function sendTestEmail(input: TestEmailInput) {
-    const { smtpHost, smtpPort, smtpUser, smtpPass, senderAddress, recipientEmail } = input;
+    const { smtpHost, smtpPort, smtpUser, smtpPass, senderAddress, recipientEmail, subject, text, html } = input;
 
     try {
         // Create a transporter object using SMTP transport
@@ -46,9 +49,9 @@ export async function sendTestEmail(input: TestEmailInput) {
         const info = await transporter.sendMail({
             from: `"${senderAddress}" <${senderAddress}>`,
             to: recipientEmail,
-            subject: 'NETRA-X Test Email',
-            text: 'This is a test email from your NETRA-X platform. Your SMTP settings are configured correctly.',
-            html: '<b>This is a test email from your NETRA-X platform.</b><p>Your SMTP settings are configured correctly.</p>',
+            subject: subject || 'NETRA-X Test Email',
+            text: text || 'This is a test email from your NETRA-X platform. Your SMTP settings are configured correctly.',
+            html: html || '<b>This is a test email from your NETRA-X platform.</b><p>Your SMTP settings are configured correctly.</p>',
         });
 
         return {
