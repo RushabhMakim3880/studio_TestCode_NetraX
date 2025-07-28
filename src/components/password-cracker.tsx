@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import MD5 from 'crypto-js/md5';
 import SHA1 from 'crypto-js/sha1';
 import SHA256 from 'crypto-js/sha256';
+import SHA512 from 'crypto-js/sha512';
 import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
@@ -41,6 +42,7 @@ const runAsyncTask = (task: Generator): Promise<void> => {
     });
 };
 
+const hashTypes = ['MD5', 'SHA1', 'SHA256', 'SHA512'];
 
 export function PasswordCracker() {
   const [result, setResult] = useState<{ isCracked: boolean, crackedPassword?: string, log: string } | null>(null);
@@ -76,6 +78,7 @@ export function PasswordCracker() {
         case 'MD5': return MD5(text).toString();
         case 'SHA1': return SHA1(text).toString();
         case 'SHA256': return SHA256(text).toString();
+        case 'SHA512': return SHA512(text).toString();
         default: return '';
       }
   }
