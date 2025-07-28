@@ -11,36 +11,17 @@ import { Loader2, BrainCircuit, CheckCircle, Info } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { saveLocalAiConfig, getLocalAiConfig, testLocalAiConnection } from '@/services/local-ai-service';
+import type { LocalAiProvider, LocalAiConfig } from '@/services/local-ai-service';
 
-export type LocalAiProvider = 'ollama' | 'google-cli' | 'generic';
-export type LocalAiConfig = {
-  provider: LocalAiProvider;
-  ollama?: {
-    baseUrl: string;
-    model: string;
-  };
-  google_cli?: {
-    path: string;
-    model: string;
-  };
-  generic?: {
-    baseUrl: string;
-    model: string;
-    apiKey?: string;
-  };
-};
-
-// This function now calls our internal proxy to bypass CORS
+// This function now runs ENTIRELY in the browser.
 async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{ success: boolean; message: string }> {
    try {
     let testUrl: string;
-    let testMethod = 'GET';
-    let testBody: any = null;
-    let testHeaders: any = {};
     
     switch (config.provider) {
       case 'ollama':
         if (!config.ollama) throw new Error("Ollama config is missing.");
+        // We use the provided URL directly, which could be localhost or an ngrok URL.
         testUrl = `${config.ollama.baseUrl}/api/tags`;
         break;
       case 'google-cli':
@@ -49,31 +30,22 @@ async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{
       case 'generic':
         if (!config.generic) throw new Error("Generic endpoint config is missing.");
         testUrl = `${config.generic.baseUrl}/models`;
-        if (config.generic.apiKey) {
-            testHeaders['Authorization'] = `Bearer ${config.generic.apiKey}`;
-        }
         break;
       default:
         throw new Error("Unknown provider specified.");
     }
     
-    // Call our own API proxy
-    const proxyResponse = await fetch('/api/local-ai-proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            url: testUrl,
-            method: testMethod,
-            body: testBody,
-            headers: testHeaders,
-        })
+    // Direct fetch from the browser
+    const response = await fetch(testUrl, {
+      method: 'GET',
+      mode: 'cors', // Important for cross-origin requests
     });
-    
-    const result = await proxyResponse.json();
 
-    if (!proxyResponse.ok) {
-        throw new Error(result.error || `Proxy request failed with status ${proxyResponse.status}`);
+    if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}. This may be a CORS issue if using a localhost URL.`);
     }
+
+    const result = await response.json();
 
     if (config.provider === 'ollama') {
         const hasModel = result.models?.some((m: any) => m.name.startsWith(config.ollama!.model));
@@ -86,7 +58,11 @@ async function performClientSideConnectionTest(config: LocalAiConfig): Promise<{
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { success: false, message: `Connection test failed: Failed to connect to the Ollama server at the specified URL. Please ensure it is running and accessible. Error: ${message}` };
+    // Provide a more helpful error message for the common CORS issue.
+    if (message.includes('Failed to fetch')) {
+        return { success: false, message: "Connection failed. This is likely a CORS issue. Please see the setup guide and ensure Ollama is started with the correct OLLAMA_ORIGINS environment variable."};
+    }
+    return { success: false, message: `Connection test failed: ${message}` };
   }
 }
 
@@ -230,9 +206,11 @@ export function LocalAiProviderManager() {
                         <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2">
                             <li>Download and install Ollama from <Link href="https://ollama.com" target="_blank" className="text-accent underline">ollama.com</Link>.</li>
                             <li>Pull a model via terminal: <code className="font-mono bg-background px-1 py-0.5 rounded">ollama run llama3</code>.</li>
-                            <li>Ensure your local Ollama server is running.</li>
-                            <li>Enter the local URL and model name, then click "Test Connection".</li>
-                            <li>If successful, click "Save Settings".</li>
+                            <li>
+                                **CRITICAL:** To allow NETRA-X to connect, you must configure Ollama's CORS policy. Set this environment variable on the machine where Ollama is running **before** starting the Ollama server:
+                                <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">OLLAMA_ORIGINS=\'\'{appOrigin}\'\'\'</pre>
+                            </li>
+                             <li>If using `ngrok`, use your public ngrok URL in the Endpoint field. Otherwise, use `http://localhost:11434`.</li>
                         </ol>
                     </div>
                 </div>
