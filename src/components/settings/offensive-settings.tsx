@@ -3,16 +3,31 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Loader2, Binary } from 'lucide-react';
+import { KeyRound, Loader2 } from 'lucide-react';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { getUserSettings, UserSettingsSchema, type UserSettings } from '@/services/user-settings-service';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { ScrollArea } from '../ui/scroll-area';
+
+const offensiveTools = [
+    { id: 'showReverseShell', label: 'Reverse Shell Generator' },
+    { id: 'showLolbins', label: 'LOLBins Payload Generator' },
+    { id: 'showSessionHijacking', label: 'Session Hijacking Tool' },
+    { id: 'showClickjacking', label: 'Clickjacking Tool' },
+    { id: 'showJwtAnalyzer', label: 'JWT Analyzer' },
+    { id: 'showPasswordCracker', label: 'Password Cracker' },
+    { id: 'showCustomMalware', label: 'AI Malware Concept Generator' },
+    { id: 'showExploitSuggester', label: 'Exploit Suggester' },
+    { id: 'showYaraGenerator', label: 'AI Yara Rule Generator' },
+    { id: 'showHashCalculator', label: 'Hash Calculator' },
+    { id: 'showEncoderDecoder', label: 'Encoder/Decoder' },
+    { id: 'showRubberDucky', label: 'AI DuckyScript Generator' },
+];
 
 export function OffensiveSettings() {
   const { user, updateUser } = useAuth();
@@ -45,13 +60,15 @@ export function OffensiveSettings() {
     });
   };
 
+  const handleToolVisibilityChange = (toolId: string, checked: boolean) => {
+    handleNestedChange('offensive', toolId as keyof UserSettings['offensive'], checked);
+  }
+
   const handleSave = async () => {
     if (!user || !settings) return;
     setIsSaving(true);
     try {
-      // Validate before saving
       UserSettingsSchema.parse(settings);
-
       updateUser(user.username, { userSettings: settings });
       toast({ title: 'Offensive Settings Saved' });
     } catch (e) {
@@ -64,7 +81,7 @@ export function OffensiveSettings() {
   };
 
   if (!settings) {
-    return <Card><CardHeader><CardTitle>Loading Settings...</CardTitle></CardHeader><CardContent><Loader2 className="animate-spin" /></CardContent></Card>;
+    return <AccordionItem value="offensive-settings-loading" disabled><AccordionTrigger>Loading Settings...</AccordionTrigger></AccordionItem>;
   }
 
   return (
@@ -74,14 +91,13 @@ export function OffensiveSettings() {
             <KeyRound className="h-6 w-6" />
             <div className="text-left">
                 <p className="font-semibold">Offensive Tool Settings</p>
-                <p className="text-sm text-muted-foreground font-normal">Set default values for payload generators.</p>
+                <p className="text-sm text-muted-foreground font-normal">Set defaults and manage visibility for offensive tools.</p>
             </div>
         </div>
       </AccordionTrigger>
       <AccordionContent>
         <div className="p-4 border-t">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Column 1: Payloads */}
             <div className="space-y-4">
               <Label className="font-semibold">Payload Defaults</Label>
               <div className="space-y-2">
@@ -94,30 +110,8 @@ export function OffensiveSettings() {
               </div>
             </div>
 
-            {/* Column 2: Merging Station */}
             <div className="space-y-4">
-               <Label className="font-semibold">Merging Station Defaults</Label>
-               <div className="space-y-2">
-                 {['enableSandboxDetection', 'selfDestruct', 'fileless', 'useFragmentation'].map((id) => (
-                    <div className="flex items-center space-x-2" key={id}>
-                        <Switch 
-                            id={`ms-${id}`}
-                            checked={settings.mergingStation.defaultEvasion.includes(id)}
-                            onCheckedChange={(checked) => {
-                                const current = settings.mergingStation.defaultEvasion;
-                                const newDefaults = checked ? [...current, id] : current.filter(i => i !== id);
-                                handleNestedChange('mergingStation', 'defaultEvasion', newDefaults);
-                            }}
-                        />
-                        <Label htmlFor={`ms-${id}`} className="font-normal capitalize">{id.replace(/([A-Z])/g, ' $1').replace('Enable ', '')}</Label>
-                    </div>
-                 ))}
-               </div>
-            </div>
-            
-            {/* Column 3: LOLBins */}
-            <div className="space-y-4">
-                <Label className="font-semibold">LOLBins Defaults</Label>
+               <Label className="font-semibold">LOLBins Defaults</Label>
                 <div className="space-y-2">
                     <Label htmlFor="lolbinDefault">Default Binary</Label>
                     <Select value={settings.lolbins.default} onValueChange={(value) => handleNestedChange('lolbins', 'default', value)}>
@@ -131,6 +125,25 @@ export function OffensiveSettings() {
                     </Select>
                 </div>
             </div>
+
+            <div className="space-y-4">
+              <Label className="font-semibold">Tool Visibility</Label>
+              <ScrollArea className="h-48 border rounded-md p-4">
+                <div className="space-y-2">
+                {offensiveTools.map(tool => (
+                  <div key={tool.id} className="flex items-center justify-between">
+                    <Label htmlFor={tool.id} className="font-normal">{tool.label}</Label>
+                    <Switch
+                      id={tool.id}
+                      checked={!!settings.offensive[tool.id as keyof typeof settings.offensive]}
+                      onCheckedChange={(checked) => handleToolVisibilityChange(tool.id, checked)}
+                    />
+                  </div>
+                ))}
+                </div>
+              </ScrollArea>
+            </div>
+            
           </div>
           <div className="flex justify-end mt-6">
             <Button onClick={handleSave} disabled={isSaving}>

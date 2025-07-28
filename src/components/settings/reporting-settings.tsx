@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Presentation, Loader2 } from 'lucide-react';
@@ -17,37 +16,43 @@ export function ReportingSettings() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [settings, setSettings] = useState<UserSettings['reporting'] | null>(null);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
 
   useEffect(() => {
     async function loadSettings() {
       const userSettings = await getUserSettings();
-      setSettings(userSettings.reporting);
+      setSettings(userSettings);
     }
     loadSettings();
   }, [user]);
   
-  const handleNestedChange = <K extends keyof UserSettings['reporting']>(
+  const handleNestedChange = <T extends keyof UserSettings, K extends keyof UserSettings[T]>(
+    category: T,
     key: K,
-    value: UserSettings['reporting'][K]
+    value: UserSettings[T][K]
   ) => {
-    setSettings(prev => prev ? { ...prev, [key]: value } : null);
+    setSettings(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            [category]: {
+                ...prev[category],
+                [key]: value
+            }
+        };
+    });
   };
+  
+   const handleVisibilityChange = (toolId: string, checked: boolean) => {
+    handleNestedChange('reporting', toolId as keyof UserSettings['reporting'], checked);
+  }
 
   const handleSave = async () => {
     if (!user || !settings) return;
     setIsSaving(true);
     try {
-      const userSettings = await getUserSettings();
-      const newSettings: UserSettings = {
-        ...userSettings,
-        reporting: settings,
-      };
-      
-      // Validate before saving
-      UserSettingsSchema.parse(newSettings);
-
-      updateUser(user.username, { userSettings: newSettings });
+      UserSettingsSchema.parse(settings);
+      updateUser(user.username, { userSettings: settings });
       toast({ title: 'Reporting Settings Saved' });
     } catch (e) {
       const error = e instanceof Error ? e.message : "An unknown error occurred.";
@@ -59,7 +64,7 @@ export function ReportingSettings() {
   };
 
   if (!settings) {
-    return <Card><CardHeader><CardTitle>Loading Settings...</CardTitle></CardHeader><CardContent><Loader2 className="animate-spin" /></CardContent></Card>;
+    return <AccordionItem value="reporting-settings-loading" disabled><AccordionTrigger>Loading Settings...</AccordionTrigger></AccordionItem>;
   }
 
   return (
@@ -80,27 +85,24 @@ export function ReportingSettings() {
               <Label className="font-semibold">Author & Timestamps</Label>
                <div className="space-y-2">
                 <Label htmlFor="defaultAuthor">Default Report Author</Label>
-                <Input id="defaultAuthor" value={settings.defaultAuthor} onChange={(e) => handleNestedChange('defaultAuthor', e.target.value)} />
+                <Input id="defaultAuthor" value={settings.reporting.defaultAuthor} onChange={(e) => handleNestedChange('reporting', 'defaultAuthor', e.target.value)} />
               </div>
               <div className="flex items-center space-x-2">
                 <Switch 
                   id="includeTimestamp" 
-                  checked={settings.includeTimestamp} 
-                  onCheckedChange={(checked) => handleNestedChange('includeTimestamp', !!checked)}
+                  checked={settings.reporting.includeTimestamp} 
+                  onCheckedChange={(checked) => handleNestedChange('reporting', 'includeTimestamp', !!checked)}
                 />
                 <Label htmlFor="includeTimestamp" className="font-normal">Include generation timestamp in PDF reports</Label>
               </div>
             </div>
-
-            <div className="space-y-4">
-              <Label className="font-semibold">PDF Header/Footer</Label>
-              <div className="space-y-2">
-                <Label htmlFor="pdfHeader">Default PDF Header Text</Label>
-                <Input id="pdfHeader" value={settings.pdfHeader} onChange={(e) => handleNestedChange('pdfHeader', e.target.value)} />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="pdfFooter">Default PDF Footer Text</Label>
-                <Input id="pdfFooter" value={settings.pdfFooter} onChange={(e) => handleNestedChange('pdfFooter', e.target.value)} />
+             <div className="space-y-4">
+              <Label className="font-semibold">Tool Visibility</Label>
+              <div className="space-y-2 border rounded-md p-4">
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="showReportFormatter" className="font-normal">Report Formatter (Bug Bounty)</Label>
+                    <Switch id="showReportFormatter" checked={settings.reporting.showReportFormatter} onCheckedChange={(c) => handleVisibilityChange('showReportFormatter', c)} />
+                </div>
               </div>
             </div>
           </div>

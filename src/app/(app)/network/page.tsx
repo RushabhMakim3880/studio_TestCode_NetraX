@@ -3,8 +3,13 @@
 
 import { RealPortScanner } from '@/components/real-port-scanner';
 import { SubdomainScanner } from '@/components/subdomain-scanner';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function NetworkInvestigationPage() {
+    const { user } = useAuth();
+    const settings = user?.userSettings?.scanning;
+
+    if (!settings) return null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -13,8 +18,8 @@ export default function NetworkInvestigationPage() {
         <p className="text-muted-foreground">Tools for live network reconnaissance and analysis.</p>
       </div>
 
-      <SubdomainScanner />
-      <RealPortScanner />
+      {settings.showSubdomainScanner && <SubdomainScanner />}
+      {settings.showRealPortScanner && <RealPortScanner />}
     </div>
   );
 }

@@ -3,8 +3,14 @@
 
 import { FirmwareAnalyzer } from '@/components/firmware-analyzer';
 import { IotTrafficAnalyzer } from '@/components/iot-traffic-analyzer';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function IotSecurityPage() {
+    const { user } = useAuth();
+    const settings = user?.userSettings?.scanning;
+
+    if (!settings) return null;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -12,8 +18,8 @@ export default function IotSecurityPage() {
         <p className="text-muted-foreground">Tools for analyzing and assessing the security of IoT devices.</p>
       </div>
 
-      <FirmwareAnalyzer />
-      <IotTrafficAnalyzer />
+      {settings.showFirmwareAnalyzer && <FirmwareAnalyzer />}
+      {settings.showIotTrafficAnalyzer && <IotTrafficAnalyzer />}
 
     </div>
   );
