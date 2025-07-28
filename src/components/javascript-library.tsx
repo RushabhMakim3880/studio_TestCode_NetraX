@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,13 +26,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import type { JsPayload } from '@/types';
 
-
-export type JsPayload = {
-    name: string;
-    description: string;
-    code: string;
-};
 
 type JavaScriptLibraryProps = {
     onSelectPayload: (payload: JsPayload) => void;
@@ -79,7 +75,9 @@ export function JavaScriptLibrary({ onSelectPayload }: JavaScriptLibraryProps) {
     };
     
     const handleSaveCustomPayload = (values: z.infer<typeof customFormSchema>) => {
-        setCustomPayloads([...customPayloads, values]);
+        // Find a default icon or a specific one if you want to allow it
+        const newPayload: JsPayload = { ...values, icon: Code };
+        setCustomPayloads([...customPayloads, newPayload]);
         toast({ title: "Payload Saved", description: `"${values.name}" has been added to your custom library.`});
         customForm.reset();
     };
@@ -89,10 +87,15 @@ export function JavaScriptLibrary({ onSelectPayload }: JavaScriptLibraryProps) {
         toast({ title: "Payload Deleted" });
     }
 
-    const PayloadCard = ({ payload, onSelect, onDelete }: { payload: JsPayload, onSelect: (p: JsPayload) => void, onDelete?: (name: string) => void }) => (
+    const PayloadCard = ({ payload, onSelect, onDelete }: { payload: JsPayload, onSelect: (p: JsPayload) => void, onDelete?: (name: string) => void }) => {
+        const Icon = payload.icon;
+        return (
         <Card className="flex flex-col">
             <CardHeader className="flex-grow">
-                <CardTitle className="text-base">{payload.name}</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                    <Icon className="h-5 w-5 text-accent" />
+                    {payload.name}
+                </CardTitle>
                 <CardDescription className="text-xs">{payload.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex items-center gap-2">
@@ -100,7 +103,7 @@ export function JavaScriptLibrary({ onSelectPayload }: JavaScriptLibraryProps) {
                 {onDelete && <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onDelete(payload.name)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
             </CardContent>
         </Card>
-    );
+    )};
 
     return (
         <Card>
@@ -166,7 +169,7 @@ export function JavaScriptLibrary({ onSelectPayload }: JavaScriptLibraryProps) {
                             <div className="mt-4 space-y-2">
                                 <h4 className="font-semibold">Generated Code</h4>
                                 <Textarea value={generatedCode} readOnly className="font-mono h-48"/>
-                                <Button onClick={() => onSelectPayload({ name: "AI Generated Payload", description: aiForm.getValues('prompt'), code: generatedCode })}>Use This Payload</Button>
+                                <Button onClick={() => onSelectPayload({ name: "AI Generated Payload", description: aiForm.getValues('prompt'), code: generatedCode, icon: Sparkles })}>Use This Payload</Button>
                             </div>
                         )}
                     </TabsContent>
