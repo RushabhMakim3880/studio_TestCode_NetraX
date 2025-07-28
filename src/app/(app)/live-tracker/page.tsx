@@ -438,7 +438,7 @@ export default function LiveTrackerPage() {
                 </TabsContent>
               </Tabs>
               <Separator />
-               <Form {...emailForm}><form onSubmit={emailForm.handleSubmit(onSend)} className="space-y-4">
+               <Form {...emailForm}><form onSubmit={emailForm.handleSubmit(onSendEmail)} className="space-y-4">
                 <FormField control={emailForm.control} name="recipientEmail" render={({field}) => (<FormItem><Label>Recipient Email</Label><Input type="email" placeholder="target@example.com" {...field}/><FormMessage/></FormItem>)}/>
                 <Button type="submit" className="w-full" disabled={!smtpConfig || isSendingEmail || !selectedTemplate}>
                     {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <SendIcon className="mr-2 h-4 w-4"/>}
