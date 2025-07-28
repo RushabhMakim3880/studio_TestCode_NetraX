@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -21,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, type User as AuthUser } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
@@ -32,6 +33,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { FileSystemNode } from '@/components/file-browser';
 import { ProjectGanttChart } from '@/components/project-gantt-chart';
+import { CampaignPlanner } from '@/components/campaign-planner';
 
 type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
 export type Project = {
@@ -392,7 +394,7 @@ export default function ProjectManagementPage() {
         <Tabs defaultValue="projects" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="planner">AI Project Planner</TabsTrigger>
-                <TabsTrigger value="projects">Projects & Tasks</TabsTrigger>
+                <TabsTrigger value="projects">Projects &amp; Tasks</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline View</TabsTrigger>
             </TabsList>
             <TabsContent value="planner" className="mt-4">
@@ -413,125 +415,126 @@ export default function ProjectManagementPage() {
                         New Project
                     </Button>
                 </div>
-
-                {filteredProjects.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
-                    {filteredProjects.map((project) => {
-                    const projectTasks = tasks.filter(t => t.projectId === project.id);
-                    return (
-                        <Card key={project.id} className="flex flex-col">
-                        <CardHeader>
-                            <div className="flex items-start justify-between">
-                            <div>
-                                <CardTitle>{project.name}</CardTitle>
-                                <CardDescription>Target: {project.target}</CardDescription>
-                            </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleEditProject(project)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/> Delete</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-grow space-y-2">
-                            <Badge variant={statusVariant[project.status] || 'default'}>{project.status}</Badge>
-                            <p className="text-sm text-muted-foreground">Duration: {project.startDate} to {project.endDate}</p>
-                        </CardContent>
-                        <CardFooter>
-                            <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="tasks" className="border-b-0">
-                                <AccordionTrigger className="hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    <ClipboardList className="h-4 w-4" />
-                                    <span>Tasks ({projectTasks.length})</span>
-                                </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="space-y-4">
-                                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                                    {projectTasks.length > 0 ? projectTasks.map(task => {
-                                      const assignee = getAssignee(task.assignedTo);
-                                      return (
-                                        <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
-                                            <div className="flex-grow">
-                                                <div className="flex items-center gap-2">
-                                                    {taskStatusIcons[task.status]}
-                                                    <span className="font-medium">{task.description}</span>
-                                                    <Badge variant="outline">{task.type}</Badge>
-                                                </div>
-                                                <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
-                                                    <div className="flex items-center gap-4">
-                                                        <TooltipProvider><Tooltip><TooltipTrigger>
-                                                          <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
-                                                        </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
-                                                        {assignee && (
-                                                            <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                                               <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
-                                                            </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
-                                                        )}
-                                                        {task.mitreTtp && (
-                                                            <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                                               <Link href={`https://attack.mitre.org/techniques/${task.mitreTtp.replace('.', '/')}`} target="_blank">
-                                                                    <Badge variant="destructive" className="font-mono text-xs">{task.mitreTtp}</Badge>
-                                                               </Link>
-                                                            </TooltipTrigger><TooltipContent><p>View MITRE ATT&CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
-                                                        )}
-                                                    </div>
-                                                    {task.type === 'Phishing' && (
-                                                      <>
-                                                        <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
-                                                        <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
-                                                      </>
-                                                    )}
-                                                    {task.evidenceIds && task.evidenceIds.length > 0 && (
-                                                        <div className="flex items-start gap-1.5 pt-1">
-                                                            <Paperclip className="h-3 w-3 mt-0.5" />
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {task.evidenceIds.map(id => (
-                                                                    <Badge key={id} variant="secondary">{getFileName(id)}</Badge>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed')}>Completed</DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                      )
-                                    }) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
-                                </div>
-                                <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(project.id)}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Task
-                                </Button>
-                                </AccordionContent>
-                            </AccordionItem>
-                            </Accordion>
-                        </CardFooter>
-                        </Card>
-                    )
-                    })}
-                </div>
-                ) : (
-                <Card className="flex flex-col items-center justify-center py-20 mt-4">
-                    <CardHeader><CardTitle>No projects found with status "{filter}"</CardTitle><CardDescription>Try selecting a different filter.</CardDescription></CardHeader>
-                </Card>
-                )}
+                <>
+                  {filteredProjects.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
+                      {filteredProjects.map((project) => {
+                      const projectTasks = tasks.filter(t => t.projectId === project.id);
+                      return (
+                          <Card key={project.id} className="flex flex-col">
+                          <CardHeader>
+                              <div className="flex items-start justify-between">
+                              <div>
+                                  <CardTitle>{project.name}</CardTitle>
+                                  <CardDescription>Target: {project.target}</CardDescription>
+                              </div>
+                              <DropdownMenu>
+                                  <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => handleEditProject(project)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleDeleteProject(project)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/> Delete</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
+                              </div>
+                          </CardHeader>
+                          <CardContent className="flex-grow space-y-2">
+                              <Badge variant={statusVariant[project.status] || 'default'}>{project.status}</Badge>
+                              <p className="text-sm text-muted-foreground">Duration: {project.startDate} to {project.endDate}</p>
+                          </CardContent>
+                          <CardFooter>
+                              <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="tasks" className="border-b-0">
+                                  <AccordionTrigger className="hover:no-underline">
+                                  <div className="flex items-center gap-2">
+                                      <ClipboardList className="h-4 w-4" />
+                                      <span>Tasks ({projectTasks.length})</span>
+                                  </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="space-y-4">
+                                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                      {projectTasks.length > 0 ? projectTasks.map(task => {
+                                        const assignee = getAssignee(task.assignedTo);
+                                        return (
+                                          <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
+                                              <div className="flex-grow">
+                                                  <div className="flex items-center gap-2">
+                                                      {taskStatusIcons[task.status]}
+                                                      <span className="font-medium">{task.description}</span>
+                                                      <Badge variant="outline">{task.type}</Badge>
+                                                  </div>
+                                                  <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
+                                                      <div className="flex items-center gap-4">
+                                                          <TooltipProvider><Tooltip><TooltipTrigger>
+                                                            <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
+                                                          </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
+                                                          {assignee && (
+                                                              <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                                                 <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
+                                                              </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
+                                                          )}
+                                                          {task.mitreTtp && (
+                                                              <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                                                 <Link href={`https://attack.mitre.org/techniques/${task.mitreTtp.replace('.', '/')}`} target="_blank">
+                                                                      <Badge variant="destructive" className="font-mono text-xs">{task.mitreTtp}</Badge>
+                                                                 </Link>
+                                                              </TooltipTrigger><TooltipContent><p>View MITRE ATT&amp;CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
+                                                          )}
+                                                      </div>
+                                                      {task.type === 'Phishing' && (
+                                                        <>
+                                                          <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
+                                                          <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
+                                                        </>
+                                                      )}
+                                                      {task.evidenceIds && task.evidenceIds.length > 0 && (
+                                                          <div className="flex items-start gap-1.5 pt-1">
+                                                              <Paperclip className="h-3 w-3 mt-0.5" />
+                                                              <div className="flex flex-wrap gap-1">
+                                                                  {task.evidenceIds.map(id => (
+                                                                      <Badge key={id} variant="secondary">{getFileName(id)}</Badge>
+                                                                  ))}
+                                                              </div>
+                                                          </div>
+                                                      )}
+                                                  </div>
+                                              </div>
+                                              <DropdownMenu>
+                                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                              <DropdownMenuContent>
+                                                  <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
+                                                  <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
+                                                  <DropdownMenuSeparator />
+                                                  <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed')}>Completed</DropdownMenuItem>
+                                                  <DropdownMenuSeparator />
+                                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                              </DropdownMenu>
+                                          </div>
+                                        )
+                                      }) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
+                                  </div>
+                                  <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(project.id)}>
+                                      <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+                                  </Button>
+                                  </AccordionContent>
+                              </AccordionItem>
+                              </Accordion>
+                          </CardFooter>
+                          </Card>
+                      )
+                      })}
+                  </div>
+                  ) : (
+                  <Card className="flex flex-col items-center justify-center py-20 mt-4">
+                      <CardHeader><CardTitle>No projects found with status "{filter}"</CardTitle><CardDescription>Try selecting a different filter.</CardDescription></CardHeader>
+                  </Card>
+                  )}
+                </>
             </TabsContent>
             <TabsContent value="timeline" className="mt-4">
                 <ProjectGanttChart projects={projects} />
