@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { suggestCampaignTasks } from '@/ai/flows/suggest-campaign-tasks-flow';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CampaignPlanner } from '@/components/campaign-planner';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, type User as AuthUser } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
@@ -546,37 +546,50 @@ export default function ProjectManagementPage() {
             <DialogTitle>{selectedProject ? 'Edit Project' : 'Create New Project'}</DialogTitle>
             <DialogDescription>{selectedProject ? `Update the details for "${selectedProject.name}".` : 'Fill in the details for the new project.'}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={projectForm.handleSubmit(onProjectSubmit)} className="space-y-4 py-4">
-              <div className="space-y-2"><Label htmlFor="name">Project Name</Label><Input id="name" {...projectForm.register('name')} />{projectForm.formState.errors.name && <p className="text-sm text-destructive">{projectForm.formState.errors.name.message}</p>}</div>
-              <div className="space-y-2"><Label htmlFor="target">Target</Label><Input id="target" {...projectForm.register('target')} />{projectForm.formState.errors.target && <p className="text-sm text-destructive">{projectForm.formState.errors.target.message}</p>}</div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2"><Label htmlFor="startDate">Start Date</Label><Input id="startDate" type="date" {...projectForm.register('startDate')} />{projectForm.formState.errors.startDate && <p className="text-sm text-destructive">{projectForm.formState.errors.startDate.message}</p>}</div>
-                 <div className="space-y-2"><Label htmlFor="endDate">End Date</Label><Input id="endDate" type="date" {...projectForm.register('endDate')} />{projectForm.formState.errors.endDate && <p className="text-sm text-destructive">{projectForm.formState.errors.endDate.message}</p>}</div>
-              </div>
-               {!selectedProject && (
-                <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox id="generate-ai-tasks" {...projectForm.register('generateAiTasks')} />
-                    <div className="grid gap-1.5 leading-none">
-                        <label
-                            htmlFor="generate-ai-tasks"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                            Use AI to suggest initial tasks
-                        </label>
-                        <p className="text-sm text-muted-foreground">
-                            Automatically create a set of starter tasks for this project.
-                        </p>
-                    </div>
+          <Form {...projectForm}>
+            <form onSubmit={projectForm.handleSubmit(onProjectSubmit)} className="space-y-4 py-4">
+                <FormField control={projectForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Project Name</FormLabel><FormControl><Input placeholder="e.g., Project Viper" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField control={projectForm.control} name="target" render={({ field }) => ( <FormItem><FormLabel>Target</FormLabel><FormControl><Input placeholder="e.g., Acme Corp" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={projectForm.control} name="startDate" render={({ field }) => ( <FormItem><FormLabel>Start Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                  <FormField control={projectForm.control} name="endDate" render={({ field }) => ( <FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
+                {!selectedProject && (
+                    <FormField
+                      control={projectForm.control}
+                      name="generateAiTasks"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2 pt-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="grid gap-1.5 leading-none">
+                            <label
+                              htmlFor="generate-ai-tasks"
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              Use AI to suggest initial tasks
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                              Automatically create a set of starter tasks for this project.
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
                 )}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsProjectFormOpen(false)} disabled={isAiLoading}>Cancel</Button>
-              <Button type="submit" disabled={isAiLoading}>
-                {isAiLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Project
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsProjectFormOpen(false)} disabled={isAiLoading}>Cancel</Button>
+                <Button type="submit" disabled={isAiLoading}>
+                  {isAiLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Project
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
       
@@ -589,19 +602,19 @@ export default function ProjectManagementPage() {
             </DialogHeader>
             <Form {...taskForm}>
             <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
-                <FormField control={taskForm.control} name="description" render={({ field }) => ( <FormItem><Label>Description</Label><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={taskForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )} />
                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={taskForm.control} name="type" render={({ field }) => ( <FormItem><Label>Task Type</Label><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="General">General</SelectItem><SelectItem value="Recon">Recon</SelectItem><SelectItem value="Phishing">Phishing</SelectItem><SelectItem value="Payload">Payload</SelectItem><SelectItem value="Post-Exploitation">Post-Exploitation</SelectItem></SelectContent></Select><FormMessage /></FormItem> )} />
-                    <FormField control={taskForm.control} name="priority" render={({ field }) => ( <FormItem><Label>Priority</Label><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem></SelectContent></Select><FormMessage /></FormItem> )} />
+                    <FormField control={taskForm.control} name="type" render={({ field }) => ( <FormItem><FormLabel>Task Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="General">General</SelectItem><SelectItem value="Recon">Recon</SelectItem><SelectItem value="Phishing">Phishing</SelectItem><SelectItem value="Payload">Payload</SelectItem><SelectItem value="Post-Exploitation">Post-Exploitation</SelectItem></SelectContent></Select><FormMessage /></FormItem> )} />
+                    <FormField control={taskForm.control} name="priority" render={({ field }) => ( <FormItem><FormLabel>Priority</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem></SelectContent></Select><FormMessage /></FormItem> )} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={taskForm.control} name="assignedTo" render={({ field }) => ( <FormItem><Label>Assign To</Label><Select onValueChange={(v) => field.onChange(v === 'unassigned' ? '' : v)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger></FormControl><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}</SelectContent></Select></FormItem> )} />
-                    <FormField control={taskForm.control} name="mitreTtp" render={({ field }) => ( <FormItem><Label>MITRE ATT&amp;CK TTP</Label><FormControl><Input placeholder="e.g., T1566.001" {...field} className="font-mono" /></FormControl></FormItem> )}/>
+                    <FormField control={taskForm.control} name="assignedTo" render={({ field }) => ( <FormItem><FormLabel>Assign To</FormLabel><Select onValueChange={(v) => field.onChange(v === 'unassigned' ? '' : v)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Unassigned"/></SelectTrigger></FormControl><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{teamMembers.map(m => <SelectItem key={m.username} value={m.username}>{m.displayName}</SelectItem>)}</SelectContent></Select></FormItem> )} />
+                    <FormField control={taskForm.control} name="mitreTtp" render={({ field }) => ( <FormItem><FormLabel>MITRE ATT&amp;CK TTP</FormLabel><FormControl><Input placeholder="e.g., T1566.001" {...field} className="font-mono" /></FormControl></FormItem> )}/>
                  </div>
                 {watchedTaskType === 'Phishing' && (
                     <div className="grid grid-cols-2 gap-4">
-                        <FormField control={taskForm.control} name="targetProfileId" render={({ field }) => ( <FormItem><Label>Target Profile</Label><Select onValueChange={(v) => { if (v === '__add_new__') { profileForm.reset(); setIsProfileFormOpen(true); } else { field.onChange(v); } }} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Profile..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="__add_new__" className="text-accent">＋ Add New Profile...</SelectItem>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.fullName}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
-                        <FormField control={taskForm.control} name="templateId" render={({ field }) => ( <FormItem><Label>Message Template</Label><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Template..." /></SelectTrigger></FormControl><SelectContent>{templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
+                        <FormField control={taskForm.control} name="targetProfileId" render={({ field }) => ( <FormItem><FormLabel>Target Profile</FormLabel><Select onValueChange={(v) => { if (v === '__add_new__') { profileForm.reset(); setIsProfileFormOpen(true); } else { field.onChange(v); } }} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Profile..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="__add_new__" className="text-accent">＋ Add New Profile...</SelectItem>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.fullName}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
+                        <FormField control={taskForm.control} name="templateId" render={({ field }) => ( <FormItem><FormLabel>Message Template</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Template..." /></SelectTrigger></FormControl><SelectContent>{templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select></FormItem> )}/>
                     </div>
                 )}
                  <FormField
@@ -609,7 +622,7 @@ export default function ProjectManagementPage() {
                     name="evidenceIds"
                     render={({ field }) => (
                     <FormItem>
-                        <Label>Link Evidence</Label>
+                        <FormLabel>Link Evidence</FormLabel>
                         <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" role="combobox" className="w-full justify-between">
@@ -661,38 +674,21 @@ export default function ProjectManagementPage() {
                 <DialogTitle>Create New Target Profile</DialogTitle>
                 <DialogDescription>Add a new target profile. It will be automatically selected for this task.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={profileForm.handleSubmit(handleCreateNewProfile)} className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="new-profile-fullName">Full Name</Label>
-                    <Input id="new-profile-fullName" {...profileForm.register('fullName')} />
-                    {profileForm.formState.errors.fullName && <p className="text-sm text-destructive">{profileForm.formState.errors.fullName.message}</p>}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="new-profile-email">Email</Label>
-                    <Input id="new-profile-email" type="email" {...profileForm.register('email')} />
-                    {profileForm.formState.errors.email && <p className="text-sm text-destructive">{profileForm.formState.errors.email.message}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="new-profile-role">Role / Position</Label>
-                        <Input id="new-profile-role" {...profileForm.register('role')} />
-                        {profileForm.formState.errors.role && <p className="text-sm text-destructive">{profileForm.formState.errors.role.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="new-profile-company">Company</Label>
-                        <Input id="new-profile-company" {...profileForm.register('company')} />
-                        {profileForm.formState.errors.company && <p className="text-sm text-destructive">{profileForm.formState.errors.company.message}</p>}
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="new-profile-notes">Notes</Label>
-                    <Textarea id="new-profile-notes" {...profileForm.register('notes')} placeholder="Add any relevant notes for this target..."/>
-                </div>
-                <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsProfileFormOpen(false)}>Cancel</Button>
-                    <Button type="submit">Create Profile</Button>
-                </DialogFooter>
-            </form>
+            <Form {...profileForm}>
+              <form onSubmit={profileForm.handleSubmit(handleCreateNewProfile)} className="space-y-4 py-4">
+                  <FormField control={profileForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                  <FormField control={profileForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                  <div className="grid grid-cols-2 gap-4">
+                      <FormField control={profileForm.control} name="role" render={({ field }) => ( <FormItem><FormLabel>Role / Position</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                      <FormField control={profileForm.control} name="company" render={({ field }) => ( <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                  </div>
+                  <FormField control={profileForm.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Add any relevant notes for this target..." {...field} /></FormControl><FormMessage /></FormItem> )} />
+                  <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setIsProfileFormOpen(false)}>Cancel</Button>
+                      <Button type="submit">Create Profile</Button>
+                  </DialogFooter>
+              </form>
+            </Form>
         </DialogContent>
       </Dialog>
       
