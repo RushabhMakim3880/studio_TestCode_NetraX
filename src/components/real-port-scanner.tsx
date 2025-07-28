@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { scanPorts, type PortScanResult, type ScanPortsOptions } from '@/actions/scan-ports-action';
-import { Loader2, AlertTriangle, ShieldCheck, Binary, Info, Code, Checkbox } from 'lucide-react';
+import { Loader2, AlertTriangle, ShieldCheck, Binary, Info, Code } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
