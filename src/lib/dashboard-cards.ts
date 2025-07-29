@@ -89,11 +89,11 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
   },
   {
     id: 'projects-bar-chart',
-    title: 'Project Progress',
+    title: 'Active Project Progress',
     description: 'A bar chart showing the progress of active projects.',
     icon: Briefcase,
     component: ProjectsBarChart,
-    className: 'md:col-span-2',
+    className: 'xl:col-span-2',
   },
   {
     id: 'task-status-chart',
@@ -116,13 +116,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'A summary of user roles and counts within the system.',
     icon: UserCog,
     component: UserStats,
-  },
-   {
-    id: 'threat-intel-summary',
-    title: 'Threat Intel Summary',
-    description: 'A summary of the latest critical vulnerabilities.',
-    icon: Rss,
-    component: ThreatIntelSummary,
   },
   {
     id: 'activity-feed',

@@ -50,7 +50,7 @@ export function TaskStatusChart() {
   }, [allTasks]);
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-lg">
             <ClipboardList />
@@ -58,9 +58,9 @@ export function TaskStatusChart() {
         </CardTitle>
          <CardDescription>Distribution of all tasks by status.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow flex items-center justify-center">
          {chartData.length > 0 ? (
-          <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[200px]">
+          <ChartContainer config={chartConfig} className="mx-auto aspect-square h-full w-full">
             <PieChart>
               <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
               <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={50} strokeWidth={2}>
@@ -72,7 +72,7 @@ export function TaskStatusChart() {
             </PieChart>
           </ChartContainer>
         ) : (
-            <div className="h-[200px] flex flex-col items-center justify-center text-muted-foreground text-center">
+            <div className="h-[250px] flex flex-col items-center justify-center text-muted-foreground text-center">
                 <FolderSearch className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                 <p className="text-sm">No task data available.</p>
                 <p className="text-xs">Add tasks in the Project Management module.</p>

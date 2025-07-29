@@ -53,7 +53,7 @@ export function ProjectsBarChart() {
   }, [allProjects, allTasks]);
 
   return (
-    <Card className="flex-grow">
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <div className="flex items-center gap-3">
           <Briefcase className="h-5 w-5" />
@@ -61,16 +61,16 @@ export function ProjectsBarChart() {
         </div>
         <CardDescription>A summary of progress for all ongoing projects.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow flex items-center justify-center">
         {chartData.length > 0 ? (
-          <ChartContainer config={chartConfig} className="h-[250px] w-full">
+          <ChartContainer config={chartConfig} className="h-full w-full">
             <BarChart
               accessibilityLayer
               data={chartData}
               layout="vertical"
               margin={{ left: 10, right: 40 }}
             >
-              <CartesianGrid horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <YAxis
                 dataKey="name"
                 type="category"
