@@ -35,7 +35,7 @@ export function ChatClient() {
 
   const filteredTeamMembers = teamMembers.filter(u =>
     u.username !== currentUser?.username &&
-    (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || u.username.toLowerCase().includes(searchQuery.toLowerCase()))
+    ((u.displayName || '').toLowerCase().includes(searchQuery.toLowerCase()) || u.username.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
   const updateUnreadCount = useCallback((conversationId: string, messages: Message[]) => {
