@@ -22,7 +22,7 @@ export type GeoIpInfo = z.infer<typeof GeoIpInfoSchema>;
  */
 export async function getGeoIpInfo(ip: string): Promise<GeoIpInfo> {
     // Avoid lookups for private/local IPs
-    if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+    if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
         return { status: 'success', query: ip, country: 'Local Network', city: 'Private Address' };
     }
 

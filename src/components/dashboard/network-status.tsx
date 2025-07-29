@@ -3,15 +3,16 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Timer, ArrowDown, ArrowUp, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Timer, Wifi, WifiOff, Globe, Loader2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { getGeoIpInfo, type GeoIpInfo } from '@/services/ip-geo-service';
+
 
 type NetworkState = {
     isOnline: boolean;
     ip: string | null;
     ping: number | null;
-    downloadSpeed: number;
-    uploadSpeed: number;
+    geo: GeoIpInfo | null;
 };
 
 export function NetworkStatus() {
@@ -19,8 +20,7 @@ export function NetworkStatus() {
     isOnline: true,
     ip: null,
     ping: null,
-    downloadSpeed: 0,
-    uploadSpeed: 0,
+    geo: null,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,50 +28,36 @@ export function NetworkStatus() {
     const fetchNetworkStatus = async () => {
        try {
         const startTime = Date.now();
-        // Use a cache-busting query parameter
-        const response = await fetch(`https://api.ipify.org?format=json&cb=${new Date().getTime()}`, { cache: 'no-store' });
+        const ipResponse = await fetch(`https://api.ipify.org?format=json&cb=${new Date().getTime()}`, { cache: 'no-store' });
         const endTime = Date.now();
         
-        if (!response.ok) throw new Error('Failed to fetch IP');
+        if (!ipResponse.ok) throw new Error('Failed to fetch IP');
         
-        const data = await response.json();
+        const ipData = await ipResponse.json();
+        const geoData = await getGeoIpInfo(ipData.ip);
         
         setStatus(prev => ({
             ...prev,
             isOnline: true,
-            ip: data.ip,
+            ip: ipData.ip,
             ping: endTime - startTime,
+            geo: geoData.status === 'success' ? geoData : null,
         }));
 
       } catch (error) {
         console.error("Network check failed:", error);
         let errorMessage = "Network check failed";
-        // A TypeError during a fetch is often due to a browser extension (like an ad-blocker) interfering.
         if (error instanceof TypeError) {
             errorMessage = "Blocked by extension";
         }
-        setStatus(prev => ({ ...prev, isOnline: false, ip: errorMessage, ping: null }));
+        setStatus(prev => ({ ...prev, isOnline: false, ip: errorMessage, ping: null, geo: null }));
       } finally {
         setIsLoading(false);
       }
     };
-    
-    // Simulate changing network speeds
-    const simulateSpeeds = () => {
-        setStatus(prev => ({
-            ...prev,
-            downloadSpeed: Math.random() * (100 - 10) + 10, // Random speed between 10 and 100 Mbps
-            uploadSpeed: Math.random() * (50 - 5) + 5, // Random speed between 5 and 50 Mbps
-        }));
-    };
 
     fetchNetworkStatus();
-    simulateSpeeds();
-
-    const interval = setInterval(() => {
-        fetchNetworkStatus();
-        simulateSpeeds();
-    }, 5000); // Re-check every 5 seconds
+    const interval = setInterval(fetchNetworkStatus, 30000); // Re-check every 30 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -84,14 +70,14 @@ export function NetworkStatus() {
   }
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-lg">
             {status.isOnline ? <Wifi /> : <WifiOff />}
             Network Status
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 pt-1">
         {isLoading ? (
             <div className="flex items-center justify-center h-24 text-muted-foreground gap-2">
                  <Loader2 className="h-5 w-5 animate-spin" />
@@ -99,29 +85,26 @@ export function NetworkStatus() {
         ) : (
             <>
                 <div className="flex justify-between items-center">
-                    <div>
-                        <p className="text-xs text-muted-foreground">Public IP Address</p>
-                        <p className="font-mono text-base">{status.ip || 'N/A'}</p>
-                    </div>
-                     <Badge variant={status.isOnline ? 'default' : 'destructive'} className={status.isOnline ? 'bg-green-500/20 text-green-400 border-green-500/30' : ''}>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge variant={status.isOnline ? 'default' : 'destructive'} className={status.isOnline ? 'bg-green-500/20 text-green-400 border-green-500/30' : ''}>
                         {status.isOnline ? 'Online' : 'Offline'}
                     </Badge>
                 </div>
-                 <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                        <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Timer className="h-3 w-3" /> Ping</p>
-                        <p className="font-mono text-base">{status.ping !== null ? `${status.ping}ms` : 'N/A'}</p>
-                        <div className="flex justify-center mt-1"><span className={`h-1.5 w-8 rounded-full ${getPingColor(status.ping)}`}></span></div>
+                 <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">Public IP Address</p>
+                    <p className="font-mono text-sm">{status.ip || 'N/A'}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="font-mono text-sm">{status.geo ? `${status.geo.city}, ${status.geo.country}` : 'N/A'}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">Latency</p>
+                     <div className="flex items-center gap-2">
+                        <div className={`h-2 w-4 rounded-full ${getPingColor(status.ping)}`}></div>
+                        <p className="font-mono text-sm">{status.ping !== null ? `${status.ping}ms` : 'N/A'}</p>
                     </div>
-                     <div>
-                        <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><ArrowDown className="h-3 w-3" /> Download</p>
-                        <p className="font-mono text-base">{status.downloadSpeed.toFixed(1)} <span className="text-xs">Mbps</span></p>
-                    </div>
-                     <div>
-                        <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><ArrowUp className="h-3 w-3" /> Upload</p>
-                        <p className="font-mono text-base">{status.uploadSpeed.toFixed(1)} <span className="text-xs">Mbps</span></p>
-                    </div>
-                 </div>
+                </div>
             </>
         )}
       </CardContent>
