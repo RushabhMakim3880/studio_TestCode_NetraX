@@ -31,7 +31,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import Link from 'next/link';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { FileSystemNode } from '@/components/file-browser';
+import type { FileSystemNode } from '@/components/file-browser';
 import { ProjectGanttChart } from '@/components/project-gantt-chart';
 import { CampaignPlanner } from '@/components/campaign-planner';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -293,11 +293,11 @@ const TaskCard = ({ task, allTasks, level = 0 }: { task: Task, allTasks: Task[],
 
 
 export default function ProjectManagementPage() {
-  const [projects, setProjects] = useLocalStorage<Project[]>('netra-projects', initialProjects);
-  const [tasks, setTasks] = useLocalStorage<Task[]>('netra-tasks', initialTasks);
-  const [profiles, setProfiles] = useLocalStorage<Profile[]>('netra-profiles', []);
-  const [templates, setTemplates] = useLocalStorage<Template[]>('netra-templates', []);
-  const [allFiles, setAllFiles] = useLocalStorage<FileSystemNode[]>('netra-fs', []);
+  const { value: projects, setValue: setProjects } = useLocalStorage<Project[]>('netra-projects', initialProjects);
+  const { value: tasks, setValue: setTasks } = useLocalStorage<Task[]>('netra-tasks', initialTasks);
+  const { value: profiles, setValue: setProfiles } = useLocalStorage<Profile[]>('netra-profiles', []);
+  const { value: templates, setValue: setTemplates } = useLocalStorage<Template[]>('netra-templates', []);
+  const { value: allFiles, setValue: setAllFiles } = useLocalStorage<FileSystemNode[]>('netra-fs', []);
   
   const [filter, setFilter] = useState<ProjectStatus | 'All'>('All');
 
@@ -547,9 +547,9 @@ export default function ProjectManagementPage() {
                         New Project
                     </Button>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
-                      {filteredProjects.length > 0 ? (
-                      filteredProjects.map((project) => {
+                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
+                  {filteredProjects.length > 0 ? (
+                    filteredProjects.map((project) => {
                       const projectTasks = tasks.filter(t => t.projectId === project.id && !t.parentTaskId); // Only top-level tasks
                       return (
                           <Card key={project.id} className="flex flex-col">
@@ -596,11 +596,11 @@ export default function ProjectManagementPage() {
                           </CardFooter>
                           </Card>
                       )
-                      })
+                    })
                   ) : (
-                  <Card className="flex flex-col items-center justify-center py-20 mt-4 xl:col-span-3">
-                      <CardHeader><CardTitle>No projects found with status "{filter}"</CardTitle><CardDescription>Try selecting a different filter.</CardDescription></CardHeader>
-                  </Card>
+                    <Card className="flex flex-col items-center justify-center py-20 mt-4 xl:col-span-3">
+                        <CardHeader><CardTitle>No projects found with status "{filter}"</CardTitle><CardDescription>Try selecting a different filter.</CardDescription></CardHeader>
+                    </Card>
                   )}
                 </div>
             </TabsContent>
