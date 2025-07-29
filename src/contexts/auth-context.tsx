@@ -9,6 +9,7 @@ import { DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboard-cards';
 import { defaultPageSettings, type PageSettings } from '@/components/settings/page-settings-manager';
 import { defaultUserSettings, type UserSettings } from '@/services/user-settings-service';
 
+export type UserStatus = 'Active' | 'Away' | 'In Meeting' | 'Offline' | 'DND';
 
 export type User = {
   username: string;
@@ -17,6 +18,7 @@ export type User = {
   role: Role;
   password?: string; 
   lastLogin?: string;
+  status: UserStatus;
   enabledModules?: string[];
   dashboardLayout?: string[];
   pageSettings?: PageSettings;
@@ -49,10 +51,10 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const seedUsers: User[] = [
-    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
-    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
-    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
-    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
+    { username: 'admin', displayName: 'Admin', password: 'password123', role: ROLES.ADMIN, lastLogin: new Date().toISOString(), avatarUrl: null, status: 'Active', enabledModules: getAllModuleNamesForRole(ROLES.ADMIN), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
+    { username: 'analyst', displayName: 'Analyst', password: 'password123', role: ROLES.ANALYST, avatarUrl: null, status: 'Active', enabledModules: getAllModuleNamesForRole(ROLES.ANALYST), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
+    { username: 'operator', displayName: 'Operator', password: 'password123', role: ROLES.OPERATOR, avatarUrl: null, status: 'Active', enabledModules: getAllModuleNamesForRole(ROLES.OPERATOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
+    { username: 'auditor', displayName: 'Auditor', password: 'password123', role: ROLES.AUDITOR, avatarUrl: null, status: 'Active', enabledModules: getAllModuleNamesForRole(ROLES.AUDITOR), dashboardLayout: DEFAULT_DASHBOARD_LAYOUT, pageSettings: defaultPageSettings, userSettings: defaultUserSettings, isTwoFactorEnabled: false },
 ];
 
 
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const migrateUserObject = (u: any) => {
       let needsUpdate = false;
+      if (!u.status) { u.status = 'Active'; needsUpdate = true; }
       if (!u.enabledModules) { u.enabledModules = getAllModuleNamesForRole(u.role); needsUpdate = true; }
       if (!u.dashboardLayout) { u.dashboardLayout = DEFAULT_DASHBOARD_LAYOUT; needsUpdate = true; }
       if (!u.pageSettings) { u.pageSettings = defaultPageSettings; needsUpdate = true; }
@@ -152,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }
     
-    const loggedInUser = { ...foundUser, lastLogin: new Date().toISOString() };
+    const loggedInUser = { ...foundUser, lastLogin: new Date().toISOString(), status: 'Active' as UserStatus };
     const updatedUsers = users.map(u => u.username === loggedInUser.username ? loggedInUser : u);
     syncUsers(updatedUsers);
     setUser(loggedInUser);
@@ -170,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...credentials, 
         lastLogin: new Date().toISOString(),
         avatarUrl: null,
+        status: 'Active',
         enabledModules: getAllModuleNamesForRole(credentials.role),
         dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
         pageSettings: defaultPageSettings,
@@ -187,6 +191,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    if (user) {
+        updateUser(user.username, { status: 'Offline' });
+    }
     localStorage.removeItem('netra-currentUser');
     setUser(null);
     router.push('/login');

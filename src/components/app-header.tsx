@@ -8,18 +8,30 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User, Circle, UserCheck, Coffee, CircleOff, MicOff } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, type UserStatus } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { ContextAwareTip } from './context-aware-tip';
 import { Breadcrumb } from './breadcrumb';
 
+const userStatuses: { name: UserStatus, icon: React.FC<any> }[] = [
+    { name: 'Active', icon: UserCheck },
+    { name: 'Away', icon: Coffee },
+    { name: 'DND', icon: MicOff },
+    { name: 'Offline', icon: CircleOff },
+];
+
 export function AppHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   const getInitials = (name?: string) => {
     if (!name) return '??';
@@ -29,6 +41,12 @@ export function AppHeader() {
       .join('')
       .toUpperCase();
   };
+  
+  const handleStatusChange = (status: UserStatus) => {
+    if (user) {
+        updateUser(user.username, { status });
+    }
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card/80 px-4 backdrop-blur-sm md:px-6">
@@ -59,6 +77,21 @@ export function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                    <Circle className="mr-2 h-4 w-4"/>
+                    <span>Set Status</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup value={user.status} onValueChange={(s) => handleStatusChange(s as UserStatus)}>
+                        {userStatuses.map(status => (
+                            <DropdownMenuRadioItem key={status.name} value={status.name} className="gap-2">
+                                <status.icon className="h-4 w-4"/> {status.name}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuItem asChild>
               <Link href="/profile">
                 <User className="mr-2 h-4 w-4" />
