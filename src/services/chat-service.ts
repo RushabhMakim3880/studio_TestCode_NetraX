@@ -8,7 +8,6 @@ import {
   onSnapshot,
   Timestamp,
   where,
-  orderBy,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import type { User } from '@/hooks/use-auth';
@@ -39,10 +38,10 @@ export const listenForMessages = (
 ) => {
   if (!db) return () => {}; // Return a no-op unsubscribe function if db is not available
   
+  // Removed orderBy to prevent the index error. Sorting will be done on the client.
   const q = query(
     collection(db, 'messages'),
-    where('conversationId', '==', conversationId),
-    orderBy('timestamp', 'asc')
+    where('conversationId', '==', conversationId)
   );
 
   return onSnapshot(q, (querySnapshot) => {
@@ -51,7 +50,9 @@ export const listenForMessages = (
       messages.push({ id: doc.id, ...doc.data() } as Message);
     });
     
-    // Firestore returns sorted data, no need to sort on client
+    // Sort messages by timestamp on the client side
+    messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+    
     callback(messages);
   }, (error) => {
     console.error("Firestore snapshot error:", error);
@@ -72,9 +73,9 @@ export const sendTextMessage = async (
     await addDoc(collection(db, 'messages'), {
         conversationId,
         sender: {
-        username: sender.username,
-        displayName: sender.displayName || sender.username,
-        avatarUrl: sender.avatarUrl || null,
+          username: sender.username,
+          displayName: sender.displayName || sender.username,
+          avatarUrl: sender.avatarUrl || null,
         },
         receiver: {
             username: receiver.username,
