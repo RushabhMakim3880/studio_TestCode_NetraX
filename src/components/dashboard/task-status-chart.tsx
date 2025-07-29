@@ -1,3 +1,4 @@
+
 'use client';
 
 import { SystemInfo } from '@/components/dashboard/system-info';

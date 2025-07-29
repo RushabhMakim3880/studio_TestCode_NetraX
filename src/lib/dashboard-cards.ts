@@ -115,6 +115,13 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     component: UserPerformanceChart,
     className: 'md:col-span-3',
   },
+   {
+    id: 'user-stats',
+    title: 'User Roles',
+    description: 'A summary of user roles and counts within the system.',
+    icon: UserCog,
+    component: UserStats,
+  },
   {
     id: 'activity-feed',
     title: 'Activity Feed',
@@ -149,4 +156,7 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
     'mitre-attack-heatmap',
     'projects-bar-chart',
     'activity-feed',
+    'shortcut-project-management',
+    'shortcut-phishing',
+    'shortcut-osint-investigator'
 ];
