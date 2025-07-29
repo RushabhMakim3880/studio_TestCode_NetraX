@@ -51,12 +51,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar variant="inset" side="left">
         <AppSidebar />
       </Sidebar>
       <SidebarInset>
         <AppHeader />
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main className="flex-1 p-4 lg:p-6 bg-primary/20">{children}</main>
         <WorkflowGenerator />
       </SidebarInset>
     </SidebarProvider>

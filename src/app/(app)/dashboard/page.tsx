@@ -54,7 +54,7 @@ export default function DashboardPage() {
              </div>
         </div>
       ) : (
-         <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg text-center p-4">
+         <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg text-center p-4 bg-card">
             <LayoutGrid className="h-16 w-16 text-muted-foreground/50 mb-4"/>
             <h3 className="text-xl font-semibold">Your Dashboard is Empty</h3>
             <p className="text-muted-foreground mt-2">Click "Customize Layout" to add some cards.</p>

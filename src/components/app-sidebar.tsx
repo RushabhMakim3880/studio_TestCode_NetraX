@@ -56,7 +56,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <SidebarHeader>
+      <SidebarHeader className="border-b">
         <Logo />
       </SidebarHeader>
       <SidebarContent>
@@ -152,7 +152,7 @@ export function AppSidebar() {
           })}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <div className="w-full p-2 text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
           <p>&copy; {new Date().getFullYear()} NETRA-X</p>
           <p>For Authorized Use Only</p>
