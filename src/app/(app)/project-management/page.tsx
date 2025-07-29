@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon, Paperclip, Lock, MessageSquare } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon, Paperclip, Lock, MessageSquare, CornerDownRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -63,6 +63,7 @@ export type Task = {
   mitreTtp?: string;
   evidenceIds?: string[];
   dependsOn?: string[];
+  parentTaskId?: string;
 };
 
 type Comment = {
@@ -117,6 +118,7 @@ const taskSchema = z.object({
     mitreTtp: z.string().optional(),
     evidenceIds: z.array(z.string()).optional(),
     dependsOn: z.array(z.string()).optional(),
+    parentTaskId: z.string().optional(),
 });
 
 const profileSchema = z.object({
@@ -209,13 +211,94 @@ function TaskComments({ taskId }: { taskId: string }) {
     );
 }
 
+const TaskCard = ({ task, allTasks, level = 0 }: { task: Task, allTasks: Task[], level?: number }) => {
+    const { users: teamMembers } = useAuth();
+    const { toast } = useToast();
+    const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [currentProjectIdForTask, setCurrentProjectIdForTask] = useState<string | null>(null);
+
+    const getAssignee = (username?: string) => teamMembers.find(m => m.username === username);
+    const getInitials = (name?: string) => {
+        if (!name) return '??';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+    const getIsBlocked = (task: Task): boolean => {
+        if (!task.dependsOn || task.dependsOn.length === 0) return false;
+        return task.dependsOn.some(depId => {
+            const dependentTask = allTasks.find(t => t.id === depId);
+            return dependentTask && dependentTask.status !== 'Completed';
+        });
+    }
+
+    const handleAddTaskClick = (projectId: string, parentTaskId?: string) => {
+        setEditingTask(null);
+        setCurrentProjectIdForTask(projectId);
+        // I'll leave the form handling in the main component to avoid prop drilling setValue
+    }
+
+    const isBlocked = getIsBlocked(task);
+    const assignee = getAssignee(task.assignedTo);
+    const subTasks = allTasks.filter(t => t.parentTaskId === task.id);
+    
+    return (
+        <div style={{ marginLeft: `${level * 1}rem`}} className="space-y-2">
+            <Card className="p-3 bg-background/50">
+                <div className="flex items-start justify-between text-sm">
+                    <div className="flex-grow">
+                        <div className="flex items-center gap-2">
+                            {isBlocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : taskStatusIcons[task.status]}
+                            <span className={`font-medium ${isBlocked ? 'text-muted-foreground line-through' : ''}`}>{task.description}</span>
+                            <Badge variant="outline">{task.type}</Badge>
+                        </div>
+                        <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
+                          <div className="flex items-center gap-4">
+                              <TooltipProvider><Tooltip><TooltipTrigger>
+                                  <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
+                              </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
+                              {assignee && (
+                                  <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                  <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
+                                  </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
+                              )}
+                          </div>
+                        </div>
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
+                             <DropdownMenuItem onClick={() => { /* Placeholder for main component's edit handler */ }}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit Task
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { /* Placeholder for main component's add sub-task handler */ }}>
+                                <CornerDownRight className="mr-2 h-4 w-4" /> Add Sub-task
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => { /* Placeholder for main component's delete handler */ }}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Task
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                </div>
+                <Separator className="my-2"/>
+                <TaskComments taskId={task.id} />
+            </Card>
+            <div className="pl-4 border-l ml-2 space-y-2">
+                {subTasks.map(subTask => <TaskCard key={subTask.id} task={subTask} allTasks={allTasks} level={level + 1} />)}
+            </div>
+        </div>
+    );
+};
+
 
 export default function ProjectManagementPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [allFiles, setAllFiles] = useState<FileSystemNode[]>([]);
+  const [projects, setProjects] = useLocalStorage<Project[]>('netra-projects', initialProjects);
+  const [tasks, setTasks] = useLocalStorage<Task[]>('netra-tasks', initialTasks);
+  const [profiles, setProfiles] = useLocalStorage<Profile[]>('netra-profiles', []);
+  const [templates, setTemplates] = useLocalStorage<Template[]>('netra-templates', []);
+  const [allFiles, setAllFiles] = useLocalStorage<FileSystemNode[]>('netra-fs', []);
+  
   const [filter, setFilter] = useState<ProjectStatus | 'All'>('All');
 
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
@@ -246,45 +329,6 @@ export default function ProjectManagementPage() {
   
   const watchedTaskType = taskForm.watch('type');
 
-  useEffect(() => {
-    const loadData = () => {
-        try {
-          const storedProjects = localStorage.getItem('netra-projects');
-          setProjects(storedProjects ? JSON.parse(storedProjects) : initialProjects);
-
-          const storedTasks = localStorage.getItem('netra-tasks');
-          setTasks(storedTasks ? JSON.parse(storedTasks) : initialTasks);
-          
-          const storedProfiles = localStorage.getItem('netra-profiles');
-          setProfiles(storedProfiles ? JSON.parse(storedProfiles) : []);
-
-          const storedTemplates = localStorage.getItem('netra-templates');
-          setTemplates(storedTemplates ? JSON.parse(storedTemplates) : []);
-          
-          const storedFiles = localStorage.getItem('netra-fs');
-          setAllFiles(storedFiles ? JSON.parse(storedFiles) : []);
-        } catch (error) {
-          console.error('Failed to load data from localStorage', error);
-        }
-    };
-    loadData();
-  }, []);
-
-  const updateProjects = (newProjects: Project[]) => {
-    setProjects(newProjects);
-    localStorage.setItem('netra-projects', JSON.stringify(newProjects));
-  }
-  
-  const updateTasks = (newTasks: Task[]) => {
-    setTasks(newTasks);
-    localStorage.setItem('netra-tasks', JSON.stringify(newTasks));
-  }
-
-  const updateProfiles = (newProfiles: Profile[]) => {
-    setProfiles(newProfiles);
-    localStorage.setItem('netra-profiles', JSON.stringify(newProfiles));
-  }
-
   const filteredProjects = useMemo(() => {
     if (filter === 'All') return projects;
     return projects.filter(p => p.status === filter);
@@ -312,8 +356,8 @@ export default function ProjectManagementPage() {
     if (selectedProject) {
       const newProjects = projects.filter(c => c.id !== selectedProject.id);
       const newTasks = tasks.filter(t => t.projectId !== selectedProject.id);
-      updateProjects(newProjects);
-      updateTasks(newTasks);
+      setProjects(newProjects);
+      setTasks(newTasks);
       toast({ title: 'Project Deleted', description: `Project "${selectedProject.name}" and its tasks have been removed.` });
       setIsDeleteAlertOpen(false);
       setSelectedProject(null);
@@ -323,7 +367,7 @@ export default function ProjectManagementPage() {
   const onProjectSubmit = async (values: z.infer<typeof projectSchema>) => {
     if(selectedProject) {
       const updatedProjects = projects.map(c => c.id === selectedProject.id ? { ...c, ...values, status: c.status } : c );
-      updateProjects(updatedProjects);
+      setProjects(updatedProjects);
       toast({ title: 'Project Updated', description: `Project "${values.name}" has been updated.` });
       setIsProjectFormOpen(false);
       setSelectedProject(null);
@@ -338,7 +382,7 @@ export default function ProjectManagementPage() {
         endDate: values.endDate,
         status: 'Planning' 
     }
-    updateProjects([...projects, newProject]);
+    setProjects([...projects, newProject]);
     toast({ title: 'Project Created', description: `New project "${values.name}" has been added.` });
     logActivity({
         user: currentUser?.displayName || 'Admin',
@@ -365,7 +409,7 @@ export default function ProjectManagementPage() {
                 priority: 'Medium',
             }));
             
-            updateTasks([...tasks, ...newAiTasks]);
+            setTasks([...tasks, ...newAiTasks]);
             toast({ title: 'AI Tasks Added', description: `${newAiTasks.length} tasks were generated for your project.` });
 
         } catch (err) {
@@ -385,10 +429,10 @@ export default function ProjectManagementPage() {
   }
 
   // Task Handlers
-  const handleAddTaskClick = (projectId: string) => {
+  const handleAddTaskClick = (projectId: string, parentTaskId?: string) => {
     setEditingTask(null);
     setCurrentProjectIdForTask(projectId);
-    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '', mitreTtp: '', evidenceIds: [], dependsOn: [] });
+    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '', mitreTtp: '', evidenceIds: [], dependsOn: [], parentTaskId: parentTaskId || '' });
     setIsTaskFormOpen(true);
   }
 
@@ -402,7 +446,7 @@ export default function ProjectManagementPage() {
   const onTaskSubmit = (values: z.infer<typeof taskSchema>) => {
       if (editingTask) {
         const updatedTasks = tasks.map(t => t.id === editingTask.id ? { ...t, ...values, type: values.type as TaskType, priority: values.priority as TaskPriority } : t);
-        updateTasks(updatedTasks);
+        setTasks(updatedTasks);
         toast({ title: "Task Updated" });
       } else if (currentProjectIdForTask) {
         const newTask: Task = {
@@ -413,7 +457,7 @@ export default function ProjectManagementPage() {
             type: values.type as TaskType,
             priority: values.priority as TaskPriority,
         };
-        updateTasks([...tasks, newTask]);
+        setTasks([...tasks, newTask]);
         toast({ title: "Task Added" });
       }
       setIsTaskFormOpen(false);
@@ -427,16 +471,15 @@ export default function ProjectManagementPage() {
         return;
     }
     const newTasks = tasks.map(t => t.id === taskId ? { ...t, status } : t);
-    updateTasks(newTasks);
+    setTasks(newTasks);
   }
 
   const handleDeleteTask = (taskId: string) => {
-    // Also remove this task from any other tasks that depend on it
     const newTasks = tasks.filter(t => t.id !== taskId).map(t => ({
         ...t,
         dependsOn: t.dependsOn?.filter(depId => depId !== taskId)
     }));
-    updateTasks(newTasks);
+    setTasks(newTasks);
     toast({ title: 'Task removed.' });
   }
 
@@ -445,10 +488,9 @@ export default function ProjectManagementPage() {
         id: `PROF-${crypto.randomUUID()}`,
         ...values,
     };
-    updateProfiles([...profiles, newProfile]);
+    setProfiles([...profiles, newProfile]);
     toast({ title: 'Profile Created', description: `New profile for "${values.fullName}" has been added.` });
     
-    // Auto-select the newly created profile in the task form
     taskForm.setValue('targetProfileId', newProfile.id);
 
     setIsProfileFormOpen(false);
@@ -505,11 +547,10 @@ export default function ProjectManagementPage() {
                         New Project
                     </Button>
                 </div>
-                 <>
-                  {filteredProjects.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
-                      {filteredProjects.map((project) => {
-                      const projectTasks = tasks.filter(t => t.projectId === project.id);
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
+                      {filteredProjects.length > 0 ? (
+                      filteredProjects.map((project) => {
+                      const projectTasks = tasks.filter(t => t.projectId === project.id && !t.parentTaskId); // Only top-level tasks
                       return (
                           <Card key={project.id} className="flex flex-col">
                           <CardHeader>
@@ -539,89 +580,12 @@ export default function ProjectManagementPage() {
                                   <AccordionTrigger className="hover:no-underline">
                                   <div className="flex items-center gap-2">
                                       <ClipboardList className="h-4 w-4" />
-                                      <span>Tasks ({projectTasks.length})</span>
+                                      <span>Tasks ({tasks.filter(t => t.projectId === project.id).length})</span>
                                   </div>
                                   </AccordionTrigger>
                                   <AccordionContent className="space-y-4">
                                   <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                                      {projectTasks.length > 0 ? projectTasks.map(task => {
-                                        const assignee = getAssignee(task.assignedTo);
-                                        const isBlocked = getTaskIsBlocked(task);
-                                        return (
-                                          <Card key={task.id} className="p-3">
-                                              <div className="flex items-start justify-between text-sm">
-                                                  <div className="flex-grow">
-                                                      <div className="flex items-center gap-2">
-                                                          {isBlocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : taskStatusIcons[task.status]}
-                                                          <span className={`font-medium ${isBlocked ? 'text-muted-foreground line-through' : ''}`}>{task.description}</span>
-                                                          <Badge variant="outline">{task.type}</Badge>
-                                                      </div>
-                                                      <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
-                                                        <div className="flex items-center gap-4">
-                                                            <TooltipProvider><Tooltip><TooltipTrigger>
-                                                                <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
-                                                            </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
-                                                            {assignee && (
-                                                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                                                <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
-                                                                </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
-                                                            )}
-                                                            {task.mitreTtp && (
-                                                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                                                <Link href={`https://attack.mitre.org/techniques/${task.mitreTtp.replace('.', '/')}`} target="_blank">
-                                                                        <Badge variant="destructive" className="font-mono text-xs">{task.mitreTtp}</Badge>
-                                                                </Link>
-                                                                </TooltipTrigger><TooltipContent><p>View MITRE ATT&amp;CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
-                                                            )}
-                                                        </div>
-                                                        {task.type === 'Phishing' && (
-                                                            <>
-                                                            <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
-                                                            <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
-                                                            </>
-                                                        )}
-                                                        {task.evidenceIds && task.evidenceIds.length > 0 && (
-                                                            <div className="flex items-start gap-1.5 pt-1">
-                                                                <Paperclip className="h-3 w-3 mt-0.5" />
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {task.evidenceIds.map(id => (
-                                                                        <Badge key={id} variant="secondary">{getFileName(id)}</Badge>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                         {task.dependsOn && task.dependsOn.length > 0 && (
-                                                          <div className="flex items-start gap-1.5 pt-1">
-                                                              <Lock className="h-3 w-3 mt-0.5" />
-                                                              <div className="flex flex-wrap gap-1">
-                                                                  {task.dependsOn.map(id => (
-                                                                      <Badge key={id} variant="outline" className="font-mono text-xs">{tasks.find(t=>t.id===id)?.description.substring(0,15)}...</Badge>
-                                                                  ))}
-                                                              </div>
-                                                          </div>
-                                                      )}
-                                                      </div>
-                                                  </div>
-                                                  <DropdownMenu>
-                                                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                  <DropdownMenuContent>
-                                                      <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
-                                                      <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
-                                                      <DropdownMenuSeparator />
-                                                      <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                                      <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do', false)}>To Do</DropdownMenuItem>
-                                                      <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress', isBlocked)}>In Progress</DropdownMenuItem>
-                                                      <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed', isBlocked)}>Completed</DropdownMenuItem>
-                                                      <DropdownMenuSeparator />
-                                                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
-                                                  </DropdownMenuContent>
-                                                  </DropdownMenu>
-                                              </div>
-                                              <Separator className="my-2"/>
-                                              <TaskComments taskId={task.id} />
-                                          </Card>
-                                        )
-                                      }) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
+                                      {projectTasks.length > 0 ? projectTasks.map(task => <TaskCard key={task.id} task={task} allTasks={tasks}/>) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
                                   </div>
                                   <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(project.id)}>
                                       <PlusCircle className="mr-2 h-4 w-4" /> Add Task
@@ -632,14 +596,13 @@ export default function ProjectManagementPage() {
                           </CardFooter>
                           </Card>
                       )
-                      })}
-                  </div>
+                      })
                   ) : (
-                  <Card className="flex flex-col items-center justify-center py-20 mt-4">
+                  <Card className="flex flex-col items-center justify-center py-20 mt-4 xl:col-span-3">
                       <CardHeader><CardTitle>No projects found with status "{filter}"</CardTitle><CardDescription>Try selecting a different filter.</CardDescription></CardHeader>
                   </Card>
                   )}
-                </>
+                </div>
             </TabsContent>
             <TabsContent value="timeline" className="mt-4">
                 <ProjectGanttChart projects={projects} />
@@ -849,5 +812,7 @@ export default function ProjectManagementPage() {
     </>
   );
 }
+
+    
 
     
