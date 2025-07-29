@@ -11,7 +11,9 @@ const getStatusColor = (status: UserStatus) => {
     switch (status) {
         case 'Active': return 'bg-green-400';
         case 'Away': return 'bg-amber-400';
+        case 'In Meeting': return 'bg-purple-400';
         case 'DND': return 'bg-red-500';
+        case 'Out of Office':
         case 'Offline':
         default: return 'bg-muted-foreground/50';
     }

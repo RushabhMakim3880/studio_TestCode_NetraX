@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, User, Circle, UserCheck, Coffee, CircleOff, MicOff } from 'lucide-react';
+import { LogOut, Settings, User, Circle, UserCheck, Coffee, MicOff, Briefcase, Plane } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth, type UserStatus } from '@/hooks/use-auth';
 import Link from 'next/link';
@@ -26,8 +26,10 @@ import { Breadcrumb } from './breadcrumb';
 const userStatuses: { name: UserStatus, icon: React.FC<any> }[] = [
     { name: 'Active', icon: UserCheck },
     { name: 'Away', icon: Coffee },
+    { name: 'In Meeting', icon: Briefcase },
     { name: 'DND', icon: MicOff },
-    { name: 'Offline', icon: CircleOff },
+    { name: 'Out of Office', icon: Plane },
+    { name: 'Offline', icon: Circle },
 ];
 
 export function AppHeader() {

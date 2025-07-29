@@ -9,7 +9,7 @@ import { DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboard-cards';
 import { defaultPageSettings, type PageSettings } from '@/components/settings/page-settings-manager';
 import { defaultUserSettings, type UserSettings } from '@/services/user-settings-service';
 
-export type UserStatus = 'Active' | 'Away' | 'In Meeting' | 'Offline' | 'DND';
+export type UserStatus = 'Active' | 'Away' | 'In Meeting' | 'Out of Office' | 'DND' | 'Offline';
 
 export type User = {
   username: string;
