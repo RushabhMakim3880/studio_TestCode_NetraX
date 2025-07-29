@@ -16,55 +16,77 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { LayoutGrid, Plus, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
-import { ALL_AVAILABLE_CARDS, DashboardCardInfo } from '@/lib/dashboard-cards';
+import { ALL_AVAILABLE_CARDS, DashboardCardInfo, AVAILABLE_WIDGET_CARDS, AVAILABLE_SHORTCUT_CARDS } from '@/lib/dashboard-cards';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
+import { Card } from '../ui/card';
+import { cn } from '@/lib/utils';
 
 export function DashboardLayoutManager() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [visibleCardIds, setVisibleCardIds] = useState<string[]>([]);
+  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   
   useEffect(() => {
     if (user?.dashboardLayout) {
-      setVisibleCardIds(user.dashboardLayout);
+      setSelectedCardIds(user.dashboardLayout);
     }
-  }, [user?.dashboardLayout]);
+  }, [user?.dashboardLayout, isModalOpen]);
 
-  const handleAddCard = (cardId: string) => {
-    if (!visibleCardIds.includes(cardId)) {
-      setVisibleCardIds(prev => [...prev, cardId]);
+  const handleCardToggle = (cardId: string, isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedCardIds(prev => [...prev, cardId]);
+    } else {
+      setSelectedCardIds(prev => prev.filter(id => id !== cardId));
     }
-  };
-  
-  const handleRemoveCard = (cardId: string) => {
-      setVisibleCardIds(prev => prev.filter(id => id !== cardId));
-  }
-
-  const moveCard = (cardId: string, direction: 'up' | 'down') => {
-    const index = visibleCardIds.indexOf(cardId);
-    if (index === -1) return;
-    
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= visibleCardIds.length) return;
-    
-    const newOrder = [...visibleCardIds];
-    const temp = newOrder[index];
-    newOrder[index] = newOrder[newIndex];
-    newOrder[newIndex] = temp;
-    
-    setVisibleCardIds(newOrder);
   };
 
   const handleSave = () => {
     if (user) {
-      updateUser(user.username, { dashboardLayout: visibleCardIds });
+      updateUser(user.username, { dashboardLayout: selectedCardIds });
       toast({ title: 'Dashboard layout updated!' });
       setIsModalOpen(false);
     }
   };
   
-  const visibleCards = visibleCardIds.map(id => ALL_AVAILABLE_CARDS.find(card => card.id === id)).filter(Boolean) as DashboardCardInfo[];
-  const availableCards = ALL_AVAILABLE_CARDS.filter(card => !visibleCardIds.includes(card.id));
+  const WidgetCardToggle = ({ card, isSelected }: { card: DashboardCardInfo, isSelected: boolean }) => {
+      const Icon = card.icon;
+      return (
+          <Card className={cn("p-4 transition-all", isSelected ? "border-accent/50 bg-accent/10" : "border-border")}>
+              <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                      <Icon className="h-5 w-5 shrink-0 text-accent"/>
+                      <div>
+                        <p className="font-semibold">{card.title}</p>
+                        <p className="text-xs text-muted-foreground">{card.description}</p>
+                      </div>
+                  </div>
+                   <Switch 
+                    checked={isSelected} 
+                    onCheckedChange={(checked) => handleCardToggle(card.id, checked)}
+                   />
+              </div>
+          </Card>
+      )
+  };
+
+  const ShortcutCardToggle = ({ card, isSelected }: { card: DashboardCardInfo, isSelected: boolean }) => {
+      const Icon = card.icon;
+      return (
+           <div className={cn("flex items-center justify-between p-3 rounded-md transition-colors", isSelected ? "bg-primary/20" : "")}>
+                <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-muted-foreground"/>
+                    <span className="text-sm font-medium">{card.title}</span>
+                </div>
+                <Switch 
+                    checked={isSelected} 
+                    onCheckedChange={(checked) => handleCardToggle(card.id, checked)}
+                />
+           </div>
+      )
+  };
+
 
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -78,52 +100,27 @@ export function DashboardLayoutManager() {
         <DialogHeader>
           <DialogTitle>Customize Dashboard Layout</DialogTitle>
           <DialogDescription>
-            Add, remove, and reorder widgets to create your ideal dashboard view.
+            Select the widgets and shortcuts you want to display on your dashboard. The order of selection will be preserved.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 grid md:grid-cols-2 gap-8 h-[60vh]">
-            <div>
-                <h3 className="font-semibold mb-2">Visible Widgets</h3>
-                <ScrollArea className="h-full border rounded-md p-2">
-                    <div className="space-y-2">
-                        {visibleCards.map((card, index) => {
-                            const Icon = card.icon;
-                            return (
-                                <div key={card.id} className="flex items-center gap-2 p-2 rounded-md bg-primary/10">
-                                    <Icon className="h-5 w-5 shrink-0" />
-                                    <div className="flex-grow">
-                                        <p className="font-semibold text-sm">{card.title}</p>
-                                        <p className="text-xs text-muted-foreground line-clamp-1">{card.description}</p>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCard(card.id, 'up')} disabled={index === 0}><ArrowUp className="h-4 w-4"/></Button>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCard(card.id, 'down')} disabled={index === visibleCards.length - 1}><ArrowDown className="h-4 w-4"/></Button>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveCard(card.id)}><Trash2 className="h-4 w-4"/></Button>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                        {visibleCards.length === 0 && <p className="text-sm text-center text-muted-foreground py-10">Add widgets from the right.</p>}
+            <div className="space-y-3">
+                <h3 className="font-semibold">Widgets</h3>
+                <ScrollArea className="h-full pr-4 -mr-4">
+                    <div className="space-y-3">
+                        {AVAILABLE_WIDGET_CARDS.map((card) => (
+                           <WidgetCardToggle key={card.id} card={card} isSelected={selectedCardIds.includes(card.id)} />
+                        ))}
                     </div>
                 </ScrollArea>
             </div>
-             <div>
-                <h3 className="font-semibold mb-2">Available Widgets</h3>
-                <ScrollArea className="h-full border rounded-md p-2">
+             <div className="space-y-3">
+                <h3 className="font-semibold">Shortcut Cards</h3>
+                <ScrollArea className="h-full pr-4 -mr-4">
                     <div className="space-y-2">
-                    {availableCards.map(card => {
-                        const Icon = card.icon;
-                        return (
-                        <div key={card.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-primary/20">
-                           <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
-                           <div className="flex-grow">
-                             <p className="font-semibold text-sm">{card.title}</p>
-                             <p className="text-xs text-muted-foreground line-clamp-1">{card.description}</p>
-                           </div>
-                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleAddCard(card.id)}><Plus className="h-4 w-4"/></Button>
-                        </div>
-                        );
-                    })}
+                        {AVAILABLE_SHORTCUT_CARDS.map((card) => (
+                            <ShortcutCardToggle key={card.id} card={card} isSelected={selectedCardIds.includes(card.id)} />
+                        ))}
                     </div>
                 </ScrollArea>
             </div>
