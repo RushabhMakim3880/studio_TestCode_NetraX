@@ -124,7 +124,7 @@ export function WorkflowGenerator() {
 
         // Add Step Title
         pdf.setFontSize(16);
-        const stepTitle = `Step ${i + 1}: ${step.description.split('\n')[0]}`;
+        const stepTitle = `Step ${i + 1}: ${step.description.split('\\n')[0]}`;
         pdf.text(stepTitle, margin, y);
         y += 8;
 
@@ -154,7 +154,7 @@ export function WorkflowGenerator() {
         y += imgHeight + 10;
       }
 
-      pdf.save(`${aiSummary.title.replace(/\s/g, '_').toLowerCase()}.pdf`);
+      pdf.save(`${aiSummary.title.replace(/\\s/g, '_').toLowerCase()}.pdf`);
 
     } catch (error) {
       console.error("PDF Generation failed:", error);
