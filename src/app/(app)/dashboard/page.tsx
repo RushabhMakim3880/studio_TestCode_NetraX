@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { AVAILABLE_WIDGET_CARDS, getShortcutCardInfo } from '@/lib/dashboard-cards';
+import { ALL_AVAILABLE_CARDS } from '@/lib/dashboard-cards';
 import { DashboardLayoutManager } from '@/components/dashboard/dashboard-layout-manager';
 import { LayoutGrid } from 'lucide-react';
 import { ShortcutCard } from '@/components/dashboard/shortcut-card';
@@ -16,21 +16,28 @@ export default function DashboardPage() {
   
   const visibleCardIds = user.dashboardLayout || [];
   
-  // Define chart IDs to be excluded
   const chartIds = ['project-progress', 'task-status', 'user-roles', 'user-performance', 'threat-intel'];
 
-  // Filter for widgets that are NOT charts and NOT the activity feed
-  const mainWidgets = AVAILABLE_WIDGET_CARDS.filter(card => 
-    visibleCardIds.includes(card.id) && 
-    !card.id.startsWith('shortcut-') && 
+  // Filter for standard widgets, excluding charts, shortcuts, and the activity feed.
+  const mainWidgets = ALL_AVAILABLE_CARDS.filter(card => 
+    visibleCardIds.includes(card.id) &&
+    !card.id.startsWith('shortcut-') &&
     card.id !== 'activity-feed' &&
     !chartIds.includes(card.id)
   );
-  
-  // Isolate the activity feed widget
-  const activityFeedWidget = AVAILABLE_WIDGET_CARDS.find(card => 
+
+  // Filter specifically for shortcut cards.
+  const shortcutWidgets = ALL_AVAILABLE_CARDS.filter(card =>
+    visibleCardIds.includes(card.id) &&
+    card.id.startsWith('shortcut-')
+  );
+
+  // Isolate the activity feed widget to place it at the bottom.
+  const activityFeedWidget = ALL_AVAILABLE_CARDS.find(card => 
     visibleCardIds.includes(card.id) && card.id === 'activity-feed'
   );
+
+  const hasContent = mainWidgets.length > 0 || shortcutWidgets.length > 0 || activityFeedWidget;
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -42,9 +49,9 @@ export default function DashboardPage() {
         <DashboardLayoutManager />
       </div>
       
-      {mainWidgets.length > 0 || activityFeedWidget ? (
+      {hasContent ? (
          <div className="space-y-6">
-            {/* Main grid for widgets */}
+            {/* Main grid for standard widgets */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                  {mainWidgets.map(card => {
                     const CardComponent = card.component;
@@ -55,6 +62,15 @@ export default function DashboardPage() {
                     );
                  })}
             </div>
+
+            {/* Grid for shortcut cards */}
+            {shortcutWidgets.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {shortcutWidgets.map(card => (
+                       card.module ? <ShortcutCard key={card.id} module={card.module} /> : null
+                    ))}
+                </div>
+            )}
 
             {/* Activity Feed at the bottom */}
             {activityFeedWidget && activityFeedWidget.component && (

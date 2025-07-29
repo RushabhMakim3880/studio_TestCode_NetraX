@@ -105,36 +105,6 @@ export const AVAILABLE_SHORTCUT_CARDS: DashboardCardInfo[] = APP_MODULES
   
 export const ALL_AVAILABLE_CARDS = [...AVAILABLE_WIDGET_CARDS, ...AVAILABLE_SHORTCUT_CARDS];
 
-// Helper function to get shortcut card info by ID
-export const getShortcutCardInfo = (id: string, modules: Module[]): DashboardCardInfo | null => {
-    if (!id.startsWith('shortcut-')) return null;
-
-    const moduleName = id.replace('shortcut-', '').replace(/-/g, ' ');
-
-    const findModule = (mods: Module[]): Module | undefined => {
-        for (const mod of mods) {
-            const normalizedModuleName = mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            const normalizedTargetName = moduleName.replace(/\s+/g, '-');
-            if (normalizedModuleName === normalizedTargetName) return mod;
-            if (mod.subModules) {
-                const found = findModule(mod.subModules);
-                if (found) return found;
-            }
-        }
-    };
-    
-    const module = findModule(modules);
-    if (!module) return null;
-
-    return {
-        id,
-        title: module.name,
-        description: `Shortcut to the ${module.name} page.`,
-        icon: module.icon,
-        module,
-    };
-};
-
 export const DEFAULT_DASHBOARD_LAYOUT = [
     'system-info',
     'network-status',
