@@ -95,12 +95,12 @@ export function DashboardLayoutManager() {
              <div>
                 <h3 className="font-semibold mb-2">Shortcut Cards</h3>
                 <ScrollArea className="h-96">
-                    <div className="space-y-2 pr-4">
+                    <div className="space-y-4 pr-4">
                     {shortcuts.map(card => {
                         const Icon = card.icon;
                         return (
                         <div key={card.id} className="flex items-center gap-4 rounded-lg border p-3">
-                            <Switch
+                           <Switch
                                 id={card.id}
                                 checked={selectedCards.includes(card.id)}
                                 onCheckedChange={checked => handleCardToggle(card.id, !!checked)}
