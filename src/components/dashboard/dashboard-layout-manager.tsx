@@ -15,12 +15,14 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutGrid, Plus, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import { LayoutGrid, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { ALL_AVAILABLE_CARDS, DashboardCardInfo, AVAILABLE_WIDGET_CARDS, AVAILABLE_SHORTCUT_CARDS } from '@/lib/dashboard-cards';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Card } from '../ui/card';
 import { cn } from '@/lib/utils';
+import { Trash2 } from 'lucide-react';
+
 
 export function DashboardLayoutManager() {
   const { user, updateUser } = useAuth();
@@ -100,10 +102,10 @@ export function DashboardLayoutManager() {
         <DialogHeader>
           <DialogTitle>Customize Dashboard Layout</DialogTitle>
           <DialogDescription>
-            Select the widgets and shortcuts you want to display on your dashboard. The order of selection will be preserved.
+            Select the widgets and shortcuts you want to display on your dashboard.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 grid md:grid-cols-2 gap-8 h-[60vh]">
+        <div className="grid md:grid-cols-2 gap-8 h-[60vh] py-4">
             <div className="space-y-3">
                 <h3 className="font-semibold">Widgets</h3>
                 <ScrollArea className="h-full pr-4 -mr-4">
