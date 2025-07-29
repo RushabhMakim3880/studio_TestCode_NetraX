@@ -72,7 +72,7 @@ export function SubdomainScanner() {
             />
             <Button type="submit" disabled={isLoading} className="w-full md:w-auto mt-2 md:mt-8">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Scan
+              Scan for Subdomains
             </Button>
           </form>
         </Form>
