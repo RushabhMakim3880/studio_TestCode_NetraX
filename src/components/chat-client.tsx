@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Users, Paperclip, Mic, StopCircle, File as FileIcon, X, AlertTriangle, Search } from 'lucide-react';
+import { Send, Users, Paperclip, Mic, StopCircle, File as FileIcon, X, AlertTriangle, Search, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { getConversationId, listenForMessages, sendTextMessage, sendFileMessage, type Message } from '@/services/chat-service';
@@ -71,6 +71,11 @@ export function ChatClient({ isPopup = false, onUserSelect, initialSelectedUser 
       setSelectedUser(user);
       if (onUserSelect) onUserSelect(user);
   }
+  
+  // Keep external selection in sync
+  useEffect(() => {
+    setSelectedUser(initialSelectedUser || null);
+  }, [initialSelectedUser]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -199,7 +204,9 @@ export function ChatClient({ isPopup = false, onUserSelect, initialSelectedUser 
     }
   }
 
-  const mainLayoutClasses = isPopup ? 'h-[60vh] md:h-[70vh]' : 'flex-grow';
+  const mainLayoutClasses = isPopup ? 'h-[60vh] md:h-[70vh] flex' : 'flex-grow flex';
+  const sidebarClasses = isPopup ? (selectedUser ? 'hidden md:flex flex-col' : 'flex flex-col w-full') : 'w-1/3 flex flex-col';
+  const mainChatAreaClasses = isPopup ? (selectedUser ? 'w-full flex flex-col' : 'hidden md:flex flex-col') : 'w-2/3 flex flex-col';
 
   if (!db) {
     return (
@@ -214,8 +221,8 @@ export function ChatClient({ isPopup = false, onUserSelect, initialSelectedUser 
   }
 
   return (
-    <Card className={cn("flex", mainLayoutClasses)}>
-      <div className="w-1/3 border-r flex flex-col">
+    <Card className={cn(mainLayoutClasses)}>
+      <div className={cn("border-r", sidebarClasses)}>
         <div className="p-4 border-b flex-shrink-0 space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Users className="h-5 w-5"/>Team Members</h2>
            <div className="relative">
@@ -229,7 +236,7 @@ export function ChatClient({ isPopup = false, onUserSelect, initialSelectedUser 
             return (
             <button key={user.username} className={cn("w-full text-left p-3 flex items-center gap-3 hover:bg-primary/20", selectedUser?.username === user.username && 'bg-primary/20')} onClick={() => selectUser(user)}>
               <Avatar className="h-9 w-9"><AvatarImage src={user.avatarUrl || ''} /><AvatarFallback>{getInitials(user.displayName)}</AvatarFallback></Avatar>
-              <div className="flex-1"><p className="font-semibold">{user.displayName}</p><p className="text-xs text-muted-foreground">{user.role}</p></div>
+              <div className="flex-1"><p className="font-semibold text-sm">{user.displayName}</p><p className="text-xs text-muted-foreground">{user.role}</p></div>
               {unreadCount > 0 && (
                 <div className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs font-bold">
                   {unreadCount}
@@ -239,45 +246,49 @@ export function ChatClient({ isPopup = false, onUserSelect, initialSelectedUser 
           )})}
         </ScrollArea>
       </div>
-      <div className="w-2/3 flex flex-col bg-primary/10">
+      <div className={cn("bg-primary/10", mainChatAreaClasses)}>
         {selectedUser && currentUser ? (
           <>
-            <div className="p-4 border-b flex items-center gap-3 bg-card flex-shrink-0">
-               <Avatar className="h-10 w-10"><AvatarImage src={selectedUser.avatarUrl || ''} /><AvatarFallback>{getInitials(selectedUser.displayName)}</AvatarFallback></Avatar>
-              <div><p className="font-semibold">{selectedUser.displayName}</p><p className="text-xs text-muted-foreground">{selectedUser.role}</p></div>
+            <div className="p-3 border-b flex items-center gap-3 bg-card flex-shrink-0">
+               {isPopup && <Button variant="ghost" size="icon" className="md:hidden" onClick={() => selectUser(null)}><ChevronLeft className="h-5 w-5"/></Button>}
+               <Avatar className="h-9 w-9"><AvatarImage src={selectedUser.avatarUrl || ''} /><AvatarFallback>{getInitials(selectedUser.displayName)}</AvatarFallback></Avatar>
+              <div><p className="font-semibold text-sm">{selectedUser.displayName}</p><p className="text-xs text-muted-foreground">{selectedUser.role}</p></div>
             </div>
             <ScrollArea className="flex-grow p-4">
               <div className="space-y-4">
                 {messages.map((msg, idx) => {
                   const fromSelf = msg.sender.username === currentUser.username;
                   return (
-                    <div key={msg.id || idx} className={cn("flex gap-3", fromSelf ? 'justify-end' : 'justify-start')}>
-                        {!fromSelf && <Avatar className="h-8 w-8"><AvatarImage src={msg.sender.avatarUrl || ''} /><AvatarFallback>{getInitials(msg.sender.displayName)}</AvatarFallback></Avatar>}
-                        <div className={cn("p-3 rounded-lg max-w-sm", fromSelf ? 'bg-accent text-accent-foreground' : 'bg-card')}>
+                    <div key={msg.id || idx} className={cn("flex gap-2 items-end", fromSelf ? 'justify-end' : 'justify-start')}>
+                        {!fromSelf && <Avatar className="h-6 w-6"><AvatarImage src={msg.sender.avatarUrl || ''} /><AvatarFallback className="text-xs">{getInitials(msg.sender.displayName)}</AvatarFallback></Avatar>}
+                        <div className={cn("p-2 rounded-lg max-w-sm", fromSelf ? 'bg-accent text-accent-foreground' : 'bg-card')}>
                             <MessageContent msg={msg} />
-                            <p className="text-xs opacity-80 mt-1 text-right">{formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true })}</p>
+                            <p className="text-[10px] opacity-70 mt-1 text-right">{formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true })}</p>
                         </div>
-                         {fromSelf && <Avatar className="h-8 w-8"><AvatarImage src={msg.sender.avatarUrl || ''} /><AvatarFallback>{getInitials(msg.sender.displayName)}</AvatarFallback></Avatar>}
+                         {fromSelf && <Avatar className="h-6 w-6"><AvatarImage src={msg.sender.avatarUrl || ''} /><AvatarFallback className="text-xs">{getInitials(msg.sender.displayName)}</AvatarFallback></Avatar>}
                     </div>
                   )
                 })}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
-            <div className="p-4 border-t bg-card flex-shrink-0">
-              <div className="relative flex items-center gap-2">
-                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                 <Button size="icon" variant="ghost" onClick={() => fileInputRef.current?.click()}><Paperclip className="h-5 w-5"/></Button>
+            <div className="p-2 border-t bg-card flex-shrink-0">
+              <div className="relative flex items-center gap-1">
+                 <Button size="icon" variant="ghost" onClick={() => fileInputRef.current?.click()}><Paperclip className="h-4 w-4"/></Button>
                  <Button size="icon" variant="ghost" onClick={handleRecordAudio}>
-                    {isRecording ? <StopCircle className="h-5 w-5 text-destructive"/> : <Mic className="h-5 w-5"/>}
+                    {isRecording ? <StopCircle className="h-4 w-4 text-destructive"/> : <Mic className="h-4 w-4"/>}
                  </Button>
-                 <Input placeholder="Type a message..." className="pr-12" value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}/>
-                 <Button size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10" onClick={handleSendMessage} disabled={!message.trim()}><Send className="h-4 w-4" /></Button>
+                 <Input placeholder="Type a message..." className="pr-10" value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}/>
+                 <Button size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleSendMessage} disabled={!message.trim()}><Send className="h-4 w-4" /></Button>
+                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
               </div>
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>Select a user to start chatting.</p></div>
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
+              <MessageSquare className="h-10 w-10 mb-2"/>
+              Select a user to start chatting.
+          </div>
         )}
       </div>
     </Card>

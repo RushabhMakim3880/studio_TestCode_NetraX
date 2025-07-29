@@ -13,9 +13,7 @@ export function ChatPopup() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const toggleChat = () => {
-    if (isOpen) {
-        setSelectedUser(null);
-    }
+    // Don't reset selected user when closing, to preserve state.
     setIsOpen(!isOpen);
   };
   
