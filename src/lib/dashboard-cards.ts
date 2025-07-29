@@ -1,4 +1,6 @@
 
+'use client';
+
 import { SystemInfo } from '@/components/dashboard/system-info';
 import { NetworkStatus } from '@/components/dashboard/network-status';
 import { UserStats } from '@/components/dashboard/user-stats';
@@ -13,9 +15,7 @@ import type { Module } from '@/lib/constants';
 import { APP_MODULES } from '@/lib/constants';
 import { TeamStatus } from '@/components/dashboard/team-status';
 import { UserPerformanceChart } from '@/components/dashboard/user-performance-chart';
-import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
 import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
-import { ThreatIntelSummary } from '@/components/dashboard/threat-intel-summary';
 import { ChatSummary } from '@/components/dashboard/chat-summary';
 
 
@@ -96,13 +96,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     className: 'xl:col-span-2',
   },
   {
-    id: 'task-status-chart',
-    title: 'Task Status Overview',
-    description: 'A donut chart showing the distribution of all tasks by their status.',
-    icon: ClipboardList,
-    component: TaskStatusChart,
-  },
-  {
     id: 'user-performance-chart',
     title: 'User Performance',
     description: 'A bar chart displaying tasks completed by each team member.',
@@ -150,6 +143,7 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
     'latest-credentials',
     'honeytrap-status',
     'todo-list',
+    'projects-bar-chart',
     'activity-feed',
     'shortcut-project-management',
     'shortcut-phishing',
