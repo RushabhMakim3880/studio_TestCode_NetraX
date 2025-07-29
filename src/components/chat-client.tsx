@@ -8,9 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Users, Paperclip, Mic, StopCircle, File as FileIcon, X, AlertTriangle } from 'lucide-react';
+import { Send, Users, Paperclip, Mic, StopCircle, File as FileIcon, X, AlertTriangle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { getConversationId, listenForMessages, sendTextMessage, sendFileMessage, type Message } from '@/services/chat-service';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -29,24 +29,72 @@ export function ChatClient() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
-   useEffect(() => {
+  const filteredTeamMembers = teamMembers.filter(u =>
+    u.username !== currentUser?.username &&
+    (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || u.username.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  
+  const updateUnreadCount = useCallback((conversationId: string, messages: Message[]) => {
+      if (!currentUser) return;
+      
+      const lastReadTimestamp = JSON.parse(localStorage.getItem(`lastRead_${conversationId}`) || '0');
+      const newMessages = messages.filter(m => m.sender.username !== currentUser.username && m.timestamp.toMillis() > lastReadTimestamp);
+      
+      const otherUser = conversationId.replace(currentUser.username, '').replace('--', '');
+      setUnreadCounts(prev => ({ ...prev, [otherUser]: newMessages.length }));
+
+  }, [currentUser]);
+
+  const markAsRead = useCallback((conversationId: string) => {
+      if (!currentUser) return;
+      localStorage.setItem(`lastRead_${conversationId}`, JSON.stringify(Date.now()));
+      const otherUser = conversationId.replace(currentUser.username, '').replace('--', '');
+      setUnreadCounts(prev => ({...prev, [otherUser]: 0 }));
+  }, [currentUser]);
+  
+  const selectUser = (user: User | null) => {
+      if(user && currentUser) {
+          const convId = getConversationId(currentUser.username, user.username);
+          markAsRead(convId);
+      }
+      setSelectedUser(user);
+  }
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    if (!currentUser || !selectedUser || !db) {
+    if (!currentUser) return;
+
+    // Set up listeners for all conversations to track unread counts
+    teamMembers.forEach(member => {
+      if (member.username === currentUser.username) return;
+      const conversationId = getConversationId(currentUser.username, member.username);
+      const unsubscribe = listenForMessages(conversationId, (newMessages) => {
+          updateUnreadCount(conversationId, newMessages);
+      });
+      return unsubscribe;
+    });
+
+    if (!selectedUser || !db) {
         setMessages([]);
         return;
     };
 
     const conversationId = getConversationId(currentUser.username, selectedUser.username);
+    markAsRead(conversationId);
     const unsubscribe = listenForMessages(conversationId, (newMessages) => {
         setMessages(newMessages);
+        markAsRead(conversationId);
     });
 
     return () => unsubscribe();
-  }, [currentUser, selectedUser]);
+  }, [currentUser, selectedUser, teamMembers, markAsRead, updateUnreadCount]);
   
   const handleSendMessage = async () => {
     if (!message.trim() || !currentUser || !selectedUser) return;
@@ -158,16 +206,27 @@ export function ChatClient() {
   return (
     <Card className="flex flex-grow">
       <div className="w-1/3 border-r flex flex-col">
-        <div className="p-4 border-b flex-shrink-0">
+        <div className="p-4 border-b flex-shrink-0 space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Users className="h-5 w-5"/>Team Members</h2>
+           <div className="relative">
+             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+             <Input placeholder="Search users..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+           </div>
         </div>
         <ScrollArea className="flex-grow">
-          {teamMembers.filter(u => u.username !== currentUser?.username).map(user => (
-            <button key={user.username} className={cn("w-full text-left p-3 flex items-center gap-3 hover:bg-primary/20", selectedUser?.username === user.username && 'bg-primary/20')} onClick={() => setSelectedUser(user)}>
+          {filteredTeamMembers.map(user => {
+            const unreadCount = unreadCounts[user.username] || 0;
+            return (
+            <button key={user.username} className={cn("w-full text-left p-3 flex items-center gap-3 hover:bg-primary/20", selectedUser?.username === user.username && 'bg-primary/20')} onClick={() => selectUser(user)}>
               <Avatar className="h-9 w-9"><AvatarImage src={user.avatarUrl || ''} /><AvatarFallback>{getInitials(user.displayName)}</AvatarFallback></Avatar>
               <div className="flex-1"><p className="font-semibold">{user.displayName}</p><p className="text-xs text-muted-foreground">{user.role}</p></div>
+              {unreadCount > 0 && (
+                <div className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs font-bold">
+                  {unreadCount}
+                </div>
+              )}
             </button>
-          ))}
+          )})}
         </ScrollArea>
       </div>
       <div className="w-2/3 flex flex-col bg-primary/10">
@@ -186,7 +245,7 @@ export function ChatClient() {
                         {!fromSelf && <Avatar className="h-8 w-8"><AvatarImage src={msg.sender.avatarUrl || ''} /><AvatarFallback>{getInitials(msg.sender.displayName)}</AvatarFallback></Avatar>}
                         <div className={cn("p-3 rounded-lg max-w-sm", fromSelf ? 'bg-accent text-accent-foreground' : 'bg-card')}>
                             <MessageContent msg={msg} />
-                            <p className="text-xs text-muted-foreground/80 mt-1 text-right">{format(msg.timestamp.toDate(), 'HH:mm')}</p>
+                            <p className="text-xs opacity-80 mt-1 text-right">{formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true })}</p>
                         </div>
                          {fromSelf && <Avatar className="h-8 w-8"><AvatarImage src={msg.sender.avatarUrl || ''} /><AvatarFallback>{getInitials(msg.sender.displayName)}</AvatarFallback></Avatar>}
                     </div>

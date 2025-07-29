@@ -8,6 +8,7 @@ import {
   onSnapshot,
   Timestamp,
   where,
+  orderBy,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import type { User } from '@/hooks/use-auth';
@@ -40,7 +41,8 @@ export const listenForMessages = (
   
   const q = query(
     collection(db, 'messages'),
-    where('conversationId', '==', conversationId)
+    where('conversationId', '==', conversationId),
+    orderBy('timestamp', 'asc')
   );
 
   return onSnapshot(q, (querySnapshot) => {
@@ -49,9 +51,7 @@ export const listenForMessages = (
       messages.push({ id: doc.id, ...doc.data() } as Message);
     });
     
-    // We now sort the messages on the client-side after receiving them.
-    messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
-    
+    // Firestore returns sorted data, no need to sort on client
     callback(messages);
   }, (error) => {
     console.error("Firestore snapshot error:", error);
