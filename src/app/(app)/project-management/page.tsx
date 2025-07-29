@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,15 +26,14 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, type User as AuthUser } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import Link from 'next/link';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { FileSystemNode } from '@/components/file-browser';
 import { ProjectGanttChart } from '@/components/project-gantt-chart';
 import { CampaignPlanner } from '@/components/campaign-planner';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { TaskCard } from '@/components/task-card';
+
 
 type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
 export type Project = {
@@ -66,7 +65,7 @@ export type Task = {
   parentTaskId?: string;
 };
 
-type Comment = {
+export type Comment = {
     id: string;
     taskId: string;
     authorName: string;
@@ -148,147 +147,6 @@ const priorityColors: { [key in TaskPriority]: string } = {
     'Medium': 'text-amber-400',
     'High': 'text-orange-500',
     'Critical': 'text-destructive',
-};
-
-function TaskComments({ taskId }: { taskId: string }) {
-    const { user: currentUser } = useAuth();
-    const { value: comments, setValue: setComments } = useLocalStorage<Comment[]>('netra-comments', []);
-    const [newComment, setNewComment] = useState('');
-
-    const taskComments = useMemo(() => {
-        return comments.filter(c => c.taskId === taskId).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    }, [comments, taskId]);
-
-    const handlePostComment = () => {
-        if (!newComment.trim() || !currentUser) return;
-        const comment: Comment = {
-            id: crypto.randomUUID(),
-            taskId,
-            authorName: currentUser.displayName,
-            authorAvatarUrl: currentUser.avatarUrl,
-            content: newComment.trim(),
-            timestamp: new Date().toISOString(),
-        };
-        setComments([...comments, comment]);
-        setNewComment('');
-    };
-
-    const getInitials = (name?: string) => {
-        if (!name) return '??';
-        return name.split(' ').map(n => n[0]).join('').toUpperCase();
-    };
-
-    return (
-        <div className="pt-2">
-            <h4 className="text-sm font-semibold mb-2">Comments</h4>
-            <div className="space-y-3">
-                {taskComments.map(comment => (
-                    <div key={comment.id} className="flex items-start gap-2">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={comment.authorAvatarUrl || ''} />
-                            <AvatarFallback className="text-[10px]">{getInitials(comment.authorName)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 bg-background/50 rounded-md p-2">
-                            <div className="flex justify-between items-center">
-                                <p className="text-xs font-bold">{comment.authorName}</p>
-                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true })}</p>
-                            </div>
-                            <p className="text-sm">{comment.content}</p>
-                        </div>
-                    </div>
-                ))}
-                 <div className="flex gap-2">
-                    <Textarea 
-                        value={newComment} 
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Add a comment... (@mention coming soon)"
-                        className="text-sm h-16"
-                    />
-                    <Button onClick={handlePostComment} size="sm">Post</Button>
-                 </div>
-            </div>
-        </div>
-    );
-}
-
-const TaskCard = ({ task, allTasks, level = 0 }: { task: Task, allTasks: Task[], level?: number }) => {
-    const { users: teamMembers } = useAuth();
-    const { toast } = useToast();
-    const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
-    const [currentProjectIdForTask, setCurrentProjectIdForTask] = useState<string | null>(null);
-
-    const getAssignee = (username?: string) => teamMembers.find(m => m.username === username);
-    const getInitials = (name?: string) => {
-        if (!name) return '??';
-        return name.split(' ').map(n => n[0]).join('').toUpperCase();
-    };
-    const getIsBlocked = (task: Task): boolean => {
-        if (!task.dependsOn || task.dependsOn.length === 0) return false;
-        return task.dependsOn.some(depId => {
-            const dependentTask = allTasks.find(t => t.id === depId);
-            return dependentTask && dependentTask.status !== 'Completed';
-        });
-    }
-
-    const handleAddTaskClick = (projectId: string, parentTaskId?: string) => {
-        setEditingTask(null);
-        setCurrentProjectIdForTask(projectId);
-        // I'll leave the form handling in the main component to avoid prop drilling setValue
-    }
-
-    const isBlocked = getIsBlocked(task);
-    const assignee = getAssignee(task.assignedTo);
-    const subTasks = allTasks.filter(t => t.parentTaskId === task.id);
-    
-    return (
-        <div style={{ marginLeft: `${level * 1}rem`}} className="space-y-2">
-            <Card className="p-3 bg-background/50">
-                <div className="flex items-start justify-between text-sm">
-                    <div className="flex-grow">
-                        <div className="flex items-center gap-2">
-                            {isBlocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : taskStatusIcons[task.status]}
-                            <span className={`font-medium ${isBlocked ? 'text-muted-foreground line-through' : ''}`}>{task.description}</span>
-                            <Badge variant="outline">{task.type}</Badge>
-                        </div>
-                        <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
-                          <div className="flex items-center gap-4">
-                              <TooltipProvider><Tooltip><TooltipTrigger>
-                                  <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
-                              </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
-                              {assignee && (
-                                  <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                  <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
-                                  </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
-                              )}
-                          </div>
-                        </div>
-                    </div>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
-                             <DropdownMenuItem onClick={() => { /* Placeholder for main component's edit handler */ }}>
-                                <Edit className="mr-2 h-4 w-4" /> Edit Task
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { /* Placeholder for main component's add sub-task handler */ }}>
-                                <CornerDownRight className="mr-2 h-4 w-4" /> Add Sub-task
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => { /* Placeholder for main component's delete handler */ }}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Task
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                </div>
-                <Separator className="my-2"/>
-                <TaskComments taskId={task.id} />
-            </Card>
-            <div className="pl-4 border-l ml-2 space-y-2">
-                {subTasks.map(subTask => <TaskCard key={subTask.id} task={subTask} allTasks={allTasks} level={level + 1} />)}
-            </div>
-        </div>
-    );
 };
 
 
@@ -465,9 +323,12 @@ export default function ProjectManagementPage() {
       setCurrentProjectIdForTask(null);
   }
 
-  const handleUpdateTaskStatus = (taskId: string, status: Task['status'], isBlocked: boolean) => {
-    if (isBlocked && status !== 'To Do') {
-        toast({ variant: 'destructive', title: 'Task Blocked', description: 'Complete all dependencies before starting this task.'});
+  const handleUpdateTaskStatus = (taskId: string, status: Task['status']) => {
+    const taskToUpdate = tasks.find(t => t.id === taskId);
+    if (!taskToUpdate) return;
+    
+    if (getIsBlocked(taskToUpdate) && status !== 'To Do') {
+        toast({ variant: 'destructive', title: 'Task Blocked', description: 'Complete all dependencies before changing status.'});
         return;
     }
     const newTasks = tasks.map(t => t.id === taskId ? { ...t, status } : t);
@@ -500,14 +361,7 @@ export default function ProjectManagementPage() {
   const getTemplateName = (templateId?: string) => templates.find(t => t.id === templateId)?.name || 'N/A';
   const getFileName = (fileId?: string) => allFiles.find(f => f.id === fileId)?.name || 'N/A';
   
-  const getInitials = (name?: string) => {
-    if (!name) return '??';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
-
-  const getAssignee = (username?: string) => teamMembers.find(m => m.username === username);
-
-  const getTaskIsBlocked = (task: Task): boolean => {
+  const getIsBlocked = (task: Task): boolean => {
       if (!task.dependsOn || task.dependsOn.length === 0) return false;
       return task.dependsOn.some(depId => {
           const dependentTask = tasks.find(t => t.id === depId);
@@ -585,7 +439,17 @@ export default function ProjectManagementPage() {
                                   </AccordionTrigger>
                                   <AccordionContent className="space-y-4">
                                   <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                                      {projectTasks.length > 0 ? projectTasks.map(task => <TaskCard key={task.id} task={task} allTasks={tasks}/>) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
+                                      {projectTasks.length > 0 ? projectTasks.map(task => 
+                                          <TaskCard 
+                                            key={task.id} 
+                                            task={task} 
+                                            allTasks={tasks} 
+                                            onEdit={handleEditTaskClick} 
+                                            onDelete={handleDeleteTask} 
+                                            onAddSubtask={() => handleAddTaskClick(project.id, task.id)}
+                                            onUpdateStatus={handleUpdateTaskStatus}
+                                          />) 
+                                        : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
                                   </div>
                                   <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddTaskClick(project.id)}>
                                       <PlusCircle className="mr-2 h-4 w-4" /> Add Task
@@ -816,3 +680,4 @@ export default function ProjectManagementPage() {
     
 
     
+
