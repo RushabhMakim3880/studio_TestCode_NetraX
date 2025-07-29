@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -16,18 +15,24 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutGrid, GripVertical } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 import { ALL_AVAILABLE_CARDS } from '@/lib/dashboard-cards';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 export function DashboardLayoutManager() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Initialize with the user's layout, or an empty array if none exists.
   const [selectedCards, setSelectedCards] = useState<string[]>(user?.dashboardLayout || []);
 
   const handleCardToggle = (cardId: string, isChecked: boolean) => {
     setSelectedCards(prev =>
-      isChecked ? [...prev, cardId] : prev.filter(id => id !== cardId)
+      isChecked
+        ? [...prev, cardId] // Add to the end of the array
+        : prev.filter(id => id !== cardId) // Remove from the array
     );
   };
 
@@ -56,7 +61,7 @@ export function DashboardLayoutManager() {
         <DialogHeader>
           <DialogTitle>Customize Dashboard Layout</DialogTitle>
           <DialogDescription>
-            Select the widgets and shortcuts you want to display on your dashboard.
+            Select the widgets and shortcuts you want to display on your dashboard. The order of selection will be preserved.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 grid md:grid-cols-2 gap-8">
@@ -68,17 +73,17 @@ export function DashboardLayoutManager() {
                         const Icon = card.icon;
                         return (
                         <div key={card.id} className="flex items-start gap-4 rounded-lg border p-4">
-                            <Checkbox
-                            id={card.id}
-                            checked={selectedCards.includes(card.id)}
-                            onCheckedChange={checked => handleCardToggle(card.id, !!checked)}
-                            className="mt-1"
+                            <Switch
+                                id={card.id}
+                                checked={selectedCards.includes(card.id)}
+                                onCheckedChange={checked => handleCardToggle(card.id, !!checked)}
+                                className="mt-1"
                             />
                             <div className="grid gap-1">
-                            <label htmlFor={card.id} className="font-semibold flex items-center gap-2 cursor-pointer">
+                            <Label htmlFor={card.id} className="font-semibold flex items-center gap-2 cursor-pointer">
                                 <Icon className="h-4 w-4" />
                                 {card.title}
-                            </label>
+                            </Label>
                             <p className="text-sm text-muted-foreground">{card.description}</p>
                             </div>
                         </div>
@@ -95,15 +100,15 @@ export function DashboardLayoutManager() {
                         const Icon = card.icon;
                         return (
                         <div key={card.id} className="flex items-center gap-4 rounded-lg border p-3">
-                            <Checkbox
-                            id={card.id}
-                            checked={selectedCards.includes(card.id)}
-                            onCheckedChange={checked => handleCardToggle(card.id, !!checked)}
+                            <Switch
+                                id={card.id}
+                                checked={selectedCards.includes(card.id)}
+                                onCheckedChange={checked => handleCardToggle(card.id, !!checked)}
                             />
-                             <label htmlFor={card.id} className="font-semibold flex items-center gap-2 text-sm cursor-pointer">
+                             <Label htmlFor={card.id} className="font-semibold flex items-center gap-2 text-sm cursor-pointer">
                                 <Icon className="h-4 w-4" />
                                 {card.title}
-                            </label>
+                            </Label>
                         </div>
                         );
                     })}
