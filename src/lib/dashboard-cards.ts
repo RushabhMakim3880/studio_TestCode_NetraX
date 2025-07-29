@@ -8,10 +8,15 @@ import { LatestCredentials } from '@/components/dashboard/latest-credentials';
 import { TodoList } from '@/components/dashboard/todo-list';
 import { ActivityFeed } from '@/components/activity-feed';
 import type { LucideIcon } from 'lucide-react';
-import { Server, Wifi, Users, Briefcase, ClipboardList, UserCog, Award, Rss, History, Radio, KeyRound, ShieldAlert, ListChecks } from 'lucide-react';
+import { Server, Wifi, Users, Briefcase, ClipboardList, UserCog, Award, Rss, History, Radio, KeyRound, ShieldAlert, ListChecks, MessageSquare } from 'lucide-react';
 import type { Module } from '@/lib/constants';
 import { APP_MODULES } from '@/lib/constants';
 import { TeamStatus } from '@/components/dashboard/team-status';
+import { UserPerformanceChart } from '@/components/dashboard/user-performance-chart';
+import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
+import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
+import { ThreatIntelSummary } from '@/components/dashboard/threat-intel-summary';
+
 
 export type DashboardCardInfo = {
   id: string;
@@ -45,7 +50,7 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     icon: Users,
     component: TeamStatus,
   },
-  {
+   {
     id: 'live-c2-sessions',
     title: 'Live C2 Sessions',
     description: 'Displays currently active C2 channels and their status.',
@@ -72,7 +77,44 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'A personal scratchpad for tracking tasks and notes.',
     icon: ListChecks,
     component: TodoList,
+    className: 'md:col-span-2 xl:col-span-1',
+  },
+  {
+    id: 'projects-bar-chart',
+    title: 'Project Progress',
+    description: 'A bar chart showing the progress of active projects.',
+    icon: Briefcase,
+    component: ProjectsBarChart,
     className: 'md:col-span-2',
+  },
+  {
+    id: 'task-status-chart',
+    title: 'Task Status Overview',
+    description: 'A donut chart showing the distribution of all tasks by their status.',
+    icon: ClipboardList,
+    component: TaskStatusChart,
+  },
+  {
+    id: 'user-performance-chart',
+    title: 'User Performance',
+    description: 'A bar chart displaying tasks completed by each team member.',
+    icon: Award,
+    component: UserPerformanceChart,
+    className: 'md:col-span-3',
+  },
+   {
+    id: 'user-stats',
+    title: 'User Roles',
+    description: 'A summary of user roles and counts within the system.',
+    icon: UserCog,
+    component: UserStats,
+  },
+   {
+    id: 'threat-intel-summary',
+    title: 'Threat Intel Summary',
+    description: 'A summary of the latest critical vulnerabilities.',
+    icon: Rss,
+    component: ThreatIntelSummary,
   },
   {
     id: 'activity-feed',
@@ -107,4 +149,7 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
     'honeytrap-status',
     'todo-list',
     'activity-feed',
+    'shortcut-project-management',
+    'shortcut-phishing',
+    'shortcut-osint-investigator'
 ];

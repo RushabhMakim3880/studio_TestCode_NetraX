@@ -43,6 +43,7 @@ import {
   EyeOff,
   Radio,
   TestTube,
+  MessageSquare,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -88,6 +89,12 @@ export const APP_MODULES: Module[] = [
       { name: 'Project Management', path: '/project-management', icon: Briefcase, roles: ALL_ROLES, },
       { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },
     ],
+  },
+   {
+    name: 'Communication',
+    icon: MessageSquare,
+    path: '/chat',
+    roles: ALL_ROLES,
   },
   {
     name: 'Intelligence',
