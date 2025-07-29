@@ -11,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { MoreHorizontal, Edit, Trash2, CornerDownRight, MessageSquare, Link as LinkIcon, Lock, Flag, Circle, CircleDot, CheckCircle2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Textarea } from './ui/textarea';
 import type { Task, Comment } from '@/app/(app)/project-management/page';
 import { useLocalStorage } from '@/hooks/use-local-storage';
