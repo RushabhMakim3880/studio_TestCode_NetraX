@@ -8,11 +8,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ListChecks, Trash2, Mic, ImageUp, Plus, Edit, X } from 'lucide-react';
+import { ListChecks, Trash2, Mic, ImageUp, Plus, Edit, X, StopCircle } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Textarea } from '../ui/textarea';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 type NoteItem = {
     id: string;
@@ -29,8 +30,13 @@ export function TodoList() {
   const [editingTodo, setEditingTodo] = useState<NoteItem | null>(null);
 
   const { toast } = useToast();
-  const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  
+  // States and refs for audio recording
+  const [isAudioRecording, setIsAudioRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
 
   const todos = notes.filter(n => n.type === 'todo');
   const textNotes = notes.filter(n => n.type !== 'todo');
@@ -60,14 +66,14 @@ export function TodoList() {
       setNewNote('');
   }
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'audio' | 'image') => {
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const newItem: NoteItem = {
           id: crypto.randomUUID(),
-          type: type,
+          type: 'image',
           content: event.target?.result as string,
           timestamp: new Date().toISOString(),
         };
@@ -103,6 +109,54 @@ export function TodoList() {
     const newItems = notes.filter(todo => todo.type !== 'todo' || !todo.completed);
     setNotes(newItems);
   };
+  
+  const handleStartAudioRecording = async () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                audioChunksRef.current.push(event.data);
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const newItem: NoteItem = {
+                    id: crypto.randomUUID(),
+                    type: 'audio',
+                    content: audioUrl,
+                    timestamp: new Date().toISOString(),
+                };
+                setNotes(prev => [...prev, newItem]);
+                
+                // Clean up tracks
+                stream.getTracks().forEach(track => track.stop());
+            };
+            
+            mediaRecorderRef.current.start();
+            setIsAudioRecording(true);
+            toast({ title: 'Recording started...' });
+
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            toast({ variant: 'destructive', title: "Microphone Access Denied", description: "Please enable microphone permissions in your browser settings." });
+        }
+    } else {
+        toast({ variant: 'destructive', title: "Unsupported Browser", description: "Your browser does not support audio recording." });
+    }
+  };
+
+  const handleStopAudioRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+        setIsAudioRecording(false);
+        toast({ title: 'Recording stopped.', description: "Audio note has been saved." });
+    }
+  };
+
 
   return (
     <Card className="h-full">
@@ -187,9 +241,16 @@ export function TodoList() {
                     <Textarea placeholder="Type a note..." value={newNote} onChange={(e) => setNewNote(e.target.value)} className="h-10 resize-none"/>
                     <Button onClick={handleAddTextNote} className="h-10">Save</Button>
                     <Button type="button" variant="outline" size="icon" className="h-10 w-10" onClick={() => imageInputRef.current?.click()}><ImageUp className="h-4 w-4"/></Button>
-                    <Button type="button" variant="outline" size="icon" className="h-10 w-10" onClick={() => audioInputRef.current?.click()}><Mic className="h-4 w-4"/></Button>
-                    <Input type="file" accept="audio/*" ref={audioInputRef} onChange={(e) => handleFileChange(e, 'audio')} className="hidden"/>
-                    <Input type="file" accept="image/*" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} className="hidden"/>
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon" 
+                        className={cn("h-10 w-10", isAudioRecording && "bg-destructive text-destructive-foreground animate-pulse")}
+                        onClick={isAudioRecording ? handleStopAudioRecording : handleStartAudioRecording}
+                    >
+                      {isAudioRecording ? <StopCircle className="h-4 w-4"/> : <Mic className="h-4 w-4"/>}
+                    </Button>
+                    <Input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageFileChange} className="hidden"/>
                  </div>
             </TabsContent>
         </Tabs>
