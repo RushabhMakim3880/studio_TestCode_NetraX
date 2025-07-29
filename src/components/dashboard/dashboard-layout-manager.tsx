@@ -15,13 +15,12 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutGrid, Plus, ArrowUp, ArrowDown } from 'lucide-react';
+import { LayoutGrid, Trash2 } from 'lucide-react';
 import { ALL_AVAILABLE_CARDS, DashboardCardInfo, AVAILABLE_WIDGET_CARDS, AVAILABLE_SHORTCUT_CARDS } from '@/lib/dashboard-cards';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Card } from '../ui/card';
 import { cn } from '@/lib/utils';
-import { Trash2 } from 'lucide-react';
 
 
 export function DashboardLayoutManager() {
