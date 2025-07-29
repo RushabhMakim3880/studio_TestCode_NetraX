@@ -8,6 +8,7 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
+  where,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import type { User } from '@/hooks/use-auth';
