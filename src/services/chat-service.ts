@@ -10,7 +10,7 @@ import {
   Timestamp,
   where,
 } from 'firebase/firestore';
-import { db } from '@/services/firebase';
+import { db, storage } from '@/services/firebase';
 import type { User } from '@/hooks/use-auth';
 
 export type MessageType = 'text' | 'image' | 'audio' | 'file';
@@ -38,10 +38,12 @@ export const listenForMessages = (
   callback: (messages: Message[]) => void
 ) => {
   if (!db) return () => {}; // Return a no-op unsubscribe function if db is not available
+  
+  // The query has been simplified to remove the `orderBy` clause.
+  // This avoids the need for a composite index in Firestore.
   const q = query(
     collection(db, 'messages'),
-    where('conversationId', '==', conversationId),
-    orderBy('timestamp', 'asc')
+    where('conversationId', '==', conversationId)
   );
 
   return onSnapshot(q, (querySnapshot) => {
@@ -49,7 +51,14 @@ export const listenForMessages = (
     querySnapshot.forEach((doc) => {
       messages.push({ id: doc.id, ...doc.data() } as Message);
     });
+    
+    // We now sort the messages on the client-side after receiving them.
+    messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+    
     callback(messages);
+  }, (error) => {
+    console.error("Firestore snapshot error:", error);
+    // You could add further error handling here if needed.
   });
 };
 
