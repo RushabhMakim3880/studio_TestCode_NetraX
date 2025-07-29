@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Users, Paperclip, Mic, StopCircle, File as FileIcon, X, AlertTriangle, Search, ChevronLeft } from 'lucide-react';
+import { Send, Users, Paperclip, Mic, StopCircle, File as FileIcon, X, AlertTriangle, Search, ChevronLeft, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { getConversationId, listenForMessages, sendTextMessage, sendFileMessage, type Message } from '@/services/chat-service';
