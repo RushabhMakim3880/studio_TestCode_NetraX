@@ -12,7 +12,7 @@ import {
   or,
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db, storage } from '@/services/firebase';
 import type { User } from '@/hooks/use-auth';
 
 export type MessageType = 'text' | 'image' | 'audio' | 'file';
