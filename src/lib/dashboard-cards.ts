@@ -16,6 +16,7 @@ import { UserPerformanceChart } from '@/components/dashboard/user-performance-ch
 import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
 import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
 import { ThreatIntelSummary } from '@/components/dashboard/threat-intel-summary';
+import { ChatSummary } from '@/components/dashboard/chat-summary';
 
 
 export type DashboardCardInfo = {
@@ -70,6 +71,13 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'Alerts you if a honeypot has been triggered.',
     icon: ShieldAlert,
     component: HoneytrapStatus,
+  },
+  {
+    id: 'chat-summary',
+    title: 'Team Chat',
+    description: 'A summary of team chat and unread messages.',
+    icon: MessageSquare,
+    component: ChatSummary,
   },
   {
     id: 'todo-list',
@@ -144,6 +152,7 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
     'system-info',
     'network-status',
     'team-status',
+    'chat-summary',
     'live-c2-sessions',
     'latest-credentials',
     'honeytrap-status',
