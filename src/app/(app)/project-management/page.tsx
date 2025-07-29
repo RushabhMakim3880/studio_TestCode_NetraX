@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon, Paperclip } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon, Paperclip, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -49,7 +49,7 @@ type TaskType = 'Recon' | 'Phishing' | 'Payload' | 'Post-Exploitation' | 'Genera
 type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 type TaskStatus = 'To Do' | 'In Progress' | 'Completed';
 
-type Task = {
+export type Task = {
   id: string;
   projectId: string;
   description: string;
@@ -61,6 +61,7 @@ type Task = {
   templateId?: string;
   mitreTtp?: string;
   evidenceIds?: string[];
+  dependsOn?: string[]; // New field for dependencies
 };
 
 type Profile = { 
@@ -82,10 +83,10 @@ const initialProjects: Project[] = [
 
 const initialTasks: Task[] = [
   { id: 'TSK-001', projectId: 'PROJ-001', description: 'Initial recon on target subdomains.', status: 'Completed', type: 'Recon', priority: 'High', assignedTo: 'analyst', mitreTtp: 'T1595', evidenceIds: ['3-2'] },
-  { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001', priority: 'Medium', assignedTo: 'operator', mitreTtp: 'T1566.001' },
-  { id: 'TSK-003', projectId: 'PROJ-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload', priority: 'High' },
+  { id: 'TSK-002', projectId: 'PROJ-001', description: 'Craft phishing email template.', status: 'In Progress', type: 'Phishing', targetProfileId: 'PROF-001', templateId: 'TPL-001', priority: 'Medium', assignedTo: 'operator', mitreTtp: 'T1566.001', dependsOn: ['TSK-001'] },
+  { id: 'TSK-003', projectId: 'PROJ-001', description: 'Deploy cloned login page.', status: 'To Do', type: 'Payload', priority: 'High', dependsOn: ['TSK-002'] },
   { id: 'TSK-004', projectId: 'PROJ-002', description: 'Analyze OSINT data for key personnel.', status: 'Completed', type: 'Recon', priority: 'Medium', assignedTo: 'analyst', evidenceIds: ['3-3'] },
-  { id: 'TSK-005', projectId: 'PROJ-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload', priority: 'Critical', assignedTo: 'operator' },
+  { id: 'TSK-005', projectId: 'PROJ-002', description: 'Prepare initial access payload.', status: 'In Progress', type: 'Payload', priority: 'Critical', assignedTo: 'operator', dependsOn: ['TSK-004']},
 ];
 
 const projectSchema = z.object({
@@ -105,6 +106,7 @@ const taskSchema = z.object({
     templateId: z.string().optional(),
     mitreTtp: z.string().optional(),
     evidenceIds: z.array(z.string()).optional(),
+    dependsOn: z.array(z.string()).optional(),
 });
 
 const profileSchema = z.object({
@@ -314,7 +316,7 @@ export default function ProjectManagementPage() {
   const handleAddTaskClick = (projectId: string) => {
     setEditingTask(null);
     setCurrentProjectIdForTask(projectId);
-    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '', mitreTtp: '', evidenceIds: [] });
+    taskForm.reset({ description: '', type: 'General', priority: 'Medium', targetProfileId: '', templateId: '', mitreTtp: '', evidenceIds: [], dependsOn: [] });
     setIsTaskFormOpen(true);
   }
 
@@ -347,14 +349,22 @@ export default function ProjectManagementPage() {
       setCurrentProjectIdForTask(null);
   }
 
-
-  const handleUpdateTaskStatus = (taskId: string, status: Task['status']) => {
+  const handleUpdateTaskStatus = (taskId: string, status: Task['status'], isBlocked: boolean) => {
+    if (isBlocked && status !== 'To Do') {
+        toast({ variant: 'destructive', title: 'Task Blocked', description: 'Complete all dependencies before starting this task.'});
+        return;
+    }
     const newTasks = tasks.map(t => t.id === taskId ? { ...t, status } : t);
     updateTasks(newTasks);
   }
 
   const handleDeleteTask = (taskId: string) => {
-    updateTasks(tasks.filter(t => t.id !== taskId));
+    // Also remove this task from any other tasks that depend on it
+    const newTasks = tasks.filter(t => t.id !== taskId).map(t => ({
+        ...t,
+        dependsOn: t.dependsOn?.filter(depId => depId !== taskId)
+    }));
+    updateTasks(newTasks);
     toast({ title: 'Task removed.' });
   }
 
@@ -383,6 +393,14 @@ export default function ProjectManagementPage() {
 
   const getAssignee = (username?: string) => teamMembers.find(m => m.username === username);
 
+  const getTaskIsBlocked = (task: Task): boolean => {
+      if (!task.dependsOn || task.dependsOn.length === 0) return false;
+      return task.dependsOn.some(depId => {
+          const dependentTask = tasks.find(t => t.id === depId);
+          return dependentTask && dependentTask.status !== 'Completed';
+      });
+  }
+
   return (
     <>
       <div className="flex flex-col gap-6">
@@ -394,7 +412,7 @@ export default function ProjectManagementPage() {
         <Tabs defaultValue="projects" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="planner">AI Project Planner</TabsTrigger>
-                <TabsTrigger value="projects">Projects &amp; Tasks</TabsTrigger>
+                <TabsTrigger value="projects">Projects & Tasks</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline View</TabsTrigger>
             </TabsList>
             <TabsContent value="planner" className="mt-4">
@@ -415,7 +433,7 @@ export default function ProjectManagementPage() {
                         New Project
                     </Button>
                 </div>
-                <>
+                 <>
                   {filteredProjects.length > 0 ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
                       {filteredProjects.map((project) => {
@@ -456,12 +474,13 @@ export default function ProjectManagementPage() {
                                   <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                                       {projectTasks.length > 0 ? projectTasks.map(task => {
                                         const assignee = getAssignee(task.assignedTo);
+                                        const isBlocked = getTaskIsBlocked(task);
                                         return (
                                           <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
                                               <div className="flex-grow">
                                                   <div className="flex items-center gap-2">
-                                                      {taskStatusIcons[task.status]}
-                                                      <span className="font-medium">{task.description}</span>
+                                                      {isBlocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : taskStatusIcons[task.status]}
+                                                      <span className={`font-medium ${isBlocked ? 'text-muted-foreground line-through' : ''}`}>{task.description}</span>
                                                       <Badge variant="outline">{task.type}</Badge>
                                                   </div>
                                                   <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
@@ -498,6 +517,16 @@ export default function ProjectManagementPage() {
                                                               </div>
                                                           </div>
                                                       )}
+                                                      {task.dependsOn && task.dependsOn.length > 0 && (
+                                                          <div className="flex items-start gap-1.5 pt-1">
+                                                              <Lock className="h-3 w-3 mt-0.5" />
+                                                              <div className="flex flex-wrap gap-1">
+                                                                  {task.dependsOn.map(id => (
+                                                                      <Badge key={id} variant="outline" className="font-mono text-xs">{tasks.find(t=>t.id===id)?.description.substring(0,15)}...</Badge>
+                                                                  ))}
+                                                              </div>
+                                                          </div>
+                                                      )}
                                                   </div>
                                               </div>
                                               <DropdownMenu>
@@ -507,9 +536,9 @@ export default function ProjectManagementPage() {
                                                   <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
                                                   <DropdownMenuSeparator />
                                                   <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do')}>To Do</DropdownMenuItem>
-                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
-                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed')}>Completed</DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do', false)}>To Do</DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress', isBlocked)}>In Progress</DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed', isBlocked)}>Completed</DropdownMenuItem>
                                                   <DropdownMenuSeparator />
                                                   <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
                                               </DropdownMenuContent>
@@ -637,27 +666,61 @@ export default function ProjectManagementPage() {
                             <Command>
                                 <CommandInput placeholder="Search files..." />
                                 <CommandEmpty>No files found.</CommandEmpty>
-                                <CommandGroup>
-                                    <CommandList>
-                                        {allFiles.filter(f => f.type === 'file').map((file) => (
-                                            <CommandItem
-                                                key={file.id}
-                                                value={file.name}
-                                                onSelect={() => {
-                                                    const selected = field.value || [];
-                                                    const isSelected = selected.includes(file.id);
-                                                    field.onChange(isSelected ? selected.filter(id => id !== file.id) : [...selected, file.id]);
-                                                }}
-                                            >
-                                                <CheckCircle2 className={cn("mr-2 h-4 w-4", (field.value || []).includes(file.id) ? "opacity-100" : "opacity-0")}/>
-                                                {file.name}
-                                            </CommandItem>
-                                        ))}
-                                    </CommandList>
-                                </CommandGroup>
+                                <CommandList>
+                                    {allFiles.filter(f => f.type === 'file').map((file) => (
+                                        <CommandItem
+                                            key={file.id}
+                                            value={file.name}
+                                            onSelect={() => {
+                                                const selected = field.value || [];
+                                                const isSelected = selected.includes(file.id);
+                                                field.onChange(isSelected ? selected.filter(id => id !== file.id) : [...selected, file.id]);
+                                            }}
+                                        >
+                                            <CheckCircle2 className={`mr-2 h-4 w-4 ${(field.value || []).includes(file.id) ? "opacity-100" : "opacity-0"}`}/>
+                                            {file.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandList>
                             </Command>
                         </PopoverContent>
                         </Popover>
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={taskForm.control}
+                    name="dependsOn"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Dependencies</FormLabel>
+                        <Popover>
+                        <PopoverTrigger asChild>
+                             <Button variant="outline" role="combobox" className="w-full justify-between">
+                                {field.value && field.value.length > 0 ? `${field.value.length} task(s) selected` : "Select prerequisite tasks..."}
+                                <Lock className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                           <Command>
+                            <CommandInput placeholder="Search tasks..." />
+                            <CommandEmpty>No tasks found.</CommandEmpty>
+                            <CommandList>
+                               {tasks.filter(t => t.projectId === currentProjectIdForTask && t.id !== editingTask?.id).map((task) => (
+                                    <CommandItem key={task.id} value={task.description} onSelect={() => {
+                                        const selected = field.value || [];
+                                        const isSelected = selected.includes(task.id);
+                                        field.onChange(isSelected ? selected.filter(id => id !== task.id) : [...selected, task.id]);
+                                    }}>
+                                        <CheckCircle2 className={`mr-2 h-4 w-4 ${(field.value || []).includes(task.id) ? "opacity-100" : "opacity-0"}`}/>
+                                        {task.description}
+                                    </CommandItem>
+                                ))}
+                            </CommandList>
+                           </Command>
+                        </PopoverContent>
+                        </Popover>
+                        <FormMessage />
                     </FormItem>
                     )}
                 />
@@ -710,3 +773,4 @@ export default function ProjectManagementPage() {
     </>
   );
 }
+
