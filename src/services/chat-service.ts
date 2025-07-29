@@ -73,12 +73,12 @@ export const sendTextMessage = async (
         conversationId,
         sender: {
         username: sender.username,
-        displayName: sender.displayName,
+        displayName: sender.displayName || sender.username,
         avatarUrl: sender.avatarUrl || null,
         },
         receiver: {
             username: receiver.username,
-            displayName: receiver.displayName,
+            displayName: receiver.displayName || receiver.username,
             avatarUrl: receiver.avatarUrl || null,
         },
         type: 'text',
@@ -117,8 +117,8 @@ export const sendFileMessage = (
 
                 await addDoc(collection(db, 'messages'), {
                     conversationId,
-                     sender: { username: sender.username, displayName: sender.displayName, avatarUrl: sender.avatarUrl || null },
-                     receiver: { username: receiver.username, displayName: receiver.displayName, avatarUrl: receiver.avatarUrl || null },
+                     sender: { username: sender.username, displayName: sender.displayName || sender.username, avatarUrl: sender.avatarUrl || null },
+                     receiver: { username: receiver.username, displayName: receiver.displayName || receiver.username, avatarUrl: receiver.avatarUrl || null },
                     type: fileType,
                     content: dataUrl,
                     fileName: file.name,
