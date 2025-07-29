@@ -67,8 +67,8 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
   },
   {
     id: 'todo-list',
-    title: 'Personal To-Do List',
-    description: 'A personal scratchpad for tracking your own tasks.',
+    title: 'Personal Scratchpad',
+    description: 'A personal scratchpad for tracking tasks and notes.',
     icon: ListChecks,
     component: TodoList,
     className: 'md:col-span-2',
