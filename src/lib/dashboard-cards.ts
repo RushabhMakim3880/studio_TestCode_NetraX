@@ -2,14 +2,13 @@
 import { SystemInfo } from '@/components/dashboard/system-info';
 import { NetworkStatus } from '@/components/dashboard/network-status';
 import { UserStats } from '@/components/dashboard/user-stats';
-import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
-import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
-import { UserRoleChart } from '@/components/dashboard/user-role-chart';
-import { UserPerformanceChart } from '@/components/dashboard/user-performance-chart';
-import { ThreatIntelSummary } from '@/components/dashboard/threat-intel-summary';
+import { LiveC2Sessions } from '@/components/dashboard/live-c2-sessions';
+import { HoneytrapStatus } from '@/components/dashboard/honeytrap-status';
+import { LatestCredentials } from '@/components/dashboard/latest-credentials';
+import { TodoList } from '@/components/dashboard/todo-list';
 import { ActivityFeed } from '@/components/activity-feed';
 import type { LucideIcon } from 'lucide-react';
-import { Server, Wifi, Users, Briefcase, ClipboardList, UserCog, Award, Rss, History } from 'lucide-react';
+import { Server, Wifi, Users, Briefcase, ClipboardList, UserCog, Award, Rss, History, Radio, KeyRound, ShieldAlert, ListChecks } from 'lucide-react';
 import type { Module } from '@/lib/constants';
 import { APP_MODULES } from '@/lib/constants';
 
@@ -34,52 +33,44 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
   {
     id: 'network-status',
     title: 'Network Status',
-    description: 'Shows live network connectivity and speed data.',
+    description: 'Shows live network connectivity and geo-location data.',
     icon: Wifi,
     component: NetworkStatus,
   },
   {
     id: 'user-stats',
     title: 'User Stats',
-    description: 'Provides a quick link to user management.',
+    description: 'Provides a quick overview of user roles and a link to management.',
     icon: Users,
     component: UserStats,
   },
   {
-    id: 'threat-intel',
-    title: 'Threat Intelligence Summary',
-    description: 'A summary of the latest high-priority CVEs.',
-    icon: Rss,
-    component: ThreatIntelSummary,
+    id: 'live-c2-sessions',
+    title: 'Live C2 Sessions',
+    description: 'Displays currently active C2 channels and their status.',
+    icon: Radio,
+    component: LiveC2Sessions,
   },
   {
-    id: 'project-progress',
-    title: 'Active Project Progress',
-    description: 'Bar chart showing the progress of active projects.',
-    icon: Briefcase,
-    component: ProjectsBarChart,
-    className: 'md:col-span-2',
+    id: 'latest-credentials',
+    title: 'Latest Credentials',
+    description: 'A feed of the most recently captured credentials.',
+    icon: KeyRound,
+    component: LatestCredentials,
   },
   {
-    id: 'task-status',
-    title: 'Task Status',
-    description: 'Pie chart of all tasks by their current status.',
-    icon: ClipboardList,
-    component: TaskStatusChart,
+    id: 'honeytrap-status',
+    title: 'Honeytrap Status',
+    description: 'Alerts you if a honeypot has been triggered.',
+    icon: ShieldAlert,
+    component: HoneytrapStatus,
   },
   {
-    id: 'user-roles',
-    title: 'User Roles',
-    description: 'Pie chart showing the breakdown of user roles.',
-    icon: UserCog,
-    component: UserRoleChart,
-  },
-  {
-    id: 'user-performance',
-    title: 'User Performance',
-    description: 'Chart of completed tasks per user.',
-    icon: Award,
-    component: UserPerformanceChart,
+    id: 'todo-list',
+    title: 'Personal To-Do List',
+    description: 'A personal scratchpad for tracking your own tasks.',
+    icon: ListChecks,
+    component: TodoList,
     className: 'md:col-span-2',
   },
   {
@@ -88,6 +79,7 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'A live feed of recent user actions on the platform.',
     icon: History,
     component: ActivityFeed,
+    className: 'md:col-span-3'
   },
 ];
 
@@ -108,10 +100,10 @@ export const ALL_AVAILABLE_CARDS = [...AVAILABLE_WIDGET_CARDS, ...AVAILABLE_SHOR
 export const DEFAULT_DASHBOARD_LAYOUT = [
     'system-info',
     'network-status',
-    'threat-intel',
-    'project-progress',
-    'task-status',
+    'user-stats',
+    'live-c2-sessions',
+    'latest-credentials',
+    'honeytrap-status',
+    'todo-list',
     'activity-feed',
-    'user-roles',
-    'user-performance'
 ];
