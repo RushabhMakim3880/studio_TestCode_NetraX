@@ -40,7 +40,7 @@ export default function RatPage() {
   
   useEffect(() => {
     channelRef.current = new BroadcastChannel('netrax_c2_channel');
-
+    
     const handleC2Message = (event: MessageEvent) => {
       const newEvent = event.data;
       if (!newEvent.sessionId) return;
@@ -187,7 +187,7 @@ export default function RatPage() {
         </div>
 
         <div className="space-y-6">
-            <SessionHistory sessions={sessionsMap} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
+            <SessionHistory sessions={sessions} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
             <Card>
                 <CardHeader>
                    <div className="flex justify-between items-center">

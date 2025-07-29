@@ -159,14 +159,6 @@ export const APP_MODULES: Module[] = [
       { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },
     ],
   },
-  {
-    name: 'Development',
-    icon: TestTube,
-    roles: ALL_ROLES, 
-    subModules: [
-      { name: 'Link Tester', path: '/test', icon: TestTube, roles: ALL_ROLES },
-    ],
-  },
 ];
 
 
