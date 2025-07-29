@@ -24,7 +24,7 @@ export function Logo({ className }: { className?: string }) {
     }
   }, []);
   
-  const appName = profile?.name || 'NETRA-X';
+  const appName = profile?.name || 'Synapse CDE';
 
   return (
     <div className={cn('flex items-center gap-2 text-foreground', className)}>
@@ -39,11 +39,15 @@ export function Logo({ className }: { className?: string }) {
             xmlns="http://www.w3.org/2000/svg"
             className="text-accent"
         >
-            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M2 7L12 12L22 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12 22V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M17 9.5L7 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M7 9.5L17 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M12 9V2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M12 21.5V15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M16.732 15.75L19.5 20.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M4.5 3.5L7.26795 8.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M16.732 8.25L19.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M4.5 20.5L7.26795 15.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M19.5 12H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M8 12H4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       )}
       <span className="font-headline text-lg font-semibold tracking-wider group-data-[collapsible=icon]:hidden">

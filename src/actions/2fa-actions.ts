@@ -4,7 +4,7 @@
 import { authenticator } from 'otplib';
 import { z } from 'zod';
 
-const APP_NAME = 'NETRA-X';
+const APP_NAME = 'SynapseCDE';
 
 export async function generate2faSecret(username: string): Promise<{ secret: string; otpauthUrl: string }> {
   try {

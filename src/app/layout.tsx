@@ -19,8 +19,8 @@ const fontHeadline = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'NETRA-X Core',
-  description: 'Nodal Electronic Threat Reconnaissance & Attack System',
+  title: 'Synapse CDE',
+  description: 'Synaptic Cyber Defense Ecosystem',
 };
 
 export default function RootLayout({
