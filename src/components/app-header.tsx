@@ -22,6 +22,20 @@ import { useAuth, type UserStatus } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { ContextAwareTip } from './context-aware-tip';
 import { Breadcrumb } from './breadcrumb';
+import { cn } from '@/lib/utils';
+
+const getStatusColor = (status?: UserStatus) => {
+    if (!status) return 'bg-muted-foreground/50';
+    switch (status) {
+        case 'Active': return 'bg-green-400';
+        case 'Away': return 'bg-amber-400';
+        case 'In Meeting': return 'bg-purple-400';
+        case 'DND': return 'bg-red-500';
+        case 'Out of Office':
+        case 'Offline':
+        default: return 'bg-muted-foreground/50';
+    }
+}
 
 const userStatuses: { name: UserStatus, icon: React.FC<any> }[] = [
     { name: 'Active', icon: UserCheck },
@@ -69,6 +83,10 @@ export function AppHeader() {
                   {getInitials(user.displayName)}
                 </AvatarFallback>
               </Avatar>
+               <span className={cn(
+                    "absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-card",
+                    getStatusColor(user.status)
+                )} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>

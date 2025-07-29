@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth, type User, type UserStatus } from '@/hooks/use-auth';
 import { Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const getStatusColor = (status: UserStatus) => {
     switch (status) {
@@ -43,16 +44,25 @@ export function TeamStatus() {
         <ul className="space-y-4">
           {teamMembers.map((member) => (
             <li key={member.username} className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar>
-                  <AvatarImage src={member.avatarUrl || ''} />
-                  <AvatarFallback>{getInitials(member.displayName)}</AvatarFallback>
-                </Avatar>
-                <span className={cn(
-                    "absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-card",
-                    getStatusColor(member.status)
-                )} />
-              </div>
+              <TooltipProvider>
+                  <Tooltip>
+                      <TooltipTrigger>
+                          <div className="relative">
+                            <Avatar>
+                              <AvatarImage src={member.avatarUrl || ''} />
+                              <AvatarFallback>{getInitials(member.displayName)}</AvatarFallback>
+                            </Avatar>
+                            <span className={cn(
+                                "absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-card",
+                                getStatusColor(member.status)
+                            )} />
+                          </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                          <p>{member.status}</p>
+                      </TooltipContent>
+                  </Tooltip>
+              </TooltipProvider>
               <div className="flex-1">
                 <p className="font-semibold text-sm">{member.displayName}</p>
                 <p className="text-xs text-muted-foreground">{member.role}</p>
