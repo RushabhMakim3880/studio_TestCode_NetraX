@@ -24,7 +24,6 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
 import { hostTestPage } from '@/actions/host-test-page-action';
-import Link from 'next/link';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -439,9 +438,6 @@ export default function PhishingPage() {
                             <Input readOnly value={hostedUrl} className="font-mono" />
                             <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
                                 <Clipboard className="h-4 w-4" />
-                            </Button>
-                            <Button type="button" size="icon" variant="outline" asChild>
-                                <Link href={hostedUrl} target="_blank" rel="noopener noreferrer"><Globe className="h-4 w-4" /></Link>
                             </Button>
                         </div>
                     </CardContent>
