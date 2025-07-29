@@ -54,7 +54,8 @@ export function ChatClient() {
         await sendTextMessage(currentUser, selectedUser, message);
         setMessage('');
     } catch (e) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to send message.' });
+        const errorMessage = e instanceof Error ? e.message : 'Failed to send message.';
+        toast({ variant: 'destructive', title: 'Error', description: errorMessage });
     }
   };
 
@@ -66,7 +67,8 @@ export function ChatClient() {
       await sendFileMessage(currentUser, selectedUser, file, () => {}); // Progress callback not needed for data URLs
       toast({ title: "File Sent!", description: `"${file.name}" has been sent.`});
     } catch(e) {
-      toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not send the file.' });
+      const errorMessage = e instanceof Error ? e.message : 'Could not send the file.';
+      toast({ variant: 'destructive', title: 'Upload Failed', description: errorMessage });
     }
   };
   
@@ -79,15 +81,25 @@ export function ChatClient() {
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
       
       recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
-      recorder.onstop = () => {
+      
+      recorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioFile = new File([audioBlob], `voice-note-${Date.now()}.webm`, { type: 'audio/webm' });
-        handleFileChange({ target: { files: [audioFile] } } as any);
+        
+        if (!currentUser || !selectedUser) return;
+        
+        try {
+            await sendFileMessage(currentUser, selectedUser, audioFile, () => {});
+            toast({ title: "Voice Note Sent!" });
+        } catch(e) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not send the voice note.' });
+        }
+        
         stream.getTracks().forEach(track => track.stop());
       };
       
@@ -106,7 +118,7 @@ export function ChatClient() {
   
   const MessageContent = ({ msg }: { msg: Message }) => {
     const formatBytes = (bytes: number, decimals = 2) => {
-        if (bytes === 0) return '0 Bytes';
+        if (!bytes || bytes === 0) return '0 Bytes';
         const k = 1024;
         const dm = decimals < 0 ? 0 : decimals;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -137,7 +149,7 @@ export function ChatClient() {
             <div className="text-center text-muted-foreground">
                 <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
                 <h3 className="text-xl font-semibold text-foreground">Firebase Not Configured</h3>
-                <p className="mt-2">The chat feature is disabled. Please add your Firebase project<br/>configuration keys to your <code className="font-mono bg-primary/20 p-1 rounded-sm">.env</code> file.</p>
+                <p className="mt-2">The chat feature is disabled. Please add your Firebase project<br/>configuration keys to your .env file.</p>
             </div>
         </Card>
     );

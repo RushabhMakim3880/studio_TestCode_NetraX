@@ -5,12 +5,11 @@ import {
   collection,
   addDoc,
   query,
-  orderBy,
   onSnapshot,
   Timestamp,
   where,
 } from 'firebase/firestore';
-import { db, storage } from '@/services/firebase';
+import { db } from '@/services/firebase';
 import type { User } from '@/hooks/use-auth';
 
 export type MessageType = 'text' | 'image' | 'audio' | 'file';
@@ -39,8 +38,6 @@ export const listenForMessages = (
 ) => {
   if (!db) return () => {}; // Return a no-op unsubscribe function if db is not available
   
-  // The query has been simplified to remove the `orderBy` clause.
-  // This avoids the need for a composite index in Firestore.
   const q = query(
     collection(db, 'messages'),
     where('conversationId', '==', conversationId)
@@ -58,7 +55,6 @@ export const listenForMessages = (
     callback(messages);
   }, (error) => {
     console.error("Firestore snapshot error:", error);
-    // You could add further error handling here if needed.
   });
 };
 
@@ -72,22 +68,27 @@ export const sendTextMessage = async (
 
   const conversationId = getConversationId(sender.username, receiver.username);
 
-  await addDoc(collection(db, 'messages'), {
-    conversationId,
-    sender: {
-      username: sender.username,
-      displayName: sender.displayName,
-      avatarUrl: sender.avatarUrl || null,
-    },
-    receiver: {
-        username: receiver.username,
-        displayName: receiver.displayName,
-        avatarUrl: receiver.avatarUrl || null,
-    },
-    type: 'text',
-    content,
-    timestamp: Timestamp.now(),
-  });
+  try {
+    await addDoc(collection(db, 'messages'), {
+        conversationId,
+        sender: {
+        username: sender.username,
+        displayName: sender.displayName,
+        avatarUrl: sender.avatarUrl || null,
+        },
+        receiver: {
+            username: receiver.username,
+            displayName: receiver.displayName,
+            avatarUrl: receiver.avatarUrl || null,
+        },
+        type: 'text',
+        content,
+        timestamp: Timestamp.now(),
+    });
+  } catch(e) {
+      console.error("Failed to send text message:", e);
+      throw new Error("Could not connect to the database to send message.");
+  }
 };
 
 
