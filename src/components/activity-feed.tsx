@@ -9,6 +9,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { getActivities, clearActivities, type ActivityLog } from '@/services/activity-log-service';
 import { Button } from './ui/button';
 import { useAuth } from '@/hooks/use-auth';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from './ui/scroll-area';
 
 export function ActivityFeed() {
   const [feed, setFeed] = useState<ActivityLog[]>([]);
@@ -61,44 +63,48 @@ export function ActivityFeed() {
                 </Button>
             )}
         </div>
-        <CardDescription>A live feed of recent actions across the platform.</CardDescription>
+        <CardDescription>A detailed log of recent actions across the platform.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto">
-        {isLoading && (
-          <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
+      <CardContent className="flex-grow p-0">
+        <ScrollArea className="h-96">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full gap-2 text-muted-foreground p-6">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Loading recent activity...</span>
           </div>
-        )}
-        {!isLoading && feed.length === 0 && (
-            <div className="text-center text-muted-foreground h-full flex flex-col items-center justify-center p-4">
+        ) : feed.length === 0 ? (
+            <div className="text-center text-muted-foreground h-full flex flex-col items-center justify-center p-6">
                 <History className="h-12 w-12 text-muted-foreground/50 mb-4" />
                 <p className="font-semibold">No recent activity</p>
                 <p className="text-sm">Actions performed will appear here.</p>
             </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Details</TableHead>
+                <TableHead className="text-right">Time</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {feed.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                     <Badge variant={getBadgeVariant(item.user)}>{item.user}</Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">{item.action}</TableCell>
+                  <TableCell className="text-muted-foreground max-w-xs truncate">{item.details}</TableCell>
+                  <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
-        {!isLoading && feed.length > 0 && (
-          <div className="space-y-6">
-            {feed.map((item, index) => (
-              <div key={item.id} className="relative pl-8">
-                 <div className="absolute left-0 top-1 h-full">
-                    <span className="absolute left-[7px] top-[5px] h-2 w-2 rounded-full bg-accent ring-2 ring-background"></span>
-                    {index !== feed.length - 1 && <div className="absolute left-[10px] top-[14px] h-full w-px bg-border"></div>}
-                </div>
-                <div className="flex items-start justify-between">
-                    <div>
-                        <p className="text-sm font-medium">
-                            <Badge variant={getBadgeVariant(item.user)} className="mr-2">{item.user}</Badge>
-                            {item.action}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">{item.details}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        </ScrollArea>
       </CardContent>
     </Card>
   );
