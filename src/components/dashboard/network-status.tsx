@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Globe, Timer, ArrowDown, ArrowUp, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Timer, ArrowDown, ArrowUp, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 type NetworkState = {

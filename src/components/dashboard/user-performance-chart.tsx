@@ -65,7 +65,7 @@ export function UserPerformanceChart() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <Award className="h-5 w-5" />
-          <CardTitle>User Performance</CardTitle>
+          <CardTitle className="text-lg">User Performance</CardTitle>
         </div>
         <CardDescription>A summary of completed tasks by team members.</CardDescription>
       </CardHeader>

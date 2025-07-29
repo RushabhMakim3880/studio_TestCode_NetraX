@@ -57,7 +57,7 @@ export function ProjectsBarChart() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <Briefcase className="h-5 w-5" />
-          <CardTitle>Active Project Progress</CardTitle>
+          <CardTitle className="text-lg">Active Project Progress</CardTitle>
         </div>
         <CardDescription>A summary of progress for all ongoing projects.</CardDescription>
       </CardHeader>
