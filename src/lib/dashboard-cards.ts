@@ -11,6 +11,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Server, Wifi, Users, Briefcase, ClipboardList, UserCog, Award, Rss, History, Radio, KeyRound, ShieldAlert, ListChecks } from 'lucide-react';
 import type { Module } from '@/lib/constants';
 import { APP_MODULES } from '@/lib/constants';
+import { TeamStatus } from '@/components/dashboard/team-status';
 
 export type DashboardCardInfo = {
   id: string;
@@ -38,11 +39,11 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     component: NetworkStatus,
   },
   {
-    id: 'user-stats',
-    title: 'User Stats',
-    description: 'Provides a quick overview of user roles and a link to management.',
+    id: 'team-status',
+    title: 'Team Status',
+    description: 'Shows the online status of team members.',
     icon: Users,
-    component: UserStats,
+    component: TeamStatus,
   },
   {
     id: 'live-c2-sessions',
@@ -100,7 +101,7 @@ export const ALL_AVAILABLE_CARDS = [...AVAILABLE_WIDGET_CARDS, ...AVAILABLE_SHOR
 export const DEFAULT_DASHBOARD_LAYOUT = [
     'system-info',
     'network-status',
-    'user-stats',
+    'team-status',
     'live-c2-sessions',
     'latest-credentials',
     'honeytrap-status',
