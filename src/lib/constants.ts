@@ -82,19 +82,13 @@ export const PREMADE_AVATARS = [
 export const APP_MODULES: Module[] = [
   {
     name: 'Core',
-    icon: LayoutDashboard, // Use a representative icon
+    icon: LayoutDashboard,
     roles: ALL_ROLES,
     subModules: [
       { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ALL_ROLES },
-      { name: 'Project Management', path: '/project-management', icon: Briefcase, roles: ALL_ROLES, },
-      { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },
+      { name: 'Project Management', path: '/project-management', icon: Briefcase, roles: ALL_ROLES },
+      { name: 'Communication', path: '/chat', icon: MessageSquare, roles: ALL_ROLES },
     ],
-  },
-   {
-    name: 'Communication',
-    icon: MessageSquare,
-    path: '/chat',
-    roles: ALL_ROLES,
   },
   {
     name: 'Intelligence',
@@ -103,6 +97,8 @@ export const APP_MODULES: Module[] = [
     subModules: [
       { name: 'OSINT Investigator', path: '/osint', icon: Fingerprint, roles: ALL_ROLES },
       { name: 'Threat Intelligence', path: '/threat-intelligence', icon: Shield, roles: ALL_ROLES },
+      { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Attack Surface', path: '/attack-surface', icon: GitFork, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
   {
@@ -110,32 +106,36 @@ export const APP_MODULES: Module[] = [
     icon: KeyRound,
     roles: [ROLES.ADMIN, ROLES.OPERATOR],
     subModules: [
-      { name: 'Phishing', path: '/phishing', icon: Mail, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Campaigns', path: '/campaigns', icon: Rocket, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Target Profiling', path: '/profiling', icon: Target, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'C2 Panel', path: '/c2', icon: Server, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Remote Access Toolkit', path: '/rat', icon: Radio, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Phishing', path: '/phishing', icon: Mail, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Merging Station', path: '/merging-station', icon: Combine, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Steganography', path: '/steganography', icon: EyeOff, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Offensive Tools', path: '/offensive', icon: Wrench, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Bug Bounty', path: '/bug-bounty', icon: Bug, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Form Generator', path: '/form-generator', icon: FileText, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Web Vulnerabilities', path: '/web-vulns', icon: Binary, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Attack Surface', path: '/attack-surface', icon: GitFork, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
-      { name: 'Live Tracker', path: '/live-tracker', icon: Workflow, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'C2 Panel', path: '/c2', icon: Server, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+    ],
+  },
+  {
+    name: 'Live Hijacking',
+    icon: Radio,
+    roles: [ROLES.ADMIN, ROLES.OPERATOR],
+    subModules: [
+      { name: 'Live Session Tracker', path: '/live-tracker', icon: Workflow, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Remote Access Toolkit', path: '/rat', icon: Radio, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'Device Hijacking', path: '/device-hijacking', icon: Camera, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
    {
-    name: 'Defensive Operations',
+    name: 'Defensive & Analysis Suite',
     icon: ShieldCheck,
     roles: [ROLES.ADMIN, ROLES.ANALYST],
     subModules: [
-      { name: 'Phishing Defense', path: '/phishing-defense', icon: Radar, roles: [ROLES.ADMIN, ROLES.ANALYST] },
       { name: 'Vulnerability Analysis', path: '/vapt', icon: Syringe, roles: [ROLES.ADMIN, ROLES.ANALYST], },
-      { name: 'Log Analysis', path: '/log-analysis', icon: GanttChartSquare, roles: [ROLES.ADMIN, ROLES.ANALYST], },
-      { name: 'IoT Security', path: '/iot', icon: Cpu, roles: [ROLES.ADMIN, ROLES.ANALYST], },
+      { name: 'Phishing Defense', path: '/phishing-defense', icon: Radar, roles: [ROLES.ADMIN, ROLES.ANALYST] },
       { name: 'Malware Analysis', path: '/analysis', icon: FileScan, roles: [ROLES.ADMIN, ROLES.ANALYST], },
+      { name: 'Log Analysis', path: '/log-analysis', icon: GanttChartSquare, roles: [ROLES.ADMIN, ROLES.ANALYST], },
+      { name: 'Steganography', path: '/steganography', icon: EyeOff, roles: [ROLES.ADMIN, ROLES.OPERATOR, ROLES.ANALYST] },
+      { name: 'Bug Bounty', path: '/bug-bounty', icon: Bug, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
+      { name: 'IoT Security', path: '/iot', icon: Cpu, roles: [ROLES.ADMIN, ROLES.ANALYST], },
     ],
   },
   {
@@ -152,16 +152,17 @@ export const APP_MODULES: Module[] = [
   {
     name: 'Administration',
     icon: Users,
-    roles: [ROLES.ADMIN, ROLES.AUDITOR],
+    roles: ALL_ROLES,
     subModules: [
       { name: 'User Management', path: '/user-management', icon: UserCog, roles: [ROLES.ADMIN] },
       { name: 'Compliance', path: '/compliance', icon: ShieldCheck, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
+      { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },
     ],
   },
   {
     name: 'Development',
     icon: TestTube,
-    roles: ALL_ROLES, // Or just Admin
+    roles: ALL_ROLES, 
     subModules: [
       { name: 'Link Tester', path: '/test', icon: TestTube, roles: ALL_ROLES },
     ],
