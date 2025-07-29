@@ -10,10 +10,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutGrid, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 import { ALL_AVAILABLE_CARDS, DashboardCardInfo, AVAILABLE_WIDGET_CARDS, AVAILABLE_SHORTCUT_CARDS } from '@/lib/dashboard-cards';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
@@ -94,23 +95,23 @@ export function DashboardLayoutManager() {
       </DialogTrigger>
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
         <DialogHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <DialogTitle>Customize Dashboard Layout</DialogTitle>
-              <DialogDescription>
-                Select the widgets and shortcuts you want to display on your dashboard.
-              </DialogDescription>
+            <div className="flex justify-between items-center pr-6">
+                <div>
+                <DialogTitle>Customize Dashboard Layout</DialogTitle>
+                <DialogDescription>
+                    Select the widgets and shortcuts you want to display on your dashboard.
+                </DialogDescription>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleSave}>Save Layout</Button>
+                </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave}>Save Layout</Button>
-            </div>
-          </div>
         </DialogHeader>
-        <div className="grid md:grid-cols-2 gap-8 flex-grow overflow-hidden py-4">
+        <div className="flex-grow grid md:grid-cols-2 gap-8 overflow-hidden py-4">
             <div className="space-y-3 flex flex-col">
                 <h3 className="font-semibold px-1">Widgets</h3>
-                <ScrollArea className="h-full pr-4 -mr-4 border rounded-lg">
+                <ScrollArea className="flex-grow h-0 pr-4 -mr-4 border rounded-lg">
                     <div className="space-y-3 p-1">
                         {AVAILABLE_WIDGET_CARDS.map((card) => (
                            <WidgetCardToggle key={card.id} card={card} isSelected={selectedCardIds.includes(card.id)} />
@@ -120,7 +121,7 @@ export function DashboardLayoutManager() {
             </div>
              <div className="space-y-3 flex flex-col">
                 <h3 className="font-semibold px-1">Shortcut Cards</h3>
-                <ScrollArea className="h-full pr-4 -mr-4 border rounded-lg">
+                <ScrollArea className="flex-grow h-0 pr-4 -mr-4 border rounded-lg">
                     <div className="space-y-2 p-1">
                         {AVAILABLE_SHORTCUT_CARDS.map((card) => (
                             <ShortcutCardToggle key={card.id} card={card} isSelected={selectedCardIds.includes(card.id)} />
