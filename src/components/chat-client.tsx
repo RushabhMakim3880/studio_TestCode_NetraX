@@ -16,9 +16,16 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/services/firebase';
 
-export function ChatClient() {
+interface ChatClientProps {
+  isPopup?: boolean; // New prop to control layout
+  onUserSelect?: (user: User | null) => void;
+  initialSelectedUser?: User | null;
+}
+
+
+export function ChatClient({ isPopup = false, onUserSelect, initialSelectedUser }: ChatClientProps) {
   const { user: currentUser, users: teamMembers } = useAuth();
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(initialSelectedUser || null);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   
@@ -62,6 +69,7 @@ export function ChatClient() {
           markAsRead(convId);
       }
       setSelectedUser(user);
+      if (onUserSelect) onUserSelect(user);
   }
 
   useEffect(() => {
@@ -191,6 +199,8 @@ export function ChatClient() {
     }
   }
 
+  const mainLayoutClasses = isPopup ? 'h-[60vh] md:h-[70vh]' : 'flex-grow';
+
   if (!db) {
     return (
         <Card className="flex flex-grow items-center justify-center p-8">
@@ -204,7 +214,7 @@ export function ChatClient() {
   }
 
   return (
-    <Card className="flex flex-grow">
+    <Card className={cn("flex", mainLayoutClasses)}>
       <div className="w-1/3 border-r flex flex-col">
         <div className="p-4 border-b flex-shrink-0 space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Users className="h-5 w-5"/>Team Members</h2>

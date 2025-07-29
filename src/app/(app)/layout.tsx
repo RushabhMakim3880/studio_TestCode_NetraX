@@ -14,6 +14,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { AppHeader } from '@/components/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WorkflowGenerator } from '@/components/workflow-generator';
+import { ChatPopup } from '@/components/chat-popup';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -58,6 +59,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <AppHeader />
         <main className="flex-1 p-4 lg:p-6 bg-primary/20">{children}</main>
         <WorkflowGenerator />
+        <ChatPopup />
       </SidebarInset>
     </SidebarProvider>
   );
