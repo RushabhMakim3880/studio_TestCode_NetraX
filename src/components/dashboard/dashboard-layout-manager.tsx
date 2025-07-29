@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutGrid, Trash2 } from 'lucide-react';
+import { LayoutGrid, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { ALL_AVAILABLE_CARDS, DashboardCardInfo, AVAILABLE_WIDGET_CARDS, AVAILABLE_SHORTCUT_CARDS } from '@/lib/dashboard-cards';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
@@ -54,21 +54,19 @@ export function DashboardLayoutManager() {
   const WidgetCardToggle = ({ card, isSelected }: { card: DashboardCardInfo, isSelected: boolean }) => {
       const Icon = card.icon;
       return (
-          <Card className={cn("p-4 transition-all", isSelected ? "border-accent/50 bg-accent/10" : "border-border")}>
-              <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                      <Icon className="h-5 w-5 shrink-0 text-accent"/>
-                      <div>
-                        <p className="font-semibold">{card.title}</p>
-                        <p className="text-xs text-muted-foreground">{card.description}</p>
-                      </div>
-                  </div>
-                   <Switch 
-                    checked={isSelected} 
-                    onCheckedChange={(checked) => handleCardToggle(card.id, checked)}
-                   />
-              </div>
-          </Card>
+           <div className={cn("flex items-center justify-between p-3 rounded-md transition-colors", isSelected ? "bg-primary/20" : "")}>
+                <div className="flex items-center gap-3">
+                    <Icon className="h-5 w-5 shrink-0 text-accent"/>
+                    <div>
+                    <p className="font-semibold">{card.title}</p>
+                    <p className="text-xs text-muted-foreground">{card.description}</p>
+                    </div>
+                </div>
+                <Switch 
+                checked={isSelected} 
+                onCheckedChange={(checked) => handleCardToggle(card.id, checked)}
+                />
+            </div>
       )
   };
 
@@ -97,28 +95,36 @@ export function DashboardLayoutManager() {
           Customize Layout
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Customize Dashboard Layout</DialogTitle>
-          <DialogDescription>
-            Select the widgets and shortcuts you want to display on your dashboard.
-          </DialogDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <DialogTitle>Customize Dashboard Layout</DialogTitle>
+              <DialogDescription>
+                Select the widgets and shortcuts you want to display on your dashboard.
+              </DialogDescription>
+            </div>
+             <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleSave}>Save Layout</Button>
+            </div>
+          </div>
         </DialogHeader>
-        <div className="grid md:grid-cols-2 gap-8 h-[60vh] py-4">
-            <div className="space-y-3">
-                <h3 className="font-semibold">Widgets</h3>
-                <ScrollArea className="h-full pr-4 -mr-4">
-                    <div className="space-y-3">
+        <div className="grid md:grid-cols-2 gap-8 flex-grow overflow-hidden py-4">
+            <div className="space-y-3 flex flex-col">
+                <h3 className="font-semibold px-1">Widgets</h3>
+                <ScrollArea className="h-full pr-4 -mr-4 border rounded-lg">
+                    <div className="space-y-3 p-1">
                         {AVAILABLE_WIDGET_CARDS.map((card) => (
                            <WidgetCardToggle key={card.id} card={card} isSelected={selectedCardIds.includes(card.id)} />
                         ))}
                     </div>
                 </ScrollArea>
             </div>
-             <div className="space-y-3">
-                <h3 className="font-semibold">Shortcut Cards</h3>
-                <ScrollArea className="h-full pr-4 -mr-4">
-                    <div className="space-y-2">
+             <div className="space-y-3 flex flex-col">
+                <h3 className="font-semibold px-1">Shortcut Cards</h3>
+                <ScrollArea className="h-full pr-4 -mr-4 border rounded-lg">
+                    <div className="space-y-2 p-1">
                         {AVAILABLE_SHORTCUT_CARDS.map((card) => (
                             <ShortcutCardToggle key={card.id} card={card} isSelected={selectedCardIds.includes(card.id)} />
                         ))}
@@ -126,10 +132,6 @@ export function DashboardLayoutManager() {
                 </ScrollArea>
             </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-          <Button onClick={handleSave}>Save Layout</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
