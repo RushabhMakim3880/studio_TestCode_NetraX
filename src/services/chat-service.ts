@@ -5,14 +5,11 @@ import {
   collection,
   addDoc,
   query,
-  where,
   orderBy,
   onSnapshot,
   Timestamp,
-  or,
 } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/services/firebase';
+import { db } from '@/services/firebase';
 import type { User } from '@/hooks/use-auth';
 
 export type MessageType = 'text' | 'image' | 'audio' | 'file';
@@ -39,6 +36,7 @@ export const listenForMessages = (
   conversationId: string,
   callback: (messages: Message[]) => void
 ) => {
+  if (!db) return () => {}; // Return a no-op unsubscribe function if db is not available
   const q = query(
     collection(db, 'messages'),
     where('conversationId', '==', conversationId),
@@ -60,7 +58,7 @@ export const sendTextMessage = async (
   receiver: User,
   content: string
 ) => {
-  if (!content.trim()) return;
+  if (!content.trim() || !db) return;
 
   const conversationId = getConversationId(sender.username, receiver.username);
 
@@ -83,45 +81,49 @@ export const sendTextMessage = async (
 };
 
 
-// Uploads a file and sends a message with its URL
+// Uploads a file and sends a message with its data URL
 export const sendFileMessage = (
   sender: User,
   receiver: User,
   file: File,
-  onProgress: (progress: number) => void
+  onProgress: (progress: number) => void // Kept for API consistency, but will be instant
 ): Promise<void> => {
     return new Promise((resolve, reject) => {
-        const fileId = crypto.randomUUID();
-        const conversationId = getConversationId(sender.username, receiver.username);
-        const storageRef = ref(storage, `chat/${conversationId}/${fileId}-${file.name}`);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        if (!db) {
+            return reject(new Error("Database not configured."));
+        }
+        onProgress(0);
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const dataUrl = event.target?.result as string;
+                if (!dataUrl) {
+                    throw new Error("Failed to read file as data URL.");
+                }
 
-        uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                onProgress(progress);
-            },
-            (error) => {
-                console.error('File upload failed:', error);
-                reject(error);
-            },
-            async () => {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                 const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('audio/') ? 'audio' : 'file';
+                const conversationId = getConversationId(sender.username, receiver.username);
 
                 await addDoc(collection(db, 'messages'), {
                     conversationId,
                      sender: { username: sender.username, displayName: sender.displayName, avatarUrl: sender.avatarUrl || null },
                      receiver: { username: receiver.username, displayName: receiver.displayName, avatarUrl: receiver.avatarUrl || null },
                     type: fileType,
-                    content: downloadURL,
+                    content: dataUrl,
                     fileName: file.name,
                     fileSize: file.size,
                     timestamp: Timestamp.now(),
                 });
+                onProgress(100);
                 resolve();
+
+            } catch (error) {
+                 reject(error);
             }
-        );
+        };
+        reader.onerror = (error) => {
+            reject(error);
+        };
+        reader.readAsDataURL(file);
     });
 };

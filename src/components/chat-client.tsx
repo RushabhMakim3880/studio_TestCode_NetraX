@@ -8,12 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Users, Paperclip, Mic, StopCircle, Image as ImageIcon, File as FileIcon, Music, X, AlertTriangle } from 'lucide-react';
+import { Send, Users, Paperclip, Mic, StopCircle, File as FileIcon, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { getConversationId, listenForMessages, sendTextMessage, sendFileMessage, type Message } from '@/services/chat-service';
 import Image from 'next/image';
-import { Progress } from './ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/services/firebase';
 
@@ -27,8 +26,6 @@ export function ChatClient() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -65,16 +62,11 @@ export function ChatClient() {
     const file = event.target.files?.[0];
     if (!file || !currentUser || !selectedUser) return;
     
-    setUploadProgress(0);
     try {
-      await sendFileMessage(currentUser, selectedUser, file, (progress) => {
-          setUploadProgress(progress);
-      });
+      await sendFileMessage(currentUser, selectedUser, file, () => {}); // Progress callback not needed for data URLs
       toast({ title: "File Sent!", description: `"${file.name}" has been sent.`});
     } catch(e) {
       toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not send the file.' });
-    } finally {
-        setUploadProgress(null);
     }
   };
   
@@ -126,7 +118,7 @@ export function ChatClient() {
         case 'image': return <Image src={msg.content} alt={msg.fileName || 'image'} width={300} height={200} className="rounded-lg object-cover cursor-pointer" onClick={() => window.open(msg.content, '_blank')} />;
         case 'audio': return <audio controls src={msg.content} className="w-full h-10"/>;
         case 'file': return (
-            <a href={msg.content} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-background/50 rounded-md">
+            <a href={msg.content} download={msg.fileName} className="flex items-center gap-2 p-2 bg-background/50 rounded-md">
                 <FileIcon className="h-6 w-6"/>
                 <div className="text-sm">
                     <p>{msg.fileName}</p>
@@ -191,7 +183,6 @@ export function ChatClient() {
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
-            {uploadProgress !== null && <Progress value={uploadProgress} className="h-1 mx-4"/>}
             <div className="p-4 border-t bg-card flex-shrink-0">
               <div className="relative flex items-center gap-2">
                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
