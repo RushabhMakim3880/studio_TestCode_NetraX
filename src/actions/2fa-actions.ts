@@ -7,10 +7,14 @@ import { z } from 'zod';
 const APP_NAME = 'NETRA-X';
 
 export async function generate2faSecret(username: string): Promise<{ secret: string; otpauthUrl: string }> {
-  const secret = authenticator.generateSecret();
-  const otpauthUrl = authenticator.keyuri(username, APP_NAME, secret);
-
-  return { secret, otpauthUrl };
+  try {
+    const secret = authenticator.generateSecret();
+    const otpauthUrl = authenticator.keyuri(username, APP_NAME, secret);
+    return { secret, otpauthUrl };
+  } catch (err) {
+    console.error("Failed to generate 2FA secret:", err);
+    throw new Error("Could not generate a 2FA secret at this time.");
+  }
 }
 
 

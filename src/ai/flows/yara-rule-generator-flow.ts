@@ -52,7 +52,12 @@ const yaraRuleGeneratorFlow = ai.defineFlow(
     outputSchema: YaraRuleGeneratorOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+     try {
+        const {output} = await prompt(input);
+        return output!;
+    } catch (err) {
+        console.error("Yara Rule generation failed:", err);
+        throw new Error("The AI model failed to generate the Yara rule. This could be due to a content safety policy violation or a temporary service issue.");
+    }
   }
 );
