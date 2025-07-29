@@ -47,7 +47,7 @@ export function NetworkStatus() {
       } catch (error) {
         console.error("Network check failed:", error);
         let errorMessage = "Network check failed";
-        if (error instanceof TypeError) {
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             errorMessage = "Blocked by extension";
         }
         setStatus(prev => ({ ...prev, isOnline: false, ip: errorMessage, ping: null, geo: null }));
@@ -72,10 +72,7 @@ export function NetworkStatus() {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-3 text-lg">
-            {status.isOnline ? <Wifi /> : <WifiOff />}
-            Network Status
-        </CardTitle>
+        <CardTitle className="flex items-center gap-3 text-lg"><Wifi /> Network Status</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-1">
         {isLoading ? (
