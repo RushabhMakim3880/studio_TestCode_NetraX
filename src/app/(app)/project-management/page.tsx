@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon, Paperclip, Lock } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ClipboardList, Circle, CircleDot, CheckCircle2, User, Mail, Loader2, Flag, Link as LinkIcon, Paperclip, Lock, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,6 +34,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { FileSystemNode } from '@/components/file-browser';
 import { ProjectGanttChart } from '@/components/project-gantt-chart';
 import { CampaignPlanner } from '@/components/campaign-planner';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
 export type Project = {
@@ -61,7 +62,16 @@ export type Task = {
   templateId?: string;
   mitreTtp?: string;
   evidenceIds?: string[];
-  dependsOn?: string[]; // New field for dependencies
+  dependsOn?: string[];
+};
+
+type Comment = {
+    id: string;
+    taskId: string;
+    authorName: string;
+    authorAvatarUrl?: string | null;
+    content: string;
+    timestamp: string;
 };
 
 type Profile = { 
@@ -137,6 +147,68 @@ const priorityColors: { [key in TaskPriority]: string } = {
     'High': 'text-orange-500',
     'Critical': 'text-destructive',
 };
+
+function TaskComments({ taskId }: { taskId: string }) {
+    const { user: currentUser } = useAuth();
+    const { value: comments, setValue: setComments } = useLocalStorage<Comment[]>('netra-comments', []);
+    const [newComment, setNewComment] = useState('');
+
+    const taskComments = useMemo(() => {
+        return comments.filter(c => c.taskId === taskId).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }, [comments, taskId]);
+
+    const handlePostComment = () => {
+        if (!newComment.trim() || !currentUser) return;
+        const comment: Comment = {
+            id: crypto.randomUUID(),
+            taskId,
+            authorName: currentUser.displayName,
+            authorAvatarUrl: currentUser.avatarUrl,
+            content: newComment.trim(),
+            timestamp: new Date().toISOString(),
+        };
+        setComments([...comments, comment]);
+        setNewComment('');
+    };
+
+    const getInitials = (name?: string) => {
+        if (!name) return '??';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+
+    return (
+        <div className="pt-2">
+            <h4 className="text-sm font-semibold mb-2">Comments</h4>
+            <div className="space-y-3">
+                {taskComments.map(comment => (
+                    <div key={comment.id} className="flex items-start gap-2">
+                        <Avatar className="h-6 w-6">
+                            <AvatarImage src={comment.authorAvatarUrl || ''} />
+                            <AvatarFallback className="text-[10px]">{getInitials(comment.authorName)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 bg-background/50 rounded-md p-2">
+                            <div className="flex justify-between items-center">
+                                <p className="text-xs font-bold">{comment.authorName}</p>
+                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.timestamp), { addSuffix: true })}</p>
+                            </div>
+                            <p className="text-sm">{comment.content}</p>
+                        </div>
+                    </div>
+                ))}
+                 <div className="flex gap-2">
+                    <Textarea 
+                        value={newComment} 
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Add a comment... (@mention coming soon)"
+                        className="text-sm h-16"
+                    />
+                    <Button onClick={handlePostComment} size="sm">Post</Button>
+                 </div>
+            </div>
+        </div>
+    );
+}
+
 
 export default function ProjectManagementPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -471,53 +543,54 @@ export default function ProjectManagementPage() {
                                   </div>
                                   </AccordionTrigger>
                                   <AccordionContent className="space-y-4">
-                                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                                       {projectTasks.length > 0 ? projectTasks.map(task => {
                                         const assignee = getAssignee(task.assignedTo);
                                         const isBlocked = getTaskIsBlocked(task);
                                         return (
-                                          <div key={task.id} className="flex items-start justify-between text-sm p-2 rounded-md hover:bg-primary/20">
-                                              <div className="flex-grow">
-                                                  <div className="flex items-center gap-2">
-                                                      {isBlocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : taskStatusIcons[task.status]}
-                                                      <span className={`font-medium ${isBlocked ? 'text-muted-foreground line-through' : ''}`}>{task.description}</span>
-                                                      <Badge variant="outline">{task.type}</Badge>
-                                                  </div>
-                                                  <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
-                                                      <div className="flex items-center gap-4">
-                                                          <TooltipProvider><Tooltip><TooltipTrigger>
-                                                            <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
-                                                          </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
-                                                          {assignee && (
-                                                              <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                                                 <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
-                                                              </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
-                                                          )}
-                                                          {task.mitreTtp && (
-                                                              <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                                                 <Link href={`https://attack.mitre.org/techniques/${task.mitreTtp.replace('.', '/')}`} target="_blank">
-                                                                      <Badge variant="destructive" className="font-mono text-xs">{task.mitreTtp}</Badge>
-                                                                 </Link>
-                                                              </TooltipTrigger><TooltipContent><p>View MITRE ATT&amp;CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
-                                                          )}
+                                          <Card key={task.id} className="p-3">
+                                              <div className="flex items-start justify-between text-sm">
+                                                  <div className="flex-grow">
+                                                      <div className="flex items-center gap-2">
+                                                          {isBlocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : taskStatusIcons[task.status]}
+                                                          <span className={`font-medium ${isBlocked ? 'text-muted-foreground line-through' : ''}`}>{task.description}</span>
+                                                          <Badge variant="outline">{task.type}</Badge>
                                                       </div>
-                                                      {task.type === 'Phishing' && (
-                                                        <>
-                                                          <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
-                                                          <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
-                                                        </>
-                                                      )}
-                                                      {task.evidenceIds && task.evidenceIds.length > 0 && (
-                                                          <div className="flex items-start gap-1.5 pt-1">
-                                                              <Paperclip className="h-3 w-3 mt-0.5" />
-                                                              <div className="flex flex-wrap gap-1">
-                                                                  {task.evidenceIds.map(id => (
-                                                                      <Badge key={id} variant="secondary">{getFileName(id)}</Badge>
-                                                                  ))}
-                                                              </div>
-                                                          </div>
-                                                      )}
-                                                      {task.dependsOn && task.dependsOn.length > 0 && (
+                                                      <div className="pl-6 text-xs text-muted-foreground space-y-1 mt-1">
+                                                        <div className="flex items-center gap-4">
+                                                            <TooltipProvider><Tooltip><TooltipTrigger>
+                                                                <Flag className={`h-3 w-3 ${priorityColors[task.priority]}`} />
+                                                            </TooltipTrigger><TooltipContent><p>{task.priority} Priority</p></TooltipContent></Tooltip></TooltipProvider>
+                                                            {assignee && (
+                                                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                                                <Avatar className="h-4 w-4"><AvatarImage src={assignee.avatarUrl || ''} /><AvatarFallback className="text-[8px]">{getInitials(assignee.displayName)}</AvatarFallback></Avatar>
+                                                                </TooltipTrigger><TooltipContent><p>Assigned to {assignee.displayName}</p></TooltipContent></Tooltip></TooltipProvider>
+                                                            )}
+                                                            {task.mitreTtp && (
+                                                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                                                <Link href={`https://attack.mitre.org/techniques/${task.mitreTtp.replace('.', '/')}`} target="_blank">
+                                                                        <Badge variant="destructive" className="font-mono text-xs">{task.mitreTtp}</Badge>
+                                                                </Link>
+                                                                </TooltipTrigger><TooltipContent><p>View MITRE ATT&amp;CK Technique</p></TooltipContent></Tooltip></TooltipProvider>
+                                                            )}
+                                                        </div>
+                                                        {task.type === 'Phishing' && (
+                                                            <>
+                                                            <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> Target: {getProfileName(task.targetProfileId)}</p>
+                                                            <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> Template: {getTemplateName(task.templateId)}</p>
+                                                            </>
+                                                        )}
+                                                        {task.evidenceIds && task.evidenceIds.length > 0 && (
+                                                            <div className="flex items-start gap-1.5 pt-1">
+                                                                <Paperclip className="h-3 w-3 mt-0.5" />
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {task.evidenceIds.map(id => (
+                                                                        <Badge key={id} variant="secondary">{getFileName(id)}</Badge>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                         {task.dependsOn && task.dependsOn.length > 0 && (
                                                           <div className="flex items-start gap-1.5 pt-1">
                                                               <Lock className="h-3 w-3 mt-0.5" />
                                                               <div className="flex flex-wrap gap-1">
@@ -527,23 +600,26 @@ export default function ProjectManagementPage() {
                                                               </div>
                                                           </div>
                                                       )}
+                                                      </div>
                                                   </div>
+                                                  <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                  <DropdownMenuContent>
+                                                      <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
+                                                      <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
+                                                      <DropdownMenuSeparator />
+                                                      <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                                                      <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do', false)}>To Do</DropdownMenuItem>
+                                                      <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress', isBlocked)}>In Progress</DropdownMenuItem>
+                                                      <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed', isBlocked)}>Completed</DropdownMenuItem>
+                                                      <DropdownMenuSeparator />
+                                                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
+                                                  </DropdownMenuContent>
+                                                  </DropdownMenu>
                                               </div>
-                                              <DropdownMenu>
-                                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                              <DropdownMenuContent>
-                                                  <DropdownMenuLabel>Task Actions</DropdownMenuLabel>
-                                                  <DropdownMenuItem onClick={() => handleEditTaskClick(task)}>Edit Task</DropdownMenuItem>
-                                                  <DropdownMenuSeparator />
-                                                  <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'To Do', false)}>To Do</DropdownMenuItem>
-                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'In Progress', isBlocked)}>In Progress</DropdownMenuItem>
-                                                  <DropdownMenuItem onClick={() => handleUpdateTaskStatus(task.id, 'Completed', isBlocked)}>Completed</DropdownMenuItem>
-                                                  <DropdownMenuSeparator />
-                                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTask(task.id)}>Delete Task</DropdownMenuItem>
-                                              </DropdownMenuContent>
-                                              </DropdownMenu>
-                                          </div>
+                                              <Separator className="my-2"/>
+                                              <TaskComments taskId={task.id} />
+                                          </Card>
                                         )
                                       }) : <p className="text-sm text-muted-foreground text-center py-4">No tasks for this project yet.</p>}
                                   </div>
@@ -746,7 +822,7 @@ export default function ProjectManagementPage() {
                   <FormField control={profileForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )} />
                   <div className="grid grid-cols-2 gap-4">
                       <FormField control={profileForm.control} name="role" render={({ field }) => ( <FormItem><FormLabel>Role / Position</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                      <FormField control={profileForm.control} name="company" render={({ field }) => ( <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                      <FormField control={profileForm.control} name="company" render={({ field }) => ( <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                   </div>
                   <FormField control={profileForm.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Add any relevant notes for this target..." {...field} /></FormControl><FormMessage /></FormItem> )} />
                   <DialogFooter>
@@ -774,3 +850,4 @@ export default function ProjectManagementPage() {
   );
 }
 
+    
