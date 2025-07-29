@@ -27,7 +27,7 @@ const getStatusColor = (status: UserStatus) => {
 
 export function ChatSummary() {
   const { user: currentUser, users: teamMembers } = useAuth();
-  const [unreadCounts, setUnreadCounts] = useLocalStorage<Record<string, number>>('netra-unread-counts', {});
+  const { value: unreadCounts, setValue: setUnreadCounts } = useLocalStorage<Record<string, number>>('netra-unread-counts', {});
   
   const getInitials = (name?: string) => {
     if (!name) return '??';
@@ -73,7 +73,9 @@ export function ChatSummary() {
       <CardContent className="flex-grow p-0">
         <ScrollArea className="h-full max-h-60">
             <div className="space-y-1 px-6">
-            {onlineUsers.map((member) => (
+            {onlineUsers.map((member) => {
+                const unreadCount = unreadCounts[member.username] || 0;
+                return (
                 <Link href="/chat" key={member.username} className="block">
                     <div className="flex items-center gap-3 p-2 rounded-md hover:bg-primary/20">
                         <div className="relative">
@@ -90,14 +92,14 @@ export function ChatSummary() {
                             <p className="font-semibold text-sm">{member.displayName}</p>
                             <p className="text-xs text-muted-foreground">{member.role}</p>
                         </div>
-                        {unreadCounts[member.username] > 0 && (
+                        {unreadCount > 0 && (
                             <div className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs font-bold">
-                                {unreadCounts[member.username]}
+                                {unreadCount}
                             </div>
                         )}
                     </div>
                 </Link>
-            ))}
+            )})}
             </div>
         </ScrollArea>
       </CardContent>
