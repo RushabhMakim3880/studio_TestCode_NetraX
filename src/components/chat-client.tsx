@@ -8,13 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Users, Paperclip, Mic, StopCircle, Image as ImageIcon, File as FileIcon, Music, X } from 'lucide-react';
+import { Send, Users, Paperclip, Mic, StopCircle, Image as ImageIcon, File as FileIcon, Music, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
-import { getConversationId, listenForMessages, sendTextMessage, sendFileMessage, type Message, type MessageType } from '@/services/chat-service';
+import { format } from 'date-fns';
+import { getConversationId, listenForMessages, sendTextMessage, sendFileMessage, type Message } from '@/services/chat-service';
 import Image from 'next/image';
 import { Progress } from './ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/services/firebase';
 
 export function ChatClient() {
   const { user: currentUser, users: teamMembers } = useAuth();
@@ -37,7 +38,7 @@ export function ChatClient() {
   }, [messages]);
 
   useEffect(() => {
-    if (!currentUser || !selectedUser) {
+    if (!currentUser || !selectedUser || !db) {
         setMessages([]);
         return;
     };
@@ -138,6 +139,18 @@ export function ChatClient() {
     }
   }
 
+  if (!db) {
+    return (
+        <Card className="flex flex-grow items-center justify-center p-8">
+            <div className="text-center text-muted-foreground">
+                <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
+                <h3 className="text-xl font-semibold text-foreground">Firebase Not Configured</h3>
+                <p className="mt-2">The chat feature is disabled. Please add your Firebase project<br/>configuration keys to your <code className="font-mono bg-primary/20 p-1 rounded-sm">.env</code> file.</p>
+            </div>
+        </Card>
+    );
+  }
+
   return (
     <Card className="flex flex-grow">
       <div className="w-1/3 border-r flex flex-col">
@@ -198,4 +211,3 @@ export function ChatClient() {
     </Card>
   );
 }
-
