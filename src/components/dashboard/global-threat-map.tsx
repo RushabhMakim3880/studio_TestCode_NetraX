@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Map } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { getGeoIpInfo } from '@/services/ip-geo-service';
@@ -55,6 +55,7 @@ export function GlobalThreatMap() {
                     <Map />
                     Global Attack Map
                 </CardTitle>
+                <CardDescription className="text-xs">Visualizes the geographic locations of active victim sessions.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="aspect-video w-full bg-primary/30 rounded-lg overflow-hidden relative">

@@ -64,7 +64,7 @@ export function MitreAttackHeatmap() {
             <GitBranch />
             MITRE ATT&CK Heatmap
         </CardTitle>
-        <CardDescription className="text-xs">Techniques used across all projects.</CardDescription>
+        <CardDescription className="text-xs">Visualizes the frequency of ATT&CK techniques used across all projects.</CardDescription>
       </CardHeader>
       <CardContent>
           {Object.keys(ttpCounts).length > 0 ? (
