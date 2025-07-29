@@ -18,12 +18,9 @@ import { UserPerformanceChart } from '@/components/dashboard/user-performance-ch
 import { ProjectsBarChart } from '@/components/dashboard/projects-bar-chart';
 import { ChatSummary } from '@/components/dashboard/chat-summary';
 import { GlobalThreatMap } from '@/components/dashboard/global-threat-map';
-import { C2TrafficMonitor } from '@/components/dashboard/c2-traffic-monitor';
 import { MitreAttackHeatmap } from '@/components/dashboard/mitre-attack-heatmap';
 import { CampaignFunnelChart } from '@/components/dashboard/campaign-funnel-chart';
 import { AutomatedOsintSummary } from '@/components/dashboard/automated-osint-summary';
-import { OnTheWireFeed } from '@/components/dashboard/on-the-wire-feed';
-
 
 export type DashboardCardInfo = {
   id: string;
@@ -72,14 +69,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     icon: Radio,
     component: LiveC2Sessions,
   },
-  {
-    id: 'c2-traffic-monitor',
-    title: 'C2 Traffic Monitor',
-    description: 'Live graph of simulated inbound/outbound C2 data.',
-    icon: Activity,
-    component: C2TrafficMonitor,
-    className: 'md:col-span-2 xl:col-span-2',
-  },
    {
     id: 'campaign-funnel-chart',
     title: 'Campaign Funnel',
@@ -101,14 +90,6 @@ export const AVAILABLE_WIDGET_CARDS: DashboardCardInfo[] = [
     description: 'AI-generated quick summary of a target company.',
     icon: Sparkles,
     component: AutomatedOsintSummary,
-  },
-  {
-    id: 'on-the-wire-feed',
-    title: '"On The Wire" Feed',
-    description: 'A live, simulated feed of captured data snippets for atmosphere.',
-    icon: Code2,
-    component: OnTheWireFeed,
-    className: 'md:col-span-2 xl:col-span-2',
   },
   {
     id: 'todo-list',
@@ -161,10 +142,9 @@ export const ALL_AVAILABLE_CARDS = [...AVAILABLE_WIDGET_CARDS, ...AVAILABLE_SHOR
 export const DEFAULT_DASHBOARD_LAYOUT = [
     'global-threat-map',
     'system-info',
-    'c2-traffic-monitor',
     'team-status',
     'chat-summary',
-    'on-the-wire-feed',
+    'live-c2-sessions',
     'campaign-funnel-chart',
     'mitre-attack-heatmap',
     'projects-bar-chart',

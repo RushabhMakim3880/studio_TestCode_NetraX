@@ -1,10 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Radio, ServerCrash } from 'lucide-react';
-import { Badge } from '../ui/badge';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { TrackedEvent } from '../live-tracker';
 
