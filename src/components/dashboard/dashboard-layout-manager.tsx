@@ -8,10 +8,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +17,6 @@ import { LayoutGrid, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { ALL_AVAILABLE_CARDS, DashboardCardInfo, AVAILABLE_WIDGET_CARDS, AVAILABLE_SHORTCUT_CARDS } from '@/lib/dashboard-cards';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
-import { Card } from '../ui/card';
 import { cn } from '@/lib/utils';
 
 
@@ -104,7 +101,7 @@ export function DashboardLayoutManager() {
                 Select the widgets and shortcuts you want to display on your dashboard.
               </DialogDescription>
             </div>
-             <div className="flex gap-2">
+            <div className="flex gap-2">
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
               <Button onClick={handleSave}>Save Layout</Button>
             </div>
