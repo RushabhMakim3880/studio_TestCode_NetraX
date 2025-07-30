@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -41,7 +42,7 @@ export function EmailOutbox() {
                 <CardDescription>A log of all phishing emails sent from the platform.</CardDescription>
             </CardHeader>
             <CardContent>
-                <ScrollArea className="h-60 w-full">
+                <ScrollArea className="h-96 w-full">
                      <Table>
                         <TableHeader>
                             <TableRow>

@@ -44,6 +44,8 @@ import {
   TestTube,
   MessageSquare,
   Eye,
+  History,
+  Mailbox,
 } from 'lucide-react';
 
 export const ROLES = {
@@ -96,7 +98,7 @@ export const APP_MODULES: Module[] = [
     roles: ALL_ROLES,
     subModules: [
       { name: 'OSINT Investigator', path: '/osint', icon: Fingerprint, roles: ALL_ROLES },
-      { name: 'Threat Intelligence', path: '/threat-intelligence', icon: Shield, roles: ALL_ROLES },
+      { name: 'Threat Intelligence', path: '/cyber-intel', icon: Shield, roles: ALL_ROLES },
       { name: 'Network Investigation', path: '/network', icon: Network, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Attack Surface', path: '/attack-surface', icon: GitFork, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
@@ -147,6 +149,7 @@ export const APP_MODULES: Module[] = [
       { name: 'Documents', path: '/documents', icon: FileText, roles: ALL_ROLES },
       { name: 'Templates', path: '/templates', icon: MessageSquarePlus, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
       { name: 'Reporting', path: '/reporting', icon: Presentation, roles: ALL_ROLES },
+      { name: 'Email Outbox', path: '/email-outbox', icon: Mailbox, roles: [ROLES.ADMIN, ROLES.OPERATOR] },
     ],
   },
   {
@@ -155,6 +158,7 @@ export const APP_MODULES: Module[] = [
     roles: ALL_ROLES,
     subModules: [
       { name: 'User Management', path: '/user-management', icon: UserCog, roles: [ROLES.ADMIN] },
+      { name: 'Activity Log', path: '/logs', icon: History, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
       { name: 'Compliance', path: '/compliance', icon: ShieldCheck, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
       { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },
     ],
