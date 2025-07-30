@@ -52,6 +52,7 @@ type AuthFormProps = {
   mode: 'login' | 'register';
 };
 
+// This component is now only used for registration. Login is handled by AnimatedLoginForm.
 export function AuthForm({ mode }: AuthFormProps) {
   const { login, register } = useAuth();
   const { toast } = useToast();
