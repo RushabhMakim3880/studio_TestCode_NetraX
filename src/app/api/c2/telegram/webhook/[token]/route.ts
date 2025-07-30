@@ -1,13 +1,12 @@
 
+'use server';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramPayload } from '@/ai/flows/telegram-c2-flow';
 import { scanSubdomains } from '@/actions/osint-actions';
 import { dnsLookup } from '@/actions/osint-actions';
 import { generatePhishingEmail } from '@/ai/flows/phishing-flow';
 import { whoisLookup } from '@/actions/osint-actions';
-
-// This is the webhook endpoint that your Telegram bot will call.
-// It must be accessible from the internet.
 
 type CommandResponse = {
     text: string;
@@ -253,17 +252,21 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
 
         // If it was a button click, edit the existing menu. Otherwise, send a new message.
         const telegramApiMethod = isCallback ? 'editMessageText' : 'sendMessage';
-
-        await sendTelegramPayload({
-            token,
-            chatId: chatId.toString(),
-            message: responsePayload.text,
-            otherParams: {
-                ...(messageId && { message_id: messageId }), // Add message_id only for edits
-                parse_mode: responsePayload.parse_mode,
-                reply_markup: responsePayload.reply_markup,
-            },
-            method: telegramApiMethod,
+        
+        // Construct the fetch request payload
+        const fetchPayload = {
+            chat_id: chatId,
+            text: responsePayload.text,
+            ...(responsePayload.parse_mode && { parse_mode: responsePayload.parse_mode }),
+            ...(responsePayload.reply_markup && { reply_markup: responsePayload.reply_markup }),
+            ...(isCallback && messageId && { message_id: messageId })
+        };
+        
+        // Send the request to Telegram
+        await fetch(`https://api.telegram.org/bot${token}/${telegramApiMethod}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fetchPayload),
         });
 
         return NextResponse.json({ status: 'ok' });
