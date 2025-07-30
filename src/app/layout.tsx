@@ -21,6 +21,9 @@ const fontHeadline = Space_Grotesk({
 export const metadata: Metadata = {
   title: 'NETRA-X',
   description: 'Advanced Red Team C2 & Attack Simulation Platform',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
