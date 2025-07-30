@@ -9,6 +9,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { APP_MODULES, Module } from '@/lib/constants';
 import type { Project, Task } from '@/app/(app)/project-management/page';
+import { ClipboardList } from 'lucide-react';
 
 type CommandPaletteProps = {
   open: boolean;
@@ -60,7 +61,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
            <CommandGroup heading="My Tasks">
             {tasks.filter(t => t.status !== 'Completed').map(task => (
               <CommandItem key={`task-${task.id}`} onSelect={() => runCommand(() => router.push('/project-management'))}>
-                 <task.icon className="mr-2 h-4 w-4" />
+                 <ClipboardList className="mr-2 h-4 w-4" />
                 <span>{task.description}</span>
               </CommandItem>
             ))}
