@@ -1,38 +1,114 @@
+'use client';
 
-'use client'
+import { useAuth } from '@/hooks/use-auth';
+import { CompanyProfileManager } from '@/components/company-profile-manager';
+import { EmailSettings } from '@/components/email-settings';
+import { ApiKeysManager } from '@/components/api-keys-manager';
+import { PageSettingsManager } from '@/components/settings/page-settings-manager';
+import { LocalAiSettings } from '@/components/local-ai-settings';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { OffensiveSettings } from '@/components/settings/offensive-settings';
+import { ScanningSettings } from '@/components/settings/scanning-settings';
+import { ReportingSettings } from '@/components/settings/reporting-settings';
+import { GlobalAppSettings } from '@/components/settings/global-app-settings';
+import { SecuritySettings } from '@/components/settings/security-settings';
+import { DataPrivacySettings } from '@/components/settings/data-privacy-settings';
+import { NotificationsSettings } from '@/components/settings/notifications-settings';
+import { BrainCircuit, KeyRound, Mail, Palette, Building } from 'lucide-react';
 
-import { useTheme } from 'next-themes';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Moon, Sun } from 'lucide-react';
-import { Label } from './ui/label';
-import { Switch } from './ui/switch';
+export default function SettingsPage() {
+  const { user } = useAuth();
+  
+  if (!user) return null;
 
-export function AppearanceSettings() {
-    const { theme, setTheme } = useTheme();
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>Switch between the light and dark theme for the application.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                        <Label>Theme</Label>
-                        <CardDescription>Select either the light or dark theme.</CardDescription>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        <Sun className="h-5 w-5"/>
-                        <Switch
-                            checked={theme === 'dark'}
-                            onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-                            aria-label="Toggle dark mode"
-                        />
-                        <Moon className="h-5 w-5"/>
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-headline text-3xl font-semibold">Settings</h1>
+        <p className="text-muted-foreground">Manage your application preferences and modules.</p>
+      </div>
+      
+      <Accordion type="multiple" className="w-full space-y-4">
+        {user.role === 'Admin' && <SecuritySettings />}
+        <PageSettingsManager />
+        <OffensiveSettings />
+        <ScanningSettings />
+        <ReportingSettings />
+        <GlobalAppSettings />
+        <DataPrivacySettings />
+        <NotificationsSettings />
+        
+        <AccordionItem value="api-keys">
+            <AccordionTrigger>
+                <div className="flex items-center gap-3">
+                    <KeyRound className="h-6 w-6" />
+                    <div className="text-left">
+                        <p className="font-semibold">API Key Management</p>
+                        <p className="text-sm text-muted-foreground font-normal">Manage third-party API keys for integrated tools.</p>
                     </div>
                 </div>
-            </CardContent>
-        </Card>
-    )
+            </AccordionTrigger>
+            <AccordionContent>
+                <div className="p-4 border-t">
+                    <ApiKeysManager />
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+        
+        <AccordionItem value="local-ai-settings">
+          <AccordionTrigger>
+            <div className="flex items-center gap-3">
+              <BrainCircuit className="h-6 w-6" />
+              <div className="text-left">
+                <p className="font-semibold">Local AI Provider</p>
+                <p className="text-sm text-muted-foreground font-normal">Configure a local Ollama instance for AI tasks.</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="p-4 border-t">
+              <LocalAiSettings />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="email-settings">
+            <AccordionTrigger>
+                <div className="flex items-center gap-3">
+                    <Mail className="h-6 w-6" />
+                    <div className="text-left">
+                        <p className="font-semibold">Email SMTP Settings</p>
+                        <p className="text-sm text-muted-foreground font-normal">Configure SMTP for sending email invites and reports.</p>
+                    </div>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent>
+                <div className="p-4 border-t">
+                    <EmailSettings />
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+        
+        {user.role === 'Admin' && (
+          <AccordionItem value="company-branding">
+              <AccordionTrigger>
+                  <div className="flex items-center gap-3">
+                      <Building className="h-6 w-6" />
+                      <div className="text-left">
+                          <p className="font-semibold">Company Branding & Letterhead</p>
+                          <p className="text-sm text-muted-foreground font-normal">Customize the app name and logo for reports.</p>
+                      </div>
+                  </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                  <div className="p-4 border-t">
+                      <CompanyProfileManager />
+                  </div>
+              </AccordionContent>
+          </AccordionItem>
+        )}
+      </Accordion>
+      
+    </div>
+  );
 }

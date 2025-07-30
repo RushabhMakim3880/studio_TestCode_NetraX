@@ -2,7 +2,6 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { AppearanceSettings } from '@/components/appearance-settings';
 import { CompanyProfileManager } from '@/components/company-profile-manager';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
@@ -33,24 +32,6 @@ export default function SettingsPage() {
       <Accordion type="multiple" className="w-full space-y-4">
         {user.role === 'Admin' && <SecuritySettings />}
         <PageSettingsManager />
-        
-        <AccordionItem value="appearance-settings">
-            <AccordionTrigger>
-                <div className="flex items-center gap-3">
-                    <Palette className="h-6 w-6" />
-                    <div className="text-left">
-                        <p className="font-semibold">Appearance</p>
-                        <p className="text-sm text-muted-foreground font-normal">Choose your visual theme for the interface.</p>
-                    </div>
-                </div>
-            </AccordionTrigger>
-            <AccordionContent>
-                <div className="p-4 border-t">
-                    <AppearanceSettings />
-                </div>
-            </AccordionContent>
-        </AccordionItem>
-
         <OffensiveSettings />
         <ScanningSettings />
         <ReportingSettings />

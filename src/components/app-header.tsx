@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, User, Circle, UserCheck, Coffee, MicOff, Briefcase, Plane, Search } from 'lucide-react';
+import { LogOut, Settings, User, Circle, UserCheck, Coffee, MicOff, Briefcase, Plane, Search, Moon, Sun } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth, type UserStatus } from '@/hooks/use-auth';
 import Link from 'next/link';
@@ -138,6 +138,8 @@ export function AppHeader({ onCommandPaletteToggle }: AppHeaderProps) {
             </DropdownMenuItem>
              <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
+                    <Sun className="h-4 w-4 mr-2 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 mr-2 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                     <span>Switch Theme</span>
                 </DropdownMenuSubTrigger>
                  <DropdownMenuSubContent>
