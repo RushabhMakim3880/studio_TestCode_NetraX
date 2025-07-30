@@ -74,7 +74,7 @@ export function DashboardLayoutManager() {
           Customize Layout
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+      <DialogContent className="max-w-4xl h-[90vh] md:h-[80vh] flex flex-col">
         <DialogHeader>
             <DialogTitle>Customize Dashboard Layout</DialogTitle>
             <DialogDescription>

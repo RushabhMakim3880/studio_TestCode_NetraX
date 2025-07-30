@@ -229,7 +229,6 @@ export default function MergingStationPage() {
           <div className="grid lg:grid-cols-3 gap-6 items-start">
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Step 1: Input Files */}
               <Card>
                 <CardHeader><StepNumber number={1}>Input Files</StepNumber></CardHeader>
                 <CardContent className="space-y-4">
@@ -255,7 +254,6 @@ export default function MergingStationPage() {
                 </CardContent>
               </Card>
 
-              {/* Step 2: Configuration */}
               <Card>
                 <CardHeader><StepNumber number={2}>Configuration</StepNumber></CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-4">
@@ -264,7 +262,6 @@ export default function MergingStationPage() {
                 </CardContent>
               </Card>
               
-              {/* Step 3: Evasion */}
               <Card>
                 <CardHeader><StepNumber number={3}>Evasion Techniques</StepNumber></CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6">
@@ -292,7 +289,6 @@ export default function MergingStationPage() {
                 </CardContent>
               </Card>
 
-              {/* Step 4: Persistence (Optional) */}
                <Card className={watchFileless ? 'opacity-50' : ''}>
                     <CardHeader><StepNumber number={4}>Persistence (Optional)</StepNumber></CardHeader>
                     <CardContent>
@@ -309,7 +305,6 @@ export default function MergingStationPage() {
 
             </div>
 
-            {/* Right Column */}
             <div className="lg:col-span-1 space-y-6">
                 <Button type="submit" className="w-full text-lg py-6" disabled={isBuilding}>
                     {isBuilding ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Binary className="mr-2 h-5 w-5" />}
