@@ -261,6 +261,7 @@ const DeadlineSplashScreen = () => {
     const days = 7;
     const [day, setDay] = useState(days);
     const [animationKey, setAnimationKey] = useState(0);
+    const designerArmRef = useRef<SVGGElement>(null);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -271,11 +272,31 @@ const DeadlineSplashScreen = () => {
             setAnimationKey(prev => prev + 1);
         }, animationTime * 1000);
 
+        const deadlineAnimation = () => {
+            const timeouts = [
+                setTimeout(() => { if (designerArmRef.current) designerArmRef.current.style.animationDuration = '1.5s'; }, 0),
+                setTimeout(() => { if (designerArmRef.current) designerArmRef.current.style.animationDuration = '1s'; }, 4000),
+                setTimeout(() => { if (designerArmRef.current) designerArmRef.current.style.animationDuration = '0.7s'; }, 8000),
+                setTimeout(() => { if (designerArmRef.current) designerArmRef.current.style.animationDuration = '0.3s'; }, 12000),
+                setTimeout(() => { if (designerArmRef.current) designerArmRef.current.style.animationDuration = '0.2s'; }, 15000),
+            ];
+            return timeouts;
+        };
+
+        let animationTimeouts = deadlineAnimation();
+        const animationInterval = setInterval(() => {
+             animationTimeouts.forEach(clearTimeout);
+             animationTimeouts = deadlineAnimation();
+        }, animationTime * 1000);
+
         return () => {
             clearInterval(timer);
             clearInterval(fullCycle);
+            clearInterval(animationInterval);
+            animationTimeouts.forEach(clearTimeout);
         };
-    }, []);
+    }, [animationTime, days]);
+
 
     return (
         <div className="relative h-full w-full flex items-center justify-center bg-black p-4 font-mono overflow-hidden">
@@ -284,19 +305,19 @@ const DeadlineSplashScreen = () => {
             #deadline svg { width: 100%; }
             #progress-time-fill { animation: progress-fill ${animationTime}s linear infinite; }
             #death-group { animation: walk ${animationTime}s ease infinite; transform: translateX(0); }
-            #death-arm { animation: move-arm 3s ease infinite; transform-origin: left center; }
+            #death-arm { animation: move-arm 3s ease infinite; transform-origin: -60px 74px; }
             #death-tool { animation: move-tool 3s ease infinite; transform-origin: -48px center; }
-            #designer-arm-grop { animation: write 1.5s ease infinite; transform-origin: left top; }
-            .deadline-days { color: #fff; text-align: center; width: 100px; margin: 0 auto; position: relative; height: 20px; }
+            #designer-arm-grop { animation: write 1.5s ease infinite; transform-origin: 90% top; }
+            .deadline-days { color: #fff; text-align: center; width: 100px; margin: 0 auto; position: relative; height: 20px; font-family: 'Oswald', sans-serif; }
             #red-flame, #yellow-flame, #white-flame { animation: show-flames ${animationTime}s ease infinite, red-flame 120ms ease infinite; transform-origin: center bottom; }
             #yellow-flame { animation-name: show-flames, yellow-flame; }
             #white-flame { animation-name: show-flames, red-flame; animation-duration: ${animationTime}s, 100ms; }
             @keyframes progress-fill { 0% { x: -100%; } 100% { x: -3%; } }
-            @keyframes walk { 0%, 6% { transform: translateX(0); } 10% { transform: translateX(100px); } 15% { transform: translateX(140px); } 25% { transform: translateX(170px); } 35% { transform: translateX(220px); } 45% { transform: translateX(280px); } 55% { transform: translateX(340px); } 65% { transform: translateX(370px); } 75% { transform: translateX(430px); } 85% { transform: translateX(460px); } 100% { transform: translateX(520px); } }
+            @keyframes walk { 0% { transform: translateX(0); } 6% { transform: translateX(0); } 10% { transform: translateX(100px); } 15% { transform: translateX(140px); } 25% { transform: translateX(170px); } 35% { transform: translateX(220px); } 45% { transform: translateX(280px); } 55% { transform: translateX(340px); } 65% { transform: translateX(370px); } 75% { transform: translateX(430px); } 85% { transform: translateX(460px); } 100% { transform: translateX(520px); } }
             @keyframes move-arm { 0%, 5% { transform: rotate(0); } 9% { transform: rotate(40deg); } 80%, 100% { transform: rotate(0); } }
             @keyframes move-tool { 0%, 5% { transform: rotate(0); } 9% { transform: rotate(50deg); } 80%, 100% { transform: rotate(0); } }
             @keyframes write { 0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1, 1); } 16% { transform: translate(0px, 0px) rotate(5deg) scale(0.8, 1); } 32% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); } 48% { transform: translate(0px, 0px) rotate(6deg) scale(0.8, 1); } 65% { transform: translate(0px, 0px) rotate(0deg) scale(1, 1); } 83% { transform: translate(0px, 0px) rotate(4deg) scale(0.8, 1); } }
-            @keyframes show-flames { 0%, 74% { opacity: 0; } 80%, 99% { opacity: 1; } 100% { opacity: 0; } }
+            @keyframes show-flames { 0% { opacity: 0; } 74% { opacity: 0; } 80% { opacity: 1; } 99% { opacity: 1; } 100% { opacity: 0; } }
             @keyframes red-flame { 0%, 100% { transform: translateY(-30px) scale(1, 1); } 25% { transform: translateY(-30px) scale(1.1, 1.1); } 75% { transform: translateY(-30px) scale(0.8, 0.7); } }
             @keyframes yellow-flame { 0% { transform: translateY(-30px) scale(0.8, 0.7); } 50% { transform: translateY(-30px) scale(1.1, 1.2); } 100% { transform: translateY(-30px) scale(1, 1); } }
             `}</style>
@@ -308,7 +329,7 @@ const DeadlineSplashScreen = () => {
                     <g id="death-group"><path id="death" fill="#BE002A" d="M-46.25,40.416c-5.42-0.281-8.349,3.17-13.25,3.918c-5.716,0.871-10.583-0.918-10.583-0.918 C-67.5,49-65.175,50.6-62.083,52c5.333,2.416,4.083,3.5,2.084,4.5c-16.5,4.833-15.417,27.917-15.417,27.917L-75.5,84.75 c-1,12.25-20.25,18.75-20.25,18.75s39.447,13.471,46.25-4.25c3.583-9.333-1.553-16.869-1.667-22.75 c-0.076-3.871,2.842-8.529,6.084-12.334c3.596-4.22,6.958-10.374,6.958-15.416C-38.125,43.186-39.833,40.75-46.25,40.416z M-40,51.959c-0.882,3.004-2.779,6.906-4.154,6.537s-0.939-4.32,0.112-7.704c0.82-2.64,2.672-5.96,3.959-5.583 C-39.005,45.523-39.073,48.8-40,51.959z"></path><path id="death-arm" fill="#BE002A" d="M-53.375,75.25c0,0,9.375,2.25,11.25,0.25s2.313-2.342,3.375-2.791 c1.083-0.459,4.375-1.75,4.292-4.75c-0.101-3.627,0.271-4.594,1.333-5.043c1.083-0.457,2.75-1.666,2.75-1.666 s0.708-0.291,0.5-0.875s-0.791-2.125-1.583-2.959c-0.792-0.832-2.375-1.874-2.917-1.332c-0.542,0.541-7.875,7.166-7.875,7.166 s-2.667,2.791-3.417,0.125S-49.833,61-49.833,61s-3.417,1.416-3.417,1.541s-1.25,5.834-1.25,5.834l-0.583,5.833L-53.375,75.25z"></path><path id="death-tool" fill="#BE002A" d="M-20.996,26.839l-42.819,91.475l1.812,0.848l38.342-81.909c0,0,8.833,2.643,12.412,7.414 c5,6.668,4.75,14.084,4.75,14.084s4.354-7.732,0.083-17.666C-10,32.75-19.647,28.676-19.647,28.676l0.463-0.988L-20.996,26.839z"></path></g>
                     <path id="designer-body" fill="#FEFFFE" d="M514.75,100.334c0,0,1.25-16.834-6.75-16.5c-5.501,0.229-5.583,3-10.833,1.666 c-3.251-0.826-5.084-15.75-0.834-22c4.948-7.277,12.086-9.266,13.334-7.833c2.25,2.583-2,10.833-4.5,14.167 c-2.5,3.333-1.833,10.416,0.5,9.916s8.026-0.141,10,2.25c3.166,3.834,4.916,17.667,4.916,17.667l0.917,2.5l-4,0.167L514.75,100.334z"></path>
                     <circle id="designer-head" fill="#FEFFFE" cx="516.083" cy="53.25" r="6.083"></circle>
-                    <g id="designer-arm-grop"><path id="designer-arm" fill="#FEFFFE" d="M505.875,64.875c0,0,5.875,7.5,13.042,6.791c6.419-0.635,11.833-2.791,13.458-4.041s2-3.5,0.25-3.875 s-11.375,5.125-16,3.25c-5.963-2.418-8.25-7.625-8.25-7.625l-2,1.125L505.875,64.875z"></path><path id="designer-pen" fill="#FEFFFE" d="M525.75,59.084c0,0-0.423-0.262-0.969,0.088c-0.586,0.375-0.547,0.891-0.547,0.891l7.172,8.984l1.261,0.453 l-0.104-1.328L525.75,59.084z"></path></g>
+                    <g id="designer-arm-grop" ref={designerArmRef}><path id="designer-arm" fill="#FEFFFE" d="M505.875,64.875c0,0,5.875,7.5,13.042,6.791c6.419-0.635,11.833-2.791,13.458-4.041s2-3.5,0.25-3.875 s-11.375,5.125-16,3.25c-5.963-2.418-8.25-7.625-8.25-7.625l-2,1.125L505.875,64.875z"></path><path id="designer-pen" fill="#FEFFFE" d="M525.75,59.084c0,0-0.423-0.262-0.969,0.088c-0.586,0.375-0.547,0.891-0.547,0.891l7.172,8.984l1.261,0.453 l-0.104-1.328L525.75,59.084z"></path></g>
                 </svg>
                 <div className="deadline-days">Deadline <span className="day">{day}</span> <span className="days">days</span></div>
             </div>
@@ -372,3 +393,4 @@ export default function SplashscreenShowcasePage() {
     </div>
   );
 }
+
