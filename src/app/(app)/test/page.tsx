@@ -188,7 +188,7 @@ const OperatorV2SplashScreen = () => {
     }, [loadingSteps.length]);
 
   return (
-  <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(19, 186, 230)'}}>
+  <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(0, 0, 0)'}}>
     <style jsx>{`
       @keyframes glitch {
         0% { clip-path: inset(10% 0 85% 0); }
@@ -226,12 +226,19 @@ const OperatorV2SplashScreen = () => {
         clip-path: inset(5% 0 90% 0);
         animation: glitch 2s infinite linear alternate-reverse;
       }
+      .hide-logo-text span {
+        display: none;
+      }
+      .logo-container > div {
+          height: 100%;
+          width: 100%;
+      }
     `}</style>
     <div className="w-full max-w-lg flex flex-col items-center text-center">
-        <div className="text-white mb-4">
-            <Logo className="h-16 w-auto" />
+        <div className="h-24 w-24 text-white mb-4 logo-container">
+            <Logo className="hide-logo-text h-full w-full" />
         </div>
-        <h1 className="font-headline text-5xl font-bold tracking-widest text-white mt-4 relative glitch-text" data-text="NETRA-X">
+        <h1 className="font-headline text-2xl font-bold tracking-widest text-white mt-4 relative glitch-text" data-text="NETRA-X">
           NETRA-X
         </h1>
         <div className="h-24 w-full flex items-center justify-center text-sm text-white/80 mt-12">
