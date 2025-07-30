@@ -226,8 +226,8 @@ export function TodoList() {
                      <div className="space-y-3">
                         {textNotes.map(note => (
                              <div key={note.id} className="flex gap-2 text-sm bg-primary/20 p-2 rounded-md group relative">
-                                <div className="flex-grow">
-                                {note.type === 'text' && <p className="whitespace-pre-wrap">{note.content}</p>}
+                                <div className="flex-grow min-w-0">
+                                {note.type === 'text' && <p className="whitespace-pre-wrap break-words">{note.content}</p>}
                                 {note.type === 'audio' && <audio controls src={note.content} className="w-full h-10"/>}
                                 {note.type === 'image' && <Image src={note.content} alt="note" width={200} height={200} className="rounded-md"/>}
                                 <p className="text-xs text-muted-foreground mt-1">{new Date(note.timestamp).toLocaleTimeString()}</p>
