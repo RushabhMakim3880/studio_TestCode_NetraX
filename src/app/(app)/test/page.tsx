@@ -170,15 +170,19 @@ const OperatorV2SplashScreen = () => {
   <div className="relative h-full w-full flex flex-col items-center justify-center bg-[#0A0E1A] p-4 font-mono overflow-hidden">
     <style jsx>{`
       @keyframes glitch-effect {
-        0% { transform: translate(0); }
-        20% { transform: translate(-2px, 2px); }
-        40% { transform: translate(-2px, -2px); }
-        60% { transform: translate(2px, 2px); }
+        0%, 100% { transform: translate(0, 0); }
+        10% { transform: translate(-2px, -2px); }
+        20% { transform: translate(2px, 2px); }
+        30% { transform: translate(0, 0); }
+        40% { transform: translate(2px, -2px); }
+        50% { transform: translate(-2px, 2px); }
+        60% { transform: translate(0, 0); }
+        70% { transform: translate(-2px, 2px); }
         80% { transform: translate(2px, -2px); }
-        100% { transform: translate(0); }
+        90% { transform: translate(-2px, -2px); }
       }
       .glitch-bar {
-        animation: glitch-effect 0.5s infinite;
+        animation: glitch-effect 0.2s infinite;
         text-shadow: 0 0 5px hsl(var(--accent)), 0 0 10px hsl(var(--accent));
       }
     `}</style>
