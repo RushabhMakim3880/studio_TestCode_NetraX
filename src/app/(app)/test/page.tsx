@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Logo } from '@/components/logo';
@@ -189,9 +190,6 @@ const OperatorV2SplashScreen = () => {
   return (
   <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(19, 186, 230)'}}>
     <style jsx>{`
-      .logo-container span {
-        display: none !important;
-      }
       @keyframes glitch {
         0% { clip-path: inset(10% 0 85% 0); }
         10% { clip-path: inset(40% 0 40% 0); }
@@ -230,13 +228,13 @@ const OperatorV2SplashScreen = () => {
       }
     `}</style>
     <div className="w-full max-w-lg flex flex-col items-center text-center">
-        <div className="logo-container h-24 w-24 text-white">
-            <Logo className="h-full w-full" />
+        <div className="text-white mb-4">
+            <Logo className="h-16 w-auto" />
         </div>
         <h1 className="font-headline text-5xl font-bold tracking-widest text-white mt-4 relative glitch-text" data-text="NETRA-X">
           NETRA-X
         </h1>
-        <div className="h-24 w-full text-center text-sm text-white/80 mt-12">
+        <div className="h-24 w-full flex items-center justify-center text-sm text-white/80 mt-12">
             <p className="text-white">{loadingSteps[currentStep]}</p>
         </div>
         <div className="w-full pt-4 space-y-2">
@@ -299,4 +297,3 @@ export default function SplashscreenShowcasePage() {
     </div>
   );
 }
-
