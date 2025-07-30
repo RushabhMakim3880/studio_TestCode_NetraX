@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Logo } from '@/components/logo';
@@ -97,17 +96,22 @@ const CyberpunkSplashScreen = () => {
     </div>
 )};
 
-const MinimalistSplashScreen = () => (
-    <div className="relative h-full w-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4 font-sans overflow-hidden">
-        <div className="flex flex-col items-center space-y-4">
-             <div className="h-16 w-16 relative">
-                 <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping"></div>
-                 <Logo />
-             </div>
-            <p className="text-lg font-medium text-muted-foreground">Loading NETRA-X</p>
+const MinimalistSplashScreen = () => {
+    useEffect(() => {
+    }, []);
+
+    return (
+        <div className="relative h-full w-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4 font-sans overflow-hidden">
+            <div className="flex flex-col items-center space-y-4">
+                 <div className="h-16 w-16 relative">
+                     <div className="absolute inset-0 rounded-full bg-accent/20 animate-ping"></div>
+                     <Logo />
+                 </div>
+                <p className="text-lg font-medium text-muted-foreground animate-pulse">Loading NETRA-X</p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const CorporateSplashScreen = () => {
     const [progress, setProgress] = useState(0);
@@ -183,8 +187,11 @@ const OperatorV2SplashScreen = () => {
     }, [loadingSteps.length]);
 
   return (
-  <div className="relative h-full w-full flex flex-col items-center justify-center bg-[#0A0E1A] p-4 font-mono overflow-hidden">
+  <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(19, 186, 230)'}}>
     <style jsx>{`
+      .logo-container span {
+        display: none !important;
+      }
       @keyframes glitch {
         0% { clip-path: inset(10% 0 85% 0); }
         10% { clip-path: inset(40% 0 40% 0); }
@@ -207,32 +214,35 @@ const OperatorV2SplashScreen = () => {
         width: 100%;
         height: 100%;
         background: inherit;
+        color: white;
       }
       .glitch-text::before {
         left: 2px;
-        text-shadow: -2px 0 hsl(var(--accent));
+        text-shadow: -2px 0 #ff00c1;
         clip-path: inset(25% 0 70% 0);
         animation: glitch 1.5s infinite linear alternate-reverse;
       }
       .glitch-text::after {
         left: -2px;
-        text-shadow: 2px 0 hsl(var(--destructive));
+        text-shadow: 2px 0 #00fff9;
         clip-path: inset(5% 0 90% 0);
         animation: glitch 2s infinite linear alternate-reverse;
       }
     `}</style>
     <div className="w-full max-w-lg flex flex-col items-center text-center">
-        <Logo className="h-16 w-16" />
-        <h1 className="font-headline text-3xl font-bold tracking-widest text-foreground mt-4 relative glitch-text" data-text="NETRA-X">
+        <div className="logo-container h-24 w-24 text-white">
+            <Logo className="h-full w-full" />
+        </div>
+        <h1 className="font-headline text-5xl font-bold tracking-widest text-white mt-4 relative glitch-text" data-text="NETRA-X">
           NETRA-X
         </h1>
-        <div className="h-24 w-full text-center text-sm text-muted-foreground mt-12">
-            <p className="text-accent">{loadingSteps[currentStep]}</p>
+        <div className="h-24 w-full text-center text-sm text-white/80 mt-12">
+            <p className="text-white">{loadingSteps[currentStep]}</p>
         </div>
         <div className="w-full pt-4 space-y-2">
-           <Progress value={progress} className="h-1.5 bg-accent/20" />
-           <p className="text-xs text-muted-foreground">
-             SYSTEM STATUS: <span className="text-accent">OPERATIONAL</span>
+           <Progress value={progress} className="h-1.5 bg-white/20 [&>div]:bg-white" />
+           <p className="text-xs text-white/70">
+             SYSTEM STATUS: <span className="text-white">OPERATIONAL</span>
            </p>
         </div>
     </div>
@@ -248,7 +258,7 @@ export default function SplashscreenShowcasePage() {
         <p className="text-muted-foreground">Review the different splash screen concepts below.</p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-8">
           <Card>
               <CardHeader><CardTitle>1. Operator Theme (Current)</CardTitle></CardHeader>
               <CardContent className="h-96">
