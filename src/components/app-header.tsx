@@ -16,13 +16,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, User, Circle, UserCheck, Coffee, MicOff, Briefcase, Plane } from 'lucide-react';
+import { LogOut, Settings, User, Circle, UserCheck, Coffee, MicOff, Briefcase, Plane, Search } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth, type UserStatus } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { ContextAwareTip } from './context-aware-tip';
 import { Breadcrumb } from './breadcrumb';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 
 const getStatusColor = (status?: UserStatus) => {
     if (!status) return 'bg-muted-foreground/50';
@@ -46,8 +47,13 @@ const userStatuses: { name: UserStatus, icon: React.FC<any> }[] = [
     { name: 'Offline', icon: Circle },
 ];
 
-export function AppHeader() {
+type AppHeaderProps = {
+    onCommandPaletteToggle: () => void;
+};
+
+export function AppHeader({ onCommandPaletteToggle }: AppHeaderProps) {
   const { user, logout, updateUser } = useAuth();
+  const { setTheme } = useTheme();
 
   const getInitials = (name?: string) => {
     if (!name) return '??';
@@ -73,6 +79,12 @@ export function AppHeader() {
        <div className="flex-1">
         <ContextAwareTip />
       </div>
+      <div className="flex items-center gap-2">
+         <Button variant="ghost" size="icon" onClick={onCommandPaletteToggle} className="text-muted-foreground hover:text-foreground">
+            <Search className="h-5 w-5"/>
+            <span className="sr-only">Open Command Palette</span>
+        </Button>
+
       {user && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -124,6 +136,15 @@ export function AppHeader() {
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
+             <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                    <span>Switch Theme</span>
+                </DropdownMenuSubTrigger>
+                 <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
+                </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
@@ -132,6 +153,7 @@ export function AppHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+      </div>
     </header>
   );
 }

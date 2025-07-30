@@ -15,11 +15,13 @@ import { AppHeader } from '@/components/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WorkflowGenerator } from '@/components/workflow-generator';
 import { ChatPopup } from '@/components/chat-popup';
+import { CommandPalette } from '@/components/command-palette';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -31,6 +33,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       router.push('/login');
     }
   }, [user, isLoading, router, isClient]);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setIsCommandPaletteOpen((open) => !open)
+      }
+    }
+    document.addEventListener("keydown", down)
+    return () => document.removeEventListener("keydown", down)
+  }, [])
+
 
   // On the server, render nothing to avoid hydration mismatches.
   // The loading skeleton will appear instantly on the client.
@@ -56,10 +70,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <AppSidebar />
       </Sidebar>
       <SidebarInset>
-        <AppHeader />
+        <AppHeader onCommandPaletteToggle={() => setIsCommandPaletteOpen(true)} />
         <main className="flex-1 p-4 lg:p-6 bg-primary/20">{children}</main>
         <WorkflowGenerator />
         <ChatPopup />
+        <CommandPalette open={isCommandPaletteOpen} onOpenChange={setIsCommandPaletteOpen} />
       </SidebarInset>
     </SidebarProvider>
   );
