@@ -55,11 +55,6 @@ body {
     --border: 210 10% 25%;
     --input: 210 10% 25%;
     --ring: 173 100% 74%;
-    --chart-1: hsl(173 100% 74%);
-    --chart-2: hsl(200 80% 60%);
-    --chart-3: hsl(220 70% 70%);
-    --chart-4: hsl(280 80% 70%);
-    --chart-5: hsl(340 90% 70%);
   }
   
   body.theme-default, body.dark {
@@ -104,17 +99,6 @@ body {
     --border: 223 44% 40%;
     --input: 223 44% 28%;
     --ring: 197 89% 48%;
-  }
-
-  body.theme-matrix {
-    --primary: 120 60% 30%;
-    --primary-foreground: 120 20% 95%;
-    --secondary: 120 40% 20%;
-    --secondary-foreground: 120 20% 95%;
-    --accent: 120 100% 50%;
-    --accent-foreground: 120 100% 10%;
-    --destructive: 0 70% 40%;
-    --ring: 120 100% 50%;
   }
 }
 

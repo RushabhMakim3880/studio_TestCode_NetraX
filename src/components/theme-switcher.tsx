@@ -11,11 +11,6 @@ const colorThemes = [
     { name: 'Dark', id: 'dark' },
     { name: 'Light', id: 'light' },
     { name: 'Delft Blue', id: 'theme-delft-blue' },
-    { name: 'Matrix', id: 'theme-matrix' },
-    { name: 'Crimson', id: 'theme-crimson' },
-    { name: 'Cyberpunk', id: 'theme-cyberpunk' },
-    { name: 'Cobalt', id: 'theme-cobalt' },
-    { name: 'Amber', id: 'theme-amber' },
 ];
 
 export function ThemeSwitcher() {
