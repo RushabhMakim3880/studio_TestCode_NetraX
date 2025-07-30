@@ -26,14 +26,14 @@ export function Logo({ className }: { className?: string }) {
   const appName = profile?.name || 'NETRA-X';
 
   return (
-    <div className={cn('flex items-center gap-2 text-foreground', className)}>
+    <div className={cn('flex items-center justify-center h-full w-full gap-2 text-foreground', className)}>
       {profile?.logoDataUrl ? (
-          <Image src={profile.logoDataUrl} alt={`${appName} Logo`} width={24} height={24} className="h-6 w-auto object-contain" />
+          <Image src={profile.logoDataUrl} alt={`${appName} Logo`} width={400} height={400} className="h-full w-auto object-contain" />
       ) : (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 256 256"
-          className="h-6 w-6"
+          className="h-full w-full"
           fill="currentColor"
         >
           <path
@@ -46,9 +46,6 @@ export function Logo({ className }: { className?: string }) {
           />
         </svg>
       )}
-      <span className="font-headline text-lg font-semibold tracking-wider group-data-[collapsible=icon]:hidden">
-        {appName}
-      </span>
     </div>
   );
 }

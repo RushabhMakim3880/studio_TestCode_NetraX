@@ -52,12 +52,14 @@ export default function SplashScreen({ user }: SplashScreenProps) {
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4 font-mono">
       <div className="flex w-full max-w-lg flex-col items-center rounded-lg border border-border/50 bg-card p-8 shadow-2xl shadow-black/20">
-        <Logo className="mb-6" />
+        <div className="h-[400px] w-[400px]">
+            <Logo />
+        </div>
         <div className="h-48 w-full overflow-hidden text-left text-sm text-muted-foreground">
           {loadingSteps.slice(0, step + 1).map((text, i) => (
             <p key={i} className={cn("animate-in fade-in", { 'text-accent': i === step })}>
-              <span className="text-accent/50 mr-2">></span>{text}
-            </p>
+            <span className="text-accent/50 mr-2">{'>'}</span>{text}
+          </p>
           ))}
         </div>
         <div className="w-full pt-4">
@@ -68,7 +70,7 @@ export default function SplashScreen({ user }: SplashScreenProps) {
         </div>
       </div>
        <p className="mt-8 text-xs text-muted-foreground">
-        NETRA-X | For authorized use only.
+        For authorized use only.
       </p>
     </div>
   );
