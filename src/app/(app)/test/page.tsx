@@ -20,7 +20,7 @@ const OperatorSplashScreen = () => {
         'Decompressing module assets...',
         'Verifying system integrity...',
     ];
-
+    
     useEffect(() => {
         const progressInterval = setInterval(() => {
             setProgress(prev => (prev >= 100 ? 0 : prev + 10));
@@ -165,13 +165,7 @@ const RetroTermSplashScreen = () => {
 
 const OperatorV2SplashScreen = () => {
     const [progress, setProgress] = useState(0);
-    const loadingSteps = [
-        'Booting main kernel...',
-        'Decrypting secure modules...',
-        'Authenticating user session...',
-        'Reticulating splines...',
-        'Finalizing UI...'
-    ];
+    const loadingSteps = ['DECRYPTING KERNEL...', 'VERIFYING SIGNATURE...', 'ACCESSING MAINFRAME...'];
     const [currentStep, setCurrentStep] = useState(0);
 
     useEffect(() => {
@@ -222,9 +216,6 @@ const OperatorV2SplashScreen = () => {
 
 const OperatorV3SplashScreen = () => {
     const [progress, setProgress] = useState(0);
-    const loadingSteps = ['DECRYPTING KERNEL...', 'VERIFYING SIGNATURE...', 'ACCESSING MAINFRAME...'];
-    const [currentStep, setCurrentStep] = useState(0);
-    
     const [word, setWord] = useState("LOADING");
     const [scrambled, setScrambled] = useState<string[]>([]);
     
@@ -232,10 +223,13 @@ const OperatorV3SplashScreen = () => {
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".split('');
         let letterCount = 0;
         let finished = false;
+        
+        let writeInterval: NodeJS.Timeout | null = null;
+        let incInterval: NodeJS.Timeout | null = null;
 
-        const writeInterval = setInterval(() => {
+        const write = () => {
             if (finished) {
-                clearInterval(writeInterval);
+                if(writeInterval) clearInterval(writeInterval);
                 return;
             }
             setScrambled(prev => {
@@ -245,27 +239,31 @@ const OperatorV3SplashScreen = () => {
                     return `<span>${randomChar}</span>`;
                 });
             });
-        }, 75);
+        };
 
-        const incInterval = setInterval(() => {
+        const inc = () => {
             if (letterCount >= word.length) {
                 finished = true;
                 setScrambled(word.split('').map(char => `<span class="glow">${char}</span>`));
-                clearInterval(incInterval);
+                if (incInterval) clearInterval(incInterval);
                 
-                // Restart logic
                 setTimeout(() => {
                     letterCount = 0;
                     finished = false;
-                }, 2000);
+                    incInterval = setInterval(inc, 1000);
+                    writeInterval = setInterval(write, 75);
+                }, 1500);
                 return;
             }
             letterCount++;
-        }, 1000);
+        };
+        
+        writeInterval = setInterval(write, 75);
+        incInterval = setInterval(inc, 1000);
         
         return () => {
-            clearInterval(writeInterval);
-            clearInterval(incInterval);
+            if(writeInterval) clearInterval(writeInterval);
+            if(incInterval) clearInterval(incInterval);
         };
     }, [word]);
 
@@ -274,23 +272,18 @@ const OperatorV3SplashScreen = () => {
         const progressInterval = setInterval(() => {
              setProgress(prev => (prev >= 100 ? 0 : prev + 5));
         }, 150);
-         const stepInterval = setInterval(() => {
-            setCurrentStep(prev => (prev >= loadingSteps.length - 1 ? 0 : prev + 1));
-        }, 900);
-        return () => {
-            clearInterval(progressInterval);
-            clearInterval(stepInterval);
-        };
-    }, [loadingSteps.length]);
+
+        return () => clearInterval(progressInterval);
+    }, []);
 
   return (
   <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(0,0,0)'}}>
     <style jsx>{`
+      @keyframes glitch { 2%, 64% { transform: translate(2px, 0) skew(0deg); } 4%, 60% { transform: translate(-2px, 0) skew(0deg); } 62% { transform: translate(0, 0) skew(5deg); } }
       .glitch-text { animation: glitch 1s infinite linear alternate-reverse; }
       .glitch-text::before, .glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; }
       .glitch-text::before { left: 2px; text-shadow: -2px 0 #ff00c1; clip-path: inset(85% 0 5% 0); animation: glitch-before 2s infinite linear alternate-reverse; }
       .glitch-text::after { left: -2px; text-shadow: 2px 0 #00fff9; clip-path: inset(10% 0 80% 0); animation: glitch-after 1.5s infinite linear alternate-reverse; }
-      @keyframes glitch { 2%, 64% { transform: translate(2px, 0) skew(0deg); } 4%, 60% { transform: translate(-2px, 0) skew(0deg); } 62% { transform: translate(0, 0) skew(5deg); } }
       @keyframes glitch-before { 0% { clip-path: inset(85% 0 5% 0); } 20% { clip-path: inset(20% 0 15% 0); } 40% { clip-path: inset(40% 0 30% 0); } 60% { clip-path: inset(70% 0 10% 0); } 80% { clip-path: inset(90% 0 5% 0); } 100% { clip-path: inset(50% 0 35% 0); } }
       @keyframes glitch-after { 0% { clip-path: inset(10% 0 80% 0); } 20% { clip-path: inset(95% 0 2% 0); } 40% { clip-path: inset(45% 0 48% 0); } 60% { clip-path: inset(15% 0 70% 0); } 80% { clip-path: inset(80% 0 5% 0); } 100% { clip-path: inset(60% 0 30% 0); } }
       .hide-logo-text :global(span) { display: none !important; }
@@ -394,49 +387,49 @@ export default function SplashscreenShowcasePage() {
       <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
           <Card>
               <CardHeader><CardTitle>1. Operator Theme (Current)</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <OperatorSplashScreen />
               </CardContent>
           </Card>
           <Card>
               <CardHeader><CardTitle>2. Cyberpunk Theme</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <CyberpunkSplashScreen />
               </CardContent>
           </Card>
           <Card>
               <CardHeader><CardTitle>3. Minimalist Theme</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <MinimalistSplashScreen />
               </CardContent>
           </Card>
           <Card>
               <CardHeader><CardTitle>4. Corporate Theme</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <CorporateSplashScreen />
               </CardContent>
           </Card>
            <Card>
               <CardHeader><CardTitle>5. Retro Terminal Theme</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <RetroTermSplashScreen />
               </CardContent>
           </Card>
            <Card>
               <CardHeader><CardTitle>6. Operator V2 (Re-imagined)</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <OperatorV2SplashScreen />
               </CardContent>
           </Card>
            <Card>
               <CardHeader><CardTitle>7. Operator V3 (Scrambled Text)</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <OperatorV3SplashScreen />
               </CardContent>
           </Card>
           <Card>
               <CardHeader><CardTitle>8. Deadline Theme</CardTitle></CardHeader>
-              <CardContent className="h-[400px]">
+              <CardContent className="h-[500px]">
                   <DeadlineSplashScreen />
               </CardContent>
           </Card>
