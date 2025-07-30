@@ -15,12 +15,15 @@ type CommandResponse = {
 
 // A simple command router to execute actions based on the message text.
 async function handleCommand(command: string, args: string[]): Promise<CommandResponse> {
-    switch (command.toLowerCase()) {
-        case '!ping':
-            return { success: true, message: 'Pong! The NETRA-X C2 is active.' };
+    // Normalize command to remove prefix and make it lowercase
+    const normalizedCommand = command.substring(1).toLowerCase();
 
-        case '!subdomainscan':
-            if (args.length === 0) return { success: false, message: 'Usage: !subdomainscan <domain>' };
+    switch (normalizedCommand) {
+        case 'ping':
+            return { success: true, message: 'Pong! The NETRA-X C2 webhook is active and responsive.' };
+
+        case 'subdomainscan':
+            if (args.length === 0) return { success: false, message: 'Usage: /subdomainscan <domain>' };
             try {
                 const subdomains = await scanSubdomains(args[0]);
                 if (subdomains.length === 0) return { success: true, message: `No subdomains found for ${args[0]}.` };
@@ -29,8 +32,8 @@ async function handleCommand(command: string, args: string[]): Promise<CommandRe
                 return { success: false, message: `Subdomain scan failed: ${e.message}` };
             }
 
-        case '!dnslookup':
-            if (args.length < 2) return { success: false, message: 'Usage: !dnslookup <domain> <record_type>' };
+        case 'dnslookup':
+            if (args.length < 2) return { success: false, message: 'Usage: /dnslookup <domain> <record_type>' };
             try {
                 const records = await dnsLookup(args[0], args[1].toUpperCase());
                 if (records.length === 0) return { success: true, message: `No ${args[1].toUpperCase()} records found for ${args[0]}.`};
@@ -39,18 +42,31 @@ async function handleCommand(command: string, args: string[]): Promise<CommandRe
             } catch (e: any) {
                 return { success: false, message: `DNS lookup failed: ${e.message}` };
             }
-
-        case '!help':
+        
+        case 'start':
+        case 'help':
             const helpText = `
-NETRA-X C2 Bot Commands:
-- !ping: Check if the bot is responsive.
-- !subdomainscan <domain>: Find subdomains.
-- !dnslookup <domain> <type>: Perform a DNS lookup (e.g., A, MX, TXT).
+*Welcome to the NETRA-X C2 Bot!*
+
+Here are the available commands:
+
+*/ping*
+Check if the bot is responsive.
+_Example: /ping_
+
+*/subdomainscan <domain>*
+Find subdomains for a target domain.
+_Example: /subdomainscan google.com_
+
+*/dnslookup <domain> <type>*
+Perform a DNS lookup.
+_Types: A, AAAA, MX, TXT, NS, CNAME_
+_Example: /dnslookup google.com MX_
 `;
             return { success: true, message: helpText.trim() };
 
         default:
-            return { success: false, message: `Unknown command: ${command}. Type !help for a list of commands.` };
+            return { success: false, message: `Unknown command: ${command}. Type /help for a list of commands.` };
     }
 }
 
@@ -81,7 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         const command = parts[0];
         const args = parts.slice(1);
 
-        if (!command.startsWith('!')) {
+        if (!command.startsWith('!') && !command.startsWith('/')) {
             // Ignore messages that are not commands
             return NextResponse.json({ status: 'ignored' });
         }
