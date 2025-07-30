@@ -29,6 +29,7 @@ const TelegramPayloadInputSchema = z.object({
   token: z.string().min(20).describe('The Telegram Bot API token.'),
   chatId: z.string().min(1).describe('The target Telegram Chat ID.'),
   message: z.string().min(1).describe('The message or payload to send.'),
+  otherParams: z.any().optional(),
 });
 export type TelegramPayloadInput = z.infer<typeof TelegramPayloadInputSchema>;
 
@@ -88,6 +89,7 @@ export async function sendTelegramPayload(input: TelegramPayloadInput): Promise<
       body: JSON.stringify({
         chat_id: input.chatId,
         text: input.message,
+        ...(input.otherParams || {}),
       }),
     });
 
