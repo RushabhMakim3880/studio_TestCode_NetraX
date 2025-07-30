@@ -1,3 +1,4 @@
+
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -349,6 +350,9 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
             ...(responsePayload.reply_markup && { reply_markup: responsePayload.reply_markup })
         };
 
+        // Determine if we should edit the existing message or send a new one.
+        const method = isCallback ? 'editMessageText' : 'sendMessage';
+
         // Add message_id for callback edits
         if (isCallback && messageId) {
             mainPayload.message_id = messageId;
@@ -357,11 +361,11 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         // Send main response
         await sendTelegramMessage(
             token,
-            isCallback ? 'editMessageText' : 'sendMessage',
+            method,
             mainPayload
         );
 
-        // Handle additional actions
+        // Handle additional actions (like sending bait to a different chat)
         if (responsePayload.additionalActions) {
             for (const action of responsePayload.additionalActions) {
                 if (action.type === 'send_bait' && action.targetId) {
