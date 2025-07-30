@@ -105,7 +105,7 @@ export default function TestPage() {
     setHostedUrl(null);
     
     try {
-      toast({ title: "Hosting Page...", description: "Writing file to server directory..." });
+      toast({ title: "Hosting Page...", description: "Writing file to public directory on the server." });
       const { url: relativeUrl } = await hostTestPage(modifiedHtml);
 
       if (relativeUrl) {

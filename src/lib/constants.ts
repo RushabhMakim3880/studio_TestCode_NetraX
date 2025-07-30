@@ -161,6 +161,7 @@ export const APP_MODULES: Module[] = [
       { name: 'Activity Log', path: '/logs', icon: History, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
       { name: 'Compliance', path: '/compliance', icon: ShieldCheck, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
       { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },
+      // The Test Page will be added dynamically in the sidebar component for development builds
     ],
   },
 ];

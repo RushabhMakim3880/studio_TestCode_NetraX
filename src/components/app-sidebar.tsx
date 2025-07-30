@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronRight, Wrench } from 'lucide-react';
+import { ChevronRight, TestTube } from 'lucide-react';
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -49,7 +49,7 @@ export function AppSidebar() {
     ...(process.env.NODE_ENV === 'development' ? [{
         name: 'Test Page',
         path: '/test',
-        icon: Wrench, // Using Wrench icon as an example
+        icon: TestTube, 
         roles: ALL_ROLES,
     }] : [])
   ];
@@ -61,7 +61,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {APP_MODULES.map((module) => {
+          {allModules.map((module) => {
             const visibleSubModules = module.subModules ? getVisibleSubModules(module) : [];
             const hasVisibleSubModules = visibleSubModules.length > 0;
             const isParentActive = hasVisibleSubModules && visibleSubModules.some(sm => sm.path === pathname);
