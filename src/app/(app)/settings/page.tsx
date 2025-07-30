@@ -2,7 +2,6 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { CompanyProfileManager } from '@/components/company-profile-manager';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
 import { PageSettingsManager } from '@/components/settings/page-settings-manager';
@@ -15,7 +14,7 @@ import { GlobalAppSettings } from '@/components/settings/global-app-settings';
 import { SecuritySettings } from '@/components/settings/security-settings';
 import { DataPrivacySettings } from '@/components/settings/data-privacy-settings';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
-import { BrainCircuit, KeyRound, Mail, Palette, Building } from 'lucide-react';
+import { BrainCircuit, KeyRound, Mail, Palette } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -89,25 +88,6 @@ export default function SettingsPage() {
                 </div>
             </AccordionContent>
         </AccordionItem>
-        
-        {user.role === 'Admin' && (
-          <AccordionItem value="company-branding">
-              <AccordionTrigger>
-                  <div className="flex items-center gap-3">
-                      <Building className="h-6 w-6" />
-                      <div className="text-left">
-                          <p className="font-semibold">Company Branding & Letterhead</p>
-                          <p className="text-sm text-muted-foreground font-normal">Customize the app name and logo for reports.</p>
-                      </div>
-                  </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                  <div className="p-4 border-t">
-                      <CompanyProfileManager />
-                  </div>
-              </AccordionContent>
-          </AccordionItem>
-        )}
       </Accordion>
       
     </div>

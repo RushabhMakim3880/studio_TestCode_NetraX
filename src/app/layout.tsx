@@ -6,7 +6,6 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
-import { ThemeInitializer } from '@/components/theme-initializer';
 
 const fontBody = Inter({
   subsets: ['latin'],
@@ -37,12 +36,7 @@ export default function RootLayout({
         className={cn('font-body antialiased', fontBody.variable, fontHeadline.variable)}
         suppressHydrationWarning={true}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          disableTransitionOnChange
-        >
-          <ThemeInitializer />
+        <ThemeProvider>
           <AuthProvider>
             {children}
             <Toaster />
