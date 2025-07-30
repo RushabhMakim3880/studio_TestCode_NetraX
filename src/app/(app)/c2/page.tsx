@@ -2,7 +2,7 @@
 'use client';
 
 import { TelegramC2Control } from '@/components/telegram-c2-control';
-import { TelegramBotGenerator } from '@/components/telegram-bot-generator';
+import { TelegramSetupGuide } from '@/components/telegram-setup-guide';
 
 export default function C2Page() {
 
@@ -13,7 +13,7 @@ export default function C2Page() {
                 <p className="text-muted-foreground">Use Telegram for command and control, payload delivery, and data exfiltration.</p>
             </div>
             
-            <TelegramBotGenerator />
+            <TelegramSetupGuide />
             <TelegramC2Control />
         </div>
     );
