@@ -138,88 +138,137 @@ const CorporateSplashScreen = () => {
 )};
 
 const RetroTermSplashScreen = () => {
-    const steps = [
-        "> NETRA-BIOS v1.3.37",
-        "> CPU: Quantum Entangler @ 5.0 THz",
-        "> MEM: 1024 PB",
-        "> Checking system integrity... [OK]",
-        "> Loading C2 kernel modules... [OK]",
-        "> Initializing stealth protocols...",
-    ];
-    const [visibleSteps, setVisibleSteps] = useState(1);
+  const [lines, setLines] = useState<string[]>(['netra-x@root:~$ ']);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const initialCommand = 'sh netra-x.sh && apt-get update';
+  const outputLines = ["CPU0 microcode updated early to revision 0x1b, date = 2014-05-29", "Initializing cgroup subsys cpuset", "Initializing cgroup subsys cpu", "Initializing cgroup subsys cpuacct", "Command line: BOOT_IMAGE=/vmlinuz-3.19.0-21-generic.efi.signed root=UUID=14ac372e-6980-4fe8-b247-fae92d54b0c5 ro quiet splash acpi_enforce_resources=lax intel_pstate=enable rcutree.rcu_idle_gp_delay=1 nouveau.runpm=0 vt.handoff=7", "KERNEL supported cpus:", "  Intel GenuineIntel", "  AMD AuthenticAMD", "  Centaur CentaurHauls", "e820: BIOS-provided physical RAM map:", "BIOS-e820: [mem 0x0000000000000000-0x000000000009dfff] usable", "BIOS-e820: [mem 0x000000000009e000-0x000000000009ffff] reserved","ACPI: PM-Timer IO Port: 0x408","ACPI: Local APIC address 0xfee00000", "i915 0000:00:02.0: fb0: inteldrmfb frame buffer device", "systemd[1]: Set hostname to <netra-x-kernel>", "NET: Registered protocol family 2","NET: Registered protocol family 10", "NET: Registered protocol family 17", "systemd[1]: Starting Journal Service...","random: nonblocking pool is initialized", "systemd-journald[346]: Received request to flush runtime journal from PID 1","Loading compiled-in X.509 certificates","Key type trusted registered"];
+
+  useEffect(() => {
+    let i = 0;
+    let currentLineIndex = 0;
+    let feedbackerTimeout: NodeJS.Timeout;
+
+    const typeCommand = () => {
+      if (i < initialCommand.length) {
+        setLines(prev => {
+          const newLines = [...prev];
+          newLines[currentLineIndex] += initialCommand.charAt(i);
+          return newLines;
+        });
+        i++;
+        setTimeout(typeCommand, Math.floor(Math.random() * 150) + 50);
+      } else {
+        setTimeout(startFeedbacker, 1000);
+      }
+    };
+
+    const startFeedbacker = () => {
+      let outputIndex = 0;
+      const feedbacker = () => {
+        if (outputIndex >= outputLines.length) {
+          // Restart logic
+          setTimeout(() => {
+            i = 0;
+            currentLineIndex = 0;
+            setLines(['netra-x@root:~$ ']);
+            typeCommand();
+          }, 3000); // Wait 3 seconds before restarting
+          return;
+        }
+        
+        const time = Math.floor(Math.random() * 4) + 1;
+        
+        let newLinesToAdd = [];
+        newLinesToAdd.push(`[ ${(Date.now() / 1000).toFixed(3)} ] ${outputLines[outputIndex]}`);
+        outputIndex++;
+        
+        if (time % 2 === 0 && outputIndex < outputLines.length) {
+            newLinesToAdd.push(`[ ${(Date.now() / 1000 + 0.001).toFixed(3)} ] ${outputLines[outputIndex]}`);
+            outputIndex++;
+        }
+        
+        setLines(prev => [...prev, ...newLinesToAdd]);
+        
+        feedbackerTimeout = setTimeout(feedbacker, time * 50);
+      };
+      feedbacker();
+    };
+
+    typeCommand();
+
+    return () => clearTimeout(feedbackerTimeout);
+  }, []);
+
+  useEffect(() => {
+    if (containerRef.current) {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [lines]);
+
+  return (
+    <div className="relative h-full w-full flex flex-col items-start justify-start bg-black p-2 font-mono text-green-400 text-sm overflow-hidden">
+        <style jsx>{`
+            .term:after { content: "_"; opacity: 1; animation: cursor 1s infinite; }
+            @keyframes cursor { 0%, 40% { opacity: 0; } 50%, 90% { opacity: 1; } 100% { opacity: 0; } }
+        `}</style>
+        <div ref={containerRef} className="w-full h-full overflow-y-auto">
+            {lines.map((line, i) => (
+                <div key={i} className={i === lines.length - 1 ? 'term' : ''} dangerouslySetInnerHTML={{ __html: line.startsWith('netra-x@root:~$ ') ? `<span>${line}</span>` : line }}/>
+            ))}
+        </div>
+    </div>
+  );
+};
+
+const OperatorV2SplashScreen = () => {
+    const [animationKey, setAnimationKey] = useState(0);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setVisibleSteps(prev => (prev >= steps.length ? 1 : prev + 1));
-        }, 800);
+            setAnimationKey(prev => prev + 1);
+        }, 8000);
         return () => clearInterval(interval);
-    }, [steps.length]);
-    
+    }, []);
+
     return (
-    <div className="relative h-full w-full flex flex-col items-start justify-start bg-black p-4 font-mono text-green-400 text-sm overflow-hidden">
-        {steps.slice(0, visibleSteps).map((step, i) => (
-             <p key={i}>{step}{i === visibleSteps - 1 && <span className="animate-pulse">|</span>}</p>
-        ))}
+    <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(19, 186, 230)'}}>
+      <style jsx>{`
+        .hide-logo-text :global(span) { display: none !important; }
+        .logo-container > div { height: 100% !important; width: 100% !important; }
+        .glitch-text { text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75), -0.025em -0.05em 0 rgba(0, 255, 0, 0.75), 0.025em 0.05em 0 rgba(0, 0, 255, 0.75); animation: glitch 500ms infinite; }
+        .glitch-text span { position: absolute; top: 0; left: 0; }
+        .glitch-text span:first-child { animation: glitch 650ms infinite; clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%); transform: translate(-0.025em, -0.0125em); opacity: 0.8; }
+        .glitch-text span:last-child { animation: glitch 375ms infinite; clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%); transform: translate(0.0125em, 0.025em); opacity: 0.8; }
+        @keyframes glitch { 0% { text-shadow: 0.05em 0 0 rgba(255,0,0,.75), -0.05em -0.025em 0 rgba(0,255,0,.75), -0.025em 0.05em 0 rgba(0,0,255,.75); } 14% { text-shadow: 0.05em 0 0 rgba(255,0,0,.75), -0.05em -0.025em 0 rgba(0,255,0,.75), -0.025em 0.05em 0 rgba(0,0,255,.75); } 15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,.75), 0.025em 0.025em 0 rgba(0,255,0,.75), -0.05em -0.05em 0 rgba(0,0,255,.75); } 49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,.75), 0.025em 0.025em 0 rgba(0,255,0,.75), -0.05em -0.05em 0 rgba(0,0,255,.75); } 50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,.75), 0.05em 0 0 rgba(0,255,0,.75), 0 -0.05em 0 rgba(0,0,255,.75); } 99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,.75), 0.05em 0 0 rgba(0,255,0,.75), 0 -0.05em 0 rgba(0,0,255,.75); } 100% { text-shadow: -0.025em 0 0 rgba(255,0,0,.75), -0.025em -0.025em 0 rgba(0,255,0,.75), -0.05em -0.025em 0 rgba(0,0,255,.75); } }
+      `}</style>
+      <div className="w-full max-w-lg flex flex-col items-center text-center" key={animationKey}>
+          <div className="h-24 w-24 text-white mb-4 logo-container">
+              <Logo className="hide-logo-text h-full w-full" />
+          </div>
+          <h1 className="text-4xl font-bold tracking-widest text-white mt-4 relative glitch-text" data-text="NETRA-X">
+              <span aria-hidden="true">NETRA-X</span>
+              NETRA-X
+              <span aria-hidden="true">NETRA-X</span>
+          </h1>
+          <div className="h-24 w-full flex items-center justify-center text-sm text-white/80 mt-12">
+             <p className="text-white">LOADING KERNEL MODULES...</p>
+          </div>
+          <div className="w-full pt-4 space-y-2">
+            <Progress value={100} className="h-1.5 bg-white/20 [&>div]:bg-white" />
+            <p className="text-xs text-white/70">
+              SYSTEM STATUS: <span className="text-white">OPERATIONAL</span>
+            </p>
+          </div>
+      </div>
     </div>
-)};
-
-const OperatorV2SplashScreen = () => {
-    const [progress, setProgress] = useState(0);
-    const loadingSteps = ['DECRYPTING KERNEL...', 'VERIFYING SIGNATURE...', 'ACCESSING MAINFRAME...'];
-    const [currentStep, setCurrentStep] = useState(0);
-
-    useEffect(() => {
-        const progressInterval = setInterval(() => {
-             setProgress(prev => (prev >= 100 ? 0 : prev + 5));
-        }, 150);
-         const stepInterval = setInterval(() => {
-            setCurrentStep(prev => (prev >= loadingSteps.length - 1 ? 0 : prev + 1));
-        }, 900);
-        return () => {
-            clearInterval(progressInterval);
-            clearInterval(stepInterval);
-        };
-    }, [loadingSteps.length]);
-
-  return (
-  <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(19, 186, 230)'}}>
-    <style jsx>{`
-      @keyframes glitch { 2%, 64% { transform: translate(2px, 0) skew(0deg); } 4%, 60% { transform: translate(-2px, 0) skew(0deg); } 62% { transform: translate(0, 0) skew(5deg); } }
-      .glitch-text { animation: glitch 1s infinite linear alternate-reverse; }
-      .glitch-text::before, .glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgb(19, 186, 230); color: white; }
-      .glitch-text::before { left: 2px; text-shadow: -2px 0 #ff00c1; clip-path: inset(85% 0 5% 0); animation: glitch-before 2s infinite linear alternate-reverse; }
-      .glitch-text::after { left: -2px; text-shadow: 2px 0 #00fff9; clip-path: inset(10% 0 80% 0); animation: glitch-after 1.5s infinite linear alternate-reverse; }
-      @keyframes glitch-before { 0% { clip-path: inset(85% 0 5% 0); } 20% { clip-path: inset(20% 0 15% 0); } 40% { clip-path: inset(40% 0 30% 0); } 60% { clip-path: inset(70% 0 10% 0); } 80% { clip-path: inset(90% 0 5% 0); } 100% { clip-path: inset(50% 0 35% 0); } }
-      @keyframes glitch-after { 0% { clip-path: inset(10% 0 80% 0); } 20% { clip-path: inset(95% 0 2% 0); } 40% { clip-path: inset(45% 0 48% 0); } 60% { clip-path: inset(15% 0 70% 0); } 80% { clip-path: inset(80% 0 5% 0); } 100% { clip-path: inset(60% 0 30% 0); } }
-      .hide-logo-text :global(span) { display: none !important; }
-      .logo-container > div { height: 100% !important; width: 100% !important; }
-    `}</style>
-    <div className="w-full max-w-lg flex flex-col items-center text-center">
-        <div className="h-24 w-24 text-white mb-4 logo-container">
-            <Logo className="hide-logo-text h-full w-full" />
-        </div>
-        <h1 className="text-4xl font-bold tracking-widest text-white mt-4 relative glitch-text" data-text="NETRA-X">
-          NETRA-X
-        </h1>
-        <div className="h-24 w-full flex items-center justify-center text-sm text-white/80 mt-12">
-            <p className="text-white">{loadingSteps[currentStep]}</p>
-        </div>
-        <div className="w-full pt-4 space-y-2">
-           <Progress value={progress} className="h-1.5 bg-white/20 [&>div]:bg-white" />
-           <p className="text-xs text-white/70">
-             SYSTEM STATUS: <span className="text-white">OPERATIONAL</span>
-           </p>
-        </div>
-    </div>
-  </div>
 )};
 
 const OperatorV3SplashScreen = () => {
-    const [progress, setProgress] = useState(0);
-    const [word, setWord] = useState("LOADING");
     const [scrambled, setScrambled] = useState<string[]>([]);
     
     useEffect(() => {
+        const word = "LOADING";
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".split('');
         let letterCount = 0;
         let finished = false;
@@ -258,22 +307,21 @@ const OperatorV3SplashScreen = () => {
             letterCount++;
         };
         
-        writeInterval = setInterval(write, 75);
-        incInterval = setInterval(inc, 1000);
+        const startAnimation = () => {
+            letterCount = 0;
+            finished = false;
+            if(writeInterval) clearInterval(writeInterval);
+            if(incInterval) clearInterval(incInterval);
+            writeInterval = setInterval(write, 75);
+            incInterval = setInterval(inc, 1000);
+        };
+        
+        startAnimation();
         
         return () => {
             if(writeInterval) clearInterval(writeInterval);
             if(incInterval) clearInterval(incInterval);
         };
-    }, [word]);
-
-
-    useEffect(() => {
-        const progressInterval = setInterval(() => {
-             setProgress(prev => (prev >= 100 ? 0 : prev + 5));
-        }, 150);
-
-        return () => clearInterval(progressInterval);
     }, []);
 
   return (
@@ -301,7 +349,7 @@ const OperatorV3SplashScreen = () => {
             <div className="scrambled-text" dangerouslySetInnerHTML={{ __html: scrambled.join('') }} />
         </div>
         <div className="w-full pt-4 space-y-2">
-           <Progress value={progress} className="h-1.5 bg-white/20 [&>div]:bg-white" />
+           <Progress value={100} className="h-1.5 bg-white/20 [&>div]:bg-white" />
            <p className="text-xs text-white/70">SYSTEM STATUS: <span className="text-white">OPERATIONAL</span></p>
         </div>
     </div>
@@ -313,7 +361,6 @@ const DeadlineSplashScreen = () => {
     const animationTime = 20; // in seconds
     const [progress, setProgress] = useState(0);
     const [animationKey, setAnimationKey] = useState(0);
-    const designerArmRef = useRef<SVGGElement>(null);
 
     useEffect(() => {
         const progressInterval = setInterval(() => {
@@ -345,7 +392,7 @@ const DeadlineSplashScreen = () => {
             #designer-arm-grop { animation: write 1.5s ease infinite; transform-origin: 90% top; }
             .deadline-days { color: #fff; text-align: center; width: 200px; margin: 0 auto; position: relative; height: 20px; font-family: 'Space Grotesk', sans-serif; }
             #red-flame, #yellow-flame, #white-flame { animation: show-flames ${animationTime}s ease infinite, red-flame 120ms ease infinite; transform-origin: center bottom; }
-            #yellow-flame { animation-name: show-flames, yellow-flame; }
+            #yellow-flame { animation-name:: show-flames, yellow-flame; }
             #white-flame { animation-name: show-flames, red-flame; animation-duration: ${animationTime}s, 100ms; }
             @keyframes progress-fill { 0% { x: -100%; } 100% { x: -3%; } }
             @keyframes walk { 0% { transform: translateX(0); } 6% { transform: translateX(0); } 10% { transform: translateX(100px); } 15% { transform: translateX(140px); } 25% { transform: translateX(170px); } 35% { transform: translateX(220px); } 45% { transform: translateX(280px); } 55% { transform: translateX(340px); } 65% { transform: translateX(370px); } 75% { transform: translateX(430px); } 85% { transform: translateX(460px); } 100% { transform: translateX(520px); } }
@@ -364,7 +411,7 @@ const DeadlineSplashScreen = () => {
                         <g id="progress-trail"><path fill="#FFFFFF" d="M491.979,83.878c1.215-0.73-0.62-5.404-3.229-11.044c-2.583-5.584-5.034-10.066-7.229-8.878 c-2.854,1.544-0.192,6.286,2.979,11.628C487.667,80.917,490.667,84.667,491.979,83.878z"></path><path fill="#FFFFFF" d="M571,76v-5h-23.608c0.476-9.951-4.642-13.25-4.642-13.25l-3.125,4c0,0,3.726,2.7,3.625,5.125 c-0.071,1.714-2.711,3.18-4.962,4.125H517v5h10v24h-25v-5.666c0,0,0.839,0,2.839-0.667s6.172-3.667,4.005-6.333 s-7.49,0.333-9.656,0.166s-6.479-1.5-8.146,1.917c-1.551,3.178,0.791,5.25,5.541,6.083l-0.065,4.5H16c-2.761,0-5,2.238-5,5v17 c0,2.762,2.239,5,5,5h549c2.762,0,5-2.238,5-5v-17c0-2.762-2.238-5-5-5h-3V76H571z"></path><path fill="#FFFFFF" d="M535,65.625c1.125,0.625,2.25-1.125,2.25-1.125l11.625-22.375c0,0,0.75-0.875-1.75-2.125 s-3.375,0.25-3.375,0.25s-8.75,21.625-9.875,23.5S533.875,65,535,65.625z"></path></g>
                         <g><defs><path id="SVGID_1_" d="M484.5,75.584c-3.172-5.342-5.833-10.084-2.979-11.628c2.195-1.188,4.646,3.294,7.229,8.878 c2.609,5.64,4.444,10.313,3.229,11.044C490.667,84.667,487.667,80.917,484.5,75.584z M571,76v-5h-23.608 c0.476-9.951-4.642-13.25-4.642-13.25l-3.125,4c0,0,3.726,2.7,3.625,5.125c-0.071,1.714-2.711,3.18-4.962,4.125H517v5h10v24h-25 v-5.666c0,0,0.839,0,2.839-0.667s6.172-3.667,4.005-6.333s-7.49,0.333-9.656,0.166s-6.479-1.5-8.146,1.917 c-1.551,3.178,0.791,5.25,5.541,6.083l-0.065,4.5H16c-2.761,0-5,2.238-5,5v17c0,2.762,2.239,5,5,5h549c2.762,0,5-2.238,5-5v-17 c0-2.762-2.238-5-5-5h-3V76H571z M535,65.625c1.125,0.625,2.25-1.125,2.25-1.125l11.625-22.375c0,0,0.75-0.875-1.75-2.125 s-3.375,0.25-3.375,0.25s-8.75,21.625-9.875,23.5S533.875,65,535,65.625z"></path></defs><clipPath id="SVGID_2_"><use xlinkHref="#SVGID_1_" overflow="visible"></use></clipPath><rect id="progress-time-fill" x="-100%" y="34" clipPath="url(#SVGID_2_)" fill="#BE002A" width="586" height="103"></rect></g>
                         <g id="death-group"><path id="death" fill="#BE002A" d="M-46.25,40.416c-5.42-0.281-8.349,3.17-13.25,3.918c-5.716,0.871-10.583-0.918-10.583-0.918 C-67.5,49-65.175,50.6-62.083,52c5.333,2.416,4.083,3.5,2.084,4.5c-16.5,4.833-15.417,27.917-15.417,27.917L-75.5,84.75 c-1,12.25-20.25,18.75-20.25,18.75s39.447,13.471,46.25-4.25c3.583-9.333-1.553-16.869-1.667-22.75 c-0.076-3.871,2.842-8.529,6.084-12.334c3.596-4.22,6.958-10.374,6.958-15.416C-38.125,43.186-39.833,40.75-46.25,40.416z M-40,51.959c-0.882,3.004-2.779,6.906-4.154,6.537s-0.939-4.32,0.112-7.704c0.82-2.64,2.672-5.96,3.959-5.583 C-39.005,45.523-39.073,48.8-40,51.959z"></path><path id="death-arm" fill="#BE002A" d="M-53.375,75.25c0,0,9.375,2.25,11.25,0.25s2.313-2.342,3.375-2.791 c1.083-0.459,4.375-1.75,4.292-4.75c-0.101-3.627,0.271-4.594,1.333-5.043c1.083-0.457,2.75-1.666,2.75-1.666 s0.708-0.291,0.5-0.875s-0.791-2.125-1.583-2.959c-0.792-0.832-2.375-1.874-2.917-1.332c-0.542,0.541-7.875,7.166-7.875,7.166 s-2.667,2.791-3.417,0.125S-49.833,61-49.833,61s-3.417,1.416-3.417,1.541s-1.25,5.834-1.25,5.834l-0.583,5.833L-53.375,75.25z"></path><path id="death-tool" fill="#BE002A" d="M-20.996,26.839l-42.819,91.475l1.812,0.848l38.342-81.909c0,0,8.833,2.643,12.412,7.414 c5,6.668,4.75,14.084,4.75,14.084s4.354-7.732,0.083-17.666C-10,32.75-19.647,28.676-19.647,28.676l0.463-0.988L-20.996,26.839z"></path></g>
-                        <g id="designer-arm-grop" ref={designerArmRef}><path id="designer-arm" fill="#FEFFFE" d="M505.875,64.875c0,0,5.875,7.5,13.042,6.791c6.419-0.635,11.833-2.791,13.458-4.041s2-3.5,0.25-3.875 s-11.375,5.125-16,3.25c-5.963-2.418-8.25-7.625-8.25-7.625l-2,1.125L505.875,64.875z"></path><path id="designer-pen" fill="#FEFFFE" d="M525.75,59.084c0,0-0.423-0.262-0.969,0.088c-0.586,0.375-0.547,0.891-0.547,0.891l7.172,8.984l1.261,0.453 l-0.104-1.328L525.75,59.084z"></path></g>
+                        <g id="designer-arm-grop"><path id="designer-arm" fill="#FEFFFE" d="M505.875,64.875c0,0,5.875,7.5,13.042,6.791c6.419-0.635,11.833-2.791,13.458-4.041s2-3.5,0.25-3.875 s-11.375,5.125-16,3.25c-5.963-2.418-8.25-7.625-8.25-7.625l-2,1.125L505.875,64.875z"></path><path id="designer-pen" fill="#FEFFFE" d="M525.75,59.084c0,0-0.423-0.262-0.969,0.088c-0.586,0.375-0.547,0.891-0.547,0.891l7.172,8.984l1.261,0.453 l-0.104-1.328L525.75,59.084z"></path></g>
                     </svg>
                     <div className="deadline-days">
                         SYSTEM INTEGRITY: <span className="day">{Math.floor(progress)}</span>%
@@ -437,3 +484,5 @@ export default function SplashscreenShowcasePage() {
     </div>
   );
 }
+
+    
