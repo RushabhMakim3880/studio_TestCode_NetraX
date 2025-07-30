@@ -9,30 +9,30 @@ body {
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 210 10% 23%;
-    --card: 0 0% 100%;
-    --card-foreground: 210 10% 23%;
+    --background: 220 17% 97%;
+    --foreground: 220 10% 3%;
+    --card: 220 17% 100%;
+    --card-foreground: 220 10% 3%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 23%;
-    --primary: 210 10% 23%;
-    --primary-foreground: 210 10% 95%;
-    --secondary: 210 10% 90%;
-    --secondary-foreground: 210 10% 23%;
-    --muted: 210 10% 90%;
-    --muted-foreground: 210 10% 45%;
-    --accent: 173 100% 38%;
-    --accent-foreground: 210 10% 98%;
+    --popover-foreground: 220 10% 3%;
+    --primary: 220 10% 18%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 220 10% 18%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 220 80% 55%;
+    --accent-foreground: 210 20% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 210 10% 85%;
-    --input: 210 10% 85%;
-    --ring: 210 10% 23%;
-    --chart-1: 210 10% 23%;
-    --chart-2: 210 10% 45%;
-    --chart-3: 210 10% 65%;
-    --chart-4: 173 80% 40%;
-    --chart-5: 0 70% 50%;
+    --border: 214 20% 85%;
+    --input: 214 20% 85%;
+    --ring: 220 10% 18%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 198 93% 60%;
+    --chart-4: 43 96% 56%;
+    --chart-5: 2, 92%, 59%;
   }
 
   .dark {
@@ -82,6 +82,28 @@ body {
     --border: 210 10% 25%;
     --input: 210 10% 25%;
     --ring: 173 100% 74%;
+  }
+  
+  body.theme-delft-blue {
+    --background: 227 41% 23%; /* Delft Blue */
+    --foreground: 210 20% 98%; /* White */
+    --card: 223 44% 34%; /* Marian Blue */
+    --card-foreground: 210 20% 98%;
+    --popover: 227 41% 18%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 223 44% 40%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 223 44% 28%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 223 44% 28%;
+    --muted-foreground: 210 20% 70%;
+    --accent: 197 89% 48%; /* Picton Blue */
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 100% 98%;
+    --border: 223 44% 40%;
+    --input: 223 44% 28%;
+    --ring: 197 89% 48%;
   }
 
   body.theme-matrix {
