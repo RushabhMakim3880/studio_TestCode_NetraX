@@ -13,11 +13,6 @@ type CommandResponse = {
     text: string;
     parse_mode?: 'Markdown' | 'HTML';
     reply_markup?: any;
-    additionalActions?: Array<{ 
-        type: 'send_bait' | 'trigger_attack', 
-        targetId?: string, 
-        attackType?: string 
-    }>;
 };
 
 // --- Main Menu ---
@@ -121,6 +116,7 @@ async function processConversation(state: { command: string, step: number, data:
                     return { text: message, parse_mode: 'Markdown' };
                 } catch (e: any) { return { text: `Error: ${e.message}` }; }
             }
+             return { text: 'Invalid step in subdomain scan conversation.' };
         },
         'dns': async () => {
              if (state.step === 1) {
@@ -138,6 +134,7 @@ async function processConversation(state: { command: string, step: number, data:
                     return { text: message, parse_mode: 'Markdown' };
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
+            return { text: 'Invalid step in DNS lookup conversation.' };
         },
         'whois': async () => {
              if (state.step === 1) {
@@ -152,6 +149,7 @@ async function processConversation(state: { command: string, step: number, data:
                     return { text: `*WHOIS Record for ${args[0]}:*\n\`\`\`\n${result}\n\`\`\``, parse_mode: 'Markdown' };
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
+            return { text: 'Invalid step in WHOIS lookup conversation.' };
         },
         'ai': async () => { // Phishing AI
             if (state.step === 1) {
@@ -170,6 +168,7 @@ async function processConversation(state: { command: string, step: number, data:
                     };
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
+            return { text: 'Invalid step in AI phishing conversation.' };
         }
     };
     
@@ -224,7 +223,7 @@ async function handleCallbackQuery(callbackQuery: any): Promise<CommandResponse>
             return await showMainMenu();
         
         case 'cmd':
-            return await handleCommand(`/${args[0]}`, [],);
+            return await handleCommand(`/${args[0]}`, []);
         
         case 'recon':
         case 'phishing':
