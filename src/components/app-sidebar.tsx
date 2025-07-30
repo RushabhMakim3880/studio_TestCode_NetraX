@@ -43,16 +43,7 @@ export function AppSidebar() {
     );
   };
   
-  const allModules = [
-    ...APP_MODULES,
-    // Add the test page module dynamically only in development
-    ...(process.env.NODE_ENV === 'development' ? [{
-        name: 'Test Page',
-        path: '/test',
-        icon: TestTube, 
-        roles: ALL_ROLES,
-    }] : [])
-  ];
+  const allModules = APP_MODULES;
 
   return (
     <>

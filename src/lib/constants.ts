@@ -33,7 +33,7 @@ import {
   Binary,
   MousePointer2,
   GitFork,
-  Link,
+  Link as LinkIcon,
   GitBranch,
   Workflow,
   Rocket,
@@ -161,9 +161,17 @@ export const APP_MODULES: Module[] = [
       { name: 'Activity Log', path: '/logs', icon: History, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
       { name: 'Compliance', path: '/compliance', icon: ShieldCheck, roles: [ROLES.ADMIN, ROLES.AUDITOR] },
       { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },
-      // The Test Page will be added dynamically in the sidebar component for development builds
     ],
   },
+  ...(process.env.NODE_ENV === 'development' ? [{
+      name: 'Development',
+      icon: TestTube,
+      roles: ALL_ROLES,
+      subModules: [
+        { name: 'Link Tester', path: '/test', icon: LinkIcon, roles: ALL_ROLES },
+        { name: 'Web Vulns (Legacy)', path: '/web-vulns', icon: TestTube, roles: ALL_ROLES },
+      ],
+  }] : [])
 ];
 
 
