@@ -58,50 +58,6 @@ body {
   }
   
   body.theme-default, body.dark {
-    --background: 210 10% 10%;
-    --foreground: 210 10% 85%;
-    --card: 210 10% 12%;
-    --card-foreground: 210 10% 90%;
-    --popover: 210 10% 10%;
-    --popover-foreground: 210 10% 90%;
-    --primary: 210 10% 23%;
-    --primary-foreground: 210 10% 90%;
-    --secondary: 210 10% 30%;
-    --secondary-foreground: 210 10% 95%;
-    --muted: 210 10% 18%;
-    --muted-foreground: 210 10% 65%;
-    --accent: 173 100% 74%;
-    --accent-foreground: 210 10% 15%;
-    --destructive: 0 70% 45%;
-    --destructive-foreground: 0 100% 98%;
-    --border: 210 10% 25%;
-    --input: 210 10% 25%;
-    --ring: 173 100% 74%;
-  }
-  
-  body.theme-delft-blue {
-    --background: 227 42% 17%;
-    --foreground: 227 15% 85%;
-    --card: 225 43% 20%;
-    --card-foreground: 227 15% 90%;
-    --popover: 227 42% 15%;
-    --popover-foreground: 227 15% 90%;
-    --primary: 223 44% 34%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 223 44% 28%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 223 44% 28%;
-    --muted-foreground: 223 20% 75%;
-    --accent: 197 85% 48%;
-    --accent-foreground: 227 42% 10%;
-    --destructive: 0 70% 45%;
-    --destructive-foreground: 0 100% 98%;
-    --border: 223 44% 25%;
-    --input: 223 44% 28%;
-    --ring: 197 85% 55%;
-  }
-
-  body.theme-netrax-os {
     --background: 210 10% 15%;
     --foreground: 210 16% 93%;
     --card: 210 10% 20%;
@@ -121,6 +77,28 @@ body {
     --border: 210 8% 31%;
     --input: 210 8% 31%;
     --ring: 173 100% 74%;
+  }
+  
+  body.light {
+    --background: 210 20% 98%;
+    --foreground: 220 10% 3%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 3%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 3%;
+    --primary: 220 10% 18%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 220 10% 18%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 220 80% 55%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 20% 85%;
+    --input: 214 20% 85%;
+    --ring: 220 10% 18%;
   }
 }
 

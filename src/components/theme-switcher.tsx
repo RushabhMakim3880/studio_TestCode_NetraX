@@ -1,5 +1,6 @@
 
 'use client';
+
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { Check, Moon, Sun, Palette, Server } from 'lucide-react';
@@ -10,8 +11,6 @@ import { Label } from './ui/label';
 const colorThemes = [
     { name: 'Dark', id: 'dark', icon: Moon },
     { name: 'Light', id: 'light', icon: Sun },
-    { name: 'Delft Blue', id: 'theme-delft-blue', icon: Palette },
-    { name: 'NETRA-X OS', id: 'theme-netrax-os', icon: Server },
 ];
 
 export function ThemeSwitcher() {
@@ -23,13 +22,10 @@ export function ThemeSwitcher() {
     }, []);
 
     const handleThemeChange = (newTheme: string) => {
-        if (newTheme === 'light' || newTheme === 'dark') {
-             // For next-themes built-in themes
-            localStorage.setItem('theme', newTheme);
-        } else {
-             // For our custom body-class themes
-            localStorage.setItem('netra-color-theme', newTheme);
-        }
+        // Clear old custom theme settings when switching to default light/dark
+        localStorage.removeItem('netra-color-theme');
+        localStorage.removeItem('netra-custom-theme-active');
+        localStorage.removeItem('netra-custom-theme');
        setTheme(newTheme);
     };
     
