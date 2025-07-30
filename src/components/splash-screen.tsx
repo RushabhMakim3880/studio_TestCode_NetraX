@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import type { User } from '@/hooks/use-auth';
 
 const getLoadingSteps = (username?: string) => [
-  'Initializing Synapse CDE...',
+  'Initializing NETRA-X...',
   'Establishing secure kernel connection...',
   'Loading RBAC policies...',
   'Decompressing module assets...',
@@ -68,7 +68,7 @@ export default function SplashScreen({ user }: SplashScreenProps) {
         </div>
       </div>
        <p className="mt-8 text-xs text-muted-foreground">
-        Synaptic Cyber Defense Ecosystem | For authorized use only.
+        NETRA-X | For authorized use only.
       </p>
     </div>
   );

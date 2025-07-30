@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Shield } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import type { CompanyProfile } from './company-profile-manager';
@@ -24,31 +24,14 @@ export function Logo({ className }: { className?: string }) {
     }
   }, []);
   
-  const appName = profile?.name || 'Synapse CDE';
+  const appName = profile?.name || 'NETRA-X';
 
   return (
     <div className={cn('flex items-center gap-2 text-foreground', className)}>
       {profile?.logoDataUrl ? (
           <Image src={profile.logoDataUrl} alt={`${appName} Logo`} width={24} height={24} className="h-6 w-auto object-contain" />
       ) : (
-        <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="text-accent"
-        >
-            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
-            <path d="M12 9V2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M12 21.5V15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M16.732 15.75L19.5 20.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M4.5 3.5L7.26795 8.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M16.732 8.25L19.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M4.5 20.5L7.26795 15.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M19.5 12H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M8 12H4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
+        <Eye className="h-6 w-6 text-accent" />
       )}
       <span className="font-headline text-lg font-semibold tracking-wider group-data-[collapsible=icon]:hidden">
         {appName}

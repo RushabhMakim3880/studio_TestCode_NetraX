@@ -1,17 +1,17 @@
 
-# Synapse CDE: Synaptic Cyber Defense Ecosystem
+# NETRA-X: Advanced Red Team C2 & Attack Simulation Platform
 
-![Synapse CDE Banner](https://placehold.co/1200x300.png)
+![NETRA-X Banner](https://placehold.co/1200x300.png)
 
-**A modular, AI-enhanced platform for advanced, simulated cybersecurity operations.**
+**An AI-enhanced command and control (C2) platform for sophisticated, simulated cybersecurity operations.**
 
 ---
 
 ## Overview
 
-Synapse CDE is a sophisticated web application designed to serve as a comprehensive command and control (C2) center for educational and professional cybersecurity training. It integrates a full suite of offensive (Red Team) and defensive (Blue Team) tools, enhanced by generative AI, to provide a realistic and interactive learning environment.
+NETRA-X is a comprehensive web application designed to serve as a command center for educational and professional cybersecurity training. It integrates a full suite of offensive (Red Team) and defensive (Blue Team) tools, enhanced by generative AI, to provide a realistic and interactive learning environment.
 
-From planning multi-stage phishing campaigns and generating custom malware concepts to analyzing logs and assessing vulnerabilities, Synapse CDE offers a centralized platform to simulate and manage the entire cybersecurity lifecycle.
+From planning multi-stage phishing campaigns and generating custom malware concepts to analyzing logs and assessing vulnerabilities, NETRA-X offers a centralized platform to simulate and manage the entire cybersecurity lifecycle.
 
 ## Key Features
 
@@ -67,7 +67,7 @@ The platform is organized into distinct modules, each catering to a specific pha
 
 ## 🚀 Getting Started: Setup Guide
 
-Follow these steps carefully to set up and run Synapse CDE on your local machine.
+Follow these steps carefully to set up and run NETRA-X on your local machine.
 
 ### Step 1: Prerequisites
 
@@ -81,8 +81,8 @@ Follow these steps carefully to set up and run Synapse CDE on your local machine
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/synapse-cde.git
-    cd synapse-cde
+    git clone https://github.com/your-username/netra-x.git
+    cd netra-x
     ```
 
 2.  **Install dependencies:**
@@ -145,7 +145,7 @@ For advanced network scans (SYN, OS Detection), you need to run a local Python w
     ```bash
     python nmap_api.py
     ```
-    For `sudo`-required scans, you may need to run `sudo python nmap_api.py`. The script runs a local server on port 5000 that Synapse CDE communicates with.
+    For `sudo`-required scans, you may need to run `sudo python nmap_api.py`. The script runs a local server on port 5000 that NETRA-X communicates with.
 
 ### Step 6: Running the Application
 
@@ -162,4 +162,4 @@ For advanced network scans (SYN, OS Detection), you need to run a local Python w
 
 ## ⚠️ Disclaimer
 
-Synapse CDE is a powerful tool created for educational and professional security testing purposes **only**. It should be used exclusively in authorized environments and against systems you have explicit permission to test. Unauthorized use of this software against any system is illegal. The developers assume no liability and are not responsible for any misuse or damage caused by this program.
+NETRA-X is a powerful tool created for educational and professional security testing purposes **only**. It should be used exclusively in authorized environments and against systems you have explicit permission to test. Unauthorized use of this software against any system is illegal. The developers assume no liability and are not responsible for any misuse or damage caused by this program.

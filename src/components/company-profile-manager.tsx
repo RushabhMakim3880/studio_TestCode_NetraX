@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ export type CompanyProfile = {
 export function CompanyProfileManager() {
   const { toast } = useToast();
   const { user, updateUser } = useAuth();
-  const [profile, setProfile] = useState<CompanyProfile>({ name: 'NETRA-X Security', address: '123 Cyber Street, Suite 404\nDigital City, DC 54321', contact: 'contact@netrax.local', logoDataUrl: null });
+  const [profile, setProfile] = useState<CompanyProfile>({ name: 'NETRA-X', address: '123 Cyber Street, Suite 404\nDigital City, DC 54321', contact: 'contact@netrax.local', logoDataUrl: null });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
