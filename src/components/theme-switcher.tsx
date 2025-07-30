@@ -2,15 +2,15 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Check, Moon, Sun } from 'lucide-react';
+import { Check, Moon, Sun, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from './ui/dropdown-menu';
 import { Label } from './ui/label';
 
 const colorThemes = [
-    { name: 'Dark', id: 'dark' },
-    { name: 'Light', id: 'light' },
-    { name: 'Delft Blue', id: 'theme-delft-blue' },
+    { name: 'Dark', id: 'dark', icon: Moon },
+    { name: 'Light', id: 'light', icon: Sun },
+    { name: 'Delft Blue', id: 'theme-delft-blue', icon: Palette },
 ];
 
 export function ThemeSwitcher() {
@@ -40,12 +40,15 @@ export function ThemeSwitcher() {
 
     return (
        <DropdownMenuRadioGroup value={theme} onValueChange={handleThemeChange}>
-            {colorThemes.map(ct => (
-                <DropdownMenuRadioItem key={ct.id} value={ct.id}>
-                    {ct.id === 'light' ? <Sun className="mr-2 h-4 w-4" /> : ct.id === 'dark' ? <Moon className="mr-2 h-4 w-4" /> : <div className="mr-2 h-4 w-4" /> }
-                    <span>{ct.name}</span>
-                </DropdownMenuRadioItem>
-            ))}
+            {colorThemes.map(ct => {
+                const Icon = ct.icon;
+                return (
+                    <DropdownMenuRadioItem key={ct.id} value={ct.id}>
+                        <Icon className="mr-2 h-4 w-4" />
+                        <span>{ct.name}</span>
+                    </DropdownMenuRadioItem>
+                );
+            })}
        </DropdownMenuRadioGroup>
     )
 }
