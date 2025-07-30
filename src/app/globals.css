@@ -9,7 +9,7 @@ body {
 
 @layer base {
   :root {
-    --background: 210 17% 98%;
+    --background: 210 20% 98%;
     --foreground: 220 10% 3%;
     --card: 0 0% 100%;
     --card-foreground: 220 10% 3%;
@@ -80,25 +80,47 @@ body {
   }
   
   body.theme-delft-blue {
-    --background: 227 42% 23%; /* HEX: #233054 */
-    --foreground: 0 0% 100%;    /* HEX: #FFFFFF */
-    --card: 223 44% 34%;       /* HEX: #31457C */
-    --card-foreground: 0 0% 100%;
-    --popover: 227 42% 18%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 223 44% 40%;
+    --background: 227 42% 17%;
+    --foreground: 227 15% 85%;
+    --card: 225 43% 20%;
+    --card-foreground: 227 15% 90%;
+    --popover: 227 42% 15%;
+    --popover-foreground: 227 15% 90%;
+    --primary: 223 44% 34%;
     --primary-foreground: 0 0% 100%;
     --secondary: 223 44% 28%;
     --secondary-foreground: 0 0% 100%;
     --muted: 223 44% 28%;
     --muted-foreground: 223 20% 75%;
-    --accent: 197 85% 48%;       /* HEX: #13ABE2 */
-    --accent-foreground: 227 42% 15%;
+    --accent: 197 85% 48%;
+    --accent-foreground: 227 42% 10%;
     --destructive: 0 70% 45%;
     --destructive-foreground: 0 100% 98%;
-    --border: 223 44% 40%;
+    --border: 223 44% 25%;
     --input: 223 44% 28%;
-    --ring: 197 85% 48%;
+    --ring: 197 85% 55%;
+  }
+
+  body.theme-netrax-os {
+    --background: 210 10% 15%;
+    --foreground: 210 16% 93%;
+    --card: 210 10% 20%;
+    --card-foreground: 210 16% 93%;
+    --popover: 210 10% 15%;
+    --popover-foreground: 210 16% 93%;
+    --primary: 210 10% 23%;
+    --primary-foreground: 210 16% 93%;
+    --secondary: 210 8% 31%;
+    --secondary-foreground: 210 16% 93%;
+    --muted: 210 8% 31%;
+    --muted-foreground: 210 10% 65%;
+    --accent: 173 100% 74%;
+    --accent-foreground: 210 10% 15%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 100% 98%;
+    --border: 210 8% 31%;
+    --input: 210 8% 31%;
+    --ring: 173 100% 74%;
   }
 }
 

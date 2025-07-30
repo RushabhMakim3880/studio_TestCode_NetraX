@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Check, Moon, Sun, Palette } from 'lucide-react';
+import { Check, Moon, Sun, Palette, Server } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from './ui/dropdown-menu';
 import { Label } from './ui/label';
@@ -11,6 +11,7 @@ const colorThemes = [
     { name: 'Dark', id: 'dark', icon: Moon },
     { name: 'Light', id: 'light', icon: Sun },
     { name: 'Delft Blue', id: 'theme-delft-blue', icon: Palette },
+    { name: 'NETRA-X OS', id: 'theme-netrax-os', icon: Server },
 ];
 
 export function ThemeSwitcher() {
