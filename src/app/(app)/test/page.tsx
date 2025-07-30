@@ -5,8 +5,9 @@ import { Logo } from '@/components/logo';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
 import Image from 'next/image';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 // --- Splash Screen Components for Showcase ---
 
@@ -232,7 +233,7 @@ const OperatorV2SplashScreen = () => {
     }, []);
 
     return (
-    <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(19, 186, 230)'}}>
+    <div className="relative h-full w-full flex flex-col items-center justify-center p-4 font-mono overflow-hidden" style={{ backgroundColor: 'rgb(0,0,0)'}}>
       <style jsx>{`
         .hide-logo-text :global(span) { display: none !important; }
         .logo-container > div { height: 100% !important; width: 100% !important; }
@@ -243,7 +244,7 @@ const OperatorV2SplashScreen = () => {
         @keyframes glitch { 0% { text-shadow: 0.05em 0 0 rgba(255,0,0,.75), -0.05em -0.025em 0 rgba(0,255,0,.75), -0.025em 0.05em 0 rgba(0,0,255,.75); } 14% { text-shadow: 0.05em 0 0 rgba(255,0,0,.75), -0.05em -0.025em 0 rgba(0,255,0,.75), -0.025em 0.05em 0 rgba(0,0,255,.75); } 15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,.75), 0.025em 0.025em 0 rgba(0,255,0,.75), -0.05em -0.05em 0 rgba(0,0,255,.75); } 49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,.75), 0.025em 0.025em 0 rgba(0,255,0,.75), -0.05em -0.05em 0 rgba(0,0,255,.75); } 50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,.75), 0.05em 0 0 rgba(0,255,0,.75), 0 -0.05em 0 rgba(0,0,255,.75); } 99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,.75), 0.05em 0 0 rgba(0,255,0,.75), 0 -0.05em 0 rgba(0,0,255,.75); } 100% { text-shadow: -0.025em 0 0 rgba(255,0,0,.75), -0.025em -0.025em 0 rgba(0,255,0,.75), -0.05em -0.025em 0 rgba(0,0,255,.75); } }
       `}</style>
       <div className="w-full max-w-lg flex flex-col items-center text-center" key={animationKey}>
-          <div className="h-24 w-24 text-white mb-4 logo-container">
+          <div className="h-48 w-48 text-white mb-4 logo-container">
               <Logo className="hide-logo-text h-full w-full" />
           </div>
           <h1 className="text-4xl font-bold tracking-widest text-white mt-4 relative glitch-text" data-text="NETRA-X">
@@ -297,10 +298,7 @@ const OperatorV3SplashScreen = () => {
                 if (incInterval) clearInterval(incInterval);
                 
                 setTimeout(() => {
-                    letterCount = 0;
-                    finished = false;
-                    incInterval = setInterval(inc, 1000);
-                    writeInterval = setInterval(write, 75);
+                    startAnimation();
                 }, 1500);
                 return;
             }
@@ -356,7 +354,6 @@ const OperatorV3SplashScreen = () => {
   </div>
 )};
 
-
 const DeadlineSplashScreen = () => {
     const animationTime = 20; // in seconds
     const [progress, setProgress] = useState(0);
@@ -392,7 +389,7 @@ const DeadlineSplashScreen = () => {
             #designer-arm-grop { animation: write 1.5s ease infinite; transform-origin: 90% top; }
             .deadline-days { color: #fff; text-align: center; width: 200px; margin: 0 auto; position: relative; height: 20px; font-family: 'Space Grotesk', sans-serif; }
             #red-flame, #yellow-flame, #white-flame { animation: show-flames ${animationTime}s ease infinite, red-flame 120ms ease infinite; transform-origin: center bottom; }
-            #yellow-flame { animation-name:: show-flames, yellow-flame; }
+            #yellow-flame { animation-name: show-flames, yellow-flame; }
             #white-flame { animation-name: show-flames, red-flame; animation-duration: ${animationTime}s, 100ms; }
             @keyframes progress-fill { 0% { x: -100%; } 100% { x: -3%; } }
             @keyframes walk { 0% { transform: translateX(0); } 6% { transform: translateX(0); } 10% { transform: translateX(100px); } 15% { transform: translateX(140px); } 25% { transform: translateX(170px); } 35% { transform: translateX(220px); } 45% { transform: translateX(280px); } 55% { transform: translateX(340px); } 65% { transform: translateX(370px); } 75% { transform: translateX(430px); } 85% { transform: translateX(460px); } 100% { transform: translateX(520px); } }
@@ -419,70 +416,51 @@ const DeadlineSplashScreen = () => {
                 </div>
             </div>
         </div>
-    );
-};
+)};
 
 
 export default function SplashscreenShowcasePage() {
+    const [selectedSplash, setSelectedSplash] = useState<React.FC | null>(null);
+
+    const splashscreens = [
+        { id: 1, title: "1. Operator Theme (Current)", component: OperatorSplashScreen },
+        { id: 2, title: "2. Cyberpunk Theme", component: CyberpunkSplashScreen },
+        { id: 3, title: "3. Minimalist Theme", component: MinimalistSplashScreen },
+        { id: 4, title: "4. Corporate Theme", component: CorporateSplashScreen },
+        { id: 5, title: "5. Retro Terminal Theme", component: RetroTermSplashScreen },
+        { id: 6, title: "6. Operator V2 (Re-imagined)", component: OperatorV2SplashScreen },
+        { id: 7, title: "7. Operator V3 (Scrambled Text)", component: OperatorV3SplashScreen },
+        { id: 8, title: "8. Deadline Theme", component: DeadlineSplashScreen },
+    ];
+    
+    const ComponentToRender = selectedSplash;
+
   return (
+    <>
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-headline text-3xl font-semibold">Splash Screen Designs</h1>
-        <p className="text-muted-foreground">Review the different splash screen concepts below.</p>
+        <p className="text-muted-foreground">Review the different splash screen concepts below. Click a card to see the full view.</p>
       </div>
-
-      <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
-          <Card>
-              <CardHeader><CardTitle>1. Operator Theme (Current)</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <OperatorSplashScreen />
-              </CardContent>
-          </Card>
-          <Card>
-              <CardHeader><CardTitle>2. Cyberpunk Theme</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <CyberpunkSplashScreen />
-              </CardContent>
-          </Card>
-          <Card>
-              <CardHeader><CardTitle>3. Minimalist Theme</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <MinimalistSplashScreen />
-              </CardContent>
-          </Card>
-          <Card>
-              <CardHeader><CardTitle>4. Corporate Theme</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <CorporateSplashScreen />
-              </CardContent>
-          </Card>
-           <Card>
-              <CardHeader><CardTitle>5. Retro Terminal Theme</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <RetroTermSplashScreen />
-              </CardContent>
-          </Card>
-           <Card>
-              <CardHeader><CardTitle>6. Operator V2 (Re-imagined)</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <OperatorV2SplashScreen />
-              </CardContent>
-          </Card>
-           <Card>
-              <CardHeader><CardTitle>7. Operator V3 (Scrambled Text)</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <OperatorV3SplashScreen />
-              </CardContent>
-          </Card>
-          <Card>
-              <CardHeader><CardTitle>8. Deadline Theme</CardTitle></CardHeader>
-              <CardContent className="h-[500px]">
-                  <DeadlineSplashScreen />
-              </CardContent>
-          </Card>
-      </div>
+      
+      <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedSplash(null)}>
+        <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            {splashscreens.map(({ id, title, component: Comp }) => (
+                <DialogTrigger key={id} asChild onClick={() => setSelectedSplash(() => Comp)}>
+                    <Card className="cursor-pointer hover:border-accent transition-colors">
+                      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+                      <CardContent className="h-[500px] overflow-hidden">
+                          <Comp />
+                      </CardContent>
+                    </Card>
+                </DialogTrigger>
+            ))}
+        </div>
+         <DialogContent className="max-w-7xl h-[80vh] p-0 border-0">
+            {ComponentToRender && <ComponentToRender />}
+         </DialogContent>
+       </Dialog>
     </div>
+    </>
   );
 }
-
-    
