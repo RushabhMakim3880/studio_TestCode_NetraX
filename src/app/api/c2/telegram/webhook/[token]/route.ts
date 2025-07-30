@@ -229,8 +229,10 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     try {
         const body = await req.json();
         let responsePayload: CommandResponse;
+        let isCallback = false;
 
         if (body.callback_query) {
+            isCallback = true;
             // This is a button press
             responsePayload = await handleCallbackQuery(body.callback_query);
             // Answer the callback query to remove the "loading" state on the button
@@ -243,20 +245,25 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         }
         
         const chatId = body.message?.chat?.id || body.callback_query?.message?.chat?.id;
+        const messageId = body.callback_query?.message?.message_id;
 
         if (!chatId) {
              return NextResponse.json({ status: 'ok', message: 'Could not determine chat ID.' });
         }
 
-        // Send the generated response back to the user
+        // If it was a button click, edit the existing menu. Otherwise, send a new message.
+        const telegramApiMethod = isCallback ? 'editMessageText' : 'sendMessage';
+
         await sendTelegramPayload({
             token,
             chatId: chatId.toString(),
             message: responsePayload.text,
             otherParams: {
+                ...(messageId && { message_id: messageId }), // Add message_id only for edits
                 parse_mode: responsePayload.parse_mode,
                 reply_markup: responsePayload.reply_markup,
-            }
+            },
+            method: telegramApiMethod,
         });
 
         return NextResponse.json({ status: 'ok' });

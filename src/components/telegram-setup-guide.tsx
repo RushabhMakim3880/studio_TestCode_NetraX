@@ -74,11 +74,11 @@ export function TelegramSetupGuide() {
           <AccordionItem value="step-3" className="border-b-0">
             <AccordionTrigger className="font-semibold">Step 3: Connect & Interact</AccordionTrigger>
             <AccordionContent className="pt-2 space-y-2 text-sm text-muted-foreground">
-               <p>Your bot is now automated! Use the "C2 Control Panel" below to connect NETRA-X to your bot and start sending messages or commands. </p>
+               <p>Your bot is now automated! Use the "C2 Control Panel" below to connect NETRA-X to your bot and start interacting with the menu.</p>
                 <ol className="list-decimal list-inside space-y-1">
                   <li>Paste your bot token into the control panel and click "Connect".</li>
-                  <li>Find your bot on Telegram and send the `/start` command. It will reply with your unique Chat ID.</li>
-                  <li>Use that Chat ID in the control panel to send messages or commands like `!ping`.</li>
+                  <li>Find your bot on Telegram and send the `/start` command.</li>
+                  <li>Use the interactive buttons to execute commands.</li>
                 </ol>
             </AccordionContent>
           </AccordionItem>
