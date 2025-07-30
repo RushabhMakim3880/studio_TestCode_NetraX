@@ -159,45 +159,78 @@ const RetroTermSplashScreen = () => {
 
 const OperatorV2SplashScreen = () => {
     const [progress, setProgress] = useState(0);
+    const loadingSteps = [
+        'Booting main kernel...',
+        'Decrypting secure modules...',
+        'Authenticating user session...',
+        'Reticulating splines...',
+        'Finalizing UI...'
+    ];
+    const [currentStep, setCurrentStep] = useState(0);
+
+
     useEffect(() => {
-        const interval = setInterval(() => {
-             setProgress(prev => (prev >= 100 ? 0 : prev + 10));
-        }, 300);
-        return () => clearInterval(interval);
-    }, []);
+        const progressInterval = setInterval(() => {
+             setProgress(prev => (prev >= 100 ? 0 : prev + 5));
+        }, 150);
+         const stepInterval = setInterval(() => {
+            setCurrentStep(prev => (prev >= loadingSteps.length - 1 ? 0 : prev + 1));
+        }, 900);
+        return () => {
+            clearInterval(progressInterval);
+            clearInterval(stepInterval);
+        };
+    }, [loadingSteps.length]);
 
   return (
   <div className="relative h-full w-full flex flex-col items-center justify-center bg-[#0A0E1A] p-4 font-mono overflow-hidden">
     <style jsx>{`
-      @keyframes glitch-effect {
-        0%, 100% { transform: translate(0, 0); }
-        10% { transform: translate(-2px, -2px); }
-        20% { transform: translate(2px, 2px); }
-        30% { transform: translate(0, 0); }
-        40% { transform: translate(2px, -2px); }
-        50% { transform: translate(-2px, 2px); }
-        60% { transform: translate(0, 0); }
-        70% { transform: translate(-2px, 2px); }
-        80% { transform: translate(2px, -2px); }
-        90% { transform: translate(-2px, -2px); }
+      @keyframes glitch {
+        0% { clip-path: inset(10% 0 85% 0); }
+        10% { clip-path: inset(40% 0 40% 0); }
+        20% { clip-path: inset(90% 0 5% 0); }
+        30% { clip-path: inset(25% 0 70% 0); }
+        40% { clip-path: inset(5% 0 90% 0); }
+        50% { clip-path: inset(60% 0 30% 0); }
+        60% { clip-path: inset(80% 0 10% 0); }
+        70% { clip-path: inset(15% 0 80% 0); }
+        80% { clip-path: inset(50% 0 45% 0); }
+        90% { clip-path: inset(5% 0 90% 0); }
+        100% { clip-path: inset(75% 0 15% 0); }
       }
-      .glitch-bar {
-        animation: glitch-effect 0.2s infinite;
-        text-shadow: 0 0 5px hsl(var(--accent)), 0 0 10px hsl(var(--accent));
+      .glitch-text::before,
+      .glitch-text::after {
+        content: attr(data-text);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: inherit;
+      }
+      .glitch-text::before {
+        left: 2px;
+        text-shadow: -2px 0 hsl(var(--accent));
+        clip-path: inset(25% 0 70% 0);
+        animation: glitch 1.5s infinite linear alternate-reverse;
+      }
+      .glitch-text::after {
+        left: -2px;
+        text-shadow: 2px 0 hsl(var(--destructive));
+        clip-path: inset(5% 0 90% 0);
+        animation: glitch 2s infinite linear alternate-reverse;
       }
     `}</style>
     <div className="w-full max-w-lg flex flex-col items-center text-center">
-        <Logo className="h-16 w-16 mb-2" />
-        <h1 className="font-headline text-2xl font-bold tracking-widest text-foreground">NETRA-X</h1>
-        <div className="h-24 w-full text-left text-sm text-muted-foreground mt-8">
-            <p className="text-accent">> Booting main kernel...</p>
-            <p>> Decrypting secure modules...</p>
-            <p>> Authenticating user session...</p>
+        <Logo className="h-16 w-16" />
+        <h1 className="font-headline text-3xl font-bold tracking-widest text-foreground mt-4 relative glitch-text" data-text="NETRA-X">
+          NETRA-X
+        </h1>
+        <div className="h-24 w-full text-center text-sm text-muted-foreground mt-12">
+            <p className="text-accent">{loadingSteps[currentStep]}</p>
         </div>
         <div className="w-full pt-4 space-y-2">
-           <div className="glitch-bar">
-             <Progress value={progress} className="h-1.5 bg-accent/20" />
-           </div>
+           <Progress value={progress} className="h-1.5 bg-accent/20" />
            <p className="text-xs text-muted-foreground">
              SYSTEM STATUS: <span className="text-accent">OPERATIONAL</span>
            </p>
@@ -256,3 +289,4 @@ export default function SplashscreenShowcasePage() {
     </div>
   );
 }
+
