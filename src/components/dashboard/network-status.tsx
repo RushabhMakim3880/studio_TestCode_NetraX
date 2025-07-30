@@ -28,18 +28,26 @@ export function NetworkStatus() {
     const fetchNetworkStatus = async () => {
        try {
         const startTime = Date.now();
-        const ipResponse = await fetch(`https://api.ipify.org?format=json&cb=${new Date().getTime()}`, { cache: 'no-store' });
+        // Use a more robust API endpoint less likely to be blocked
+        const ipResponse = await fetch(`https://1.1.1.1/cdn-cgi/trace`, {
+            cache: 'no-store',
+            method: 'GET',
+            headers: { 'Accept': 'text/plain' },
+        });
         const endTime = Date.now();
         
         if (!ipResponse.ok) throw new Error('Failed to fetch IP');
         
-        const ipData = await ipResponse.json();
-        const geoData = await getGeoIpInfo(ipData.ip);
+        const traceText = await ipResponse.text();
+        const ipLine = traceText.split('\n').find(line => line.startsWith('ip='));
+        const ip = ipLine ? ipLine.split('=')[1] : 'Unknown';
+
+        const geoData = await getGeoIpInfo(ip);
         
         setStatus(prev => ({
             ...prev,
             isOnline: true,
-            ip: ipData.ip,
+            ip: ip,
             ping: endTime - startTime,
             geo: geoData.status === 'success' ? geoData : null,
         }));
@@ -47,8 +55,8 @@ export function NetworkStatus() {
       } catch (error) {
         console.error("Network check failed:", error);
         let errorMessage = "Network check failed";
-        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-            errorMessage = "Blocked by extension";
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            errorMessage = "Blocked by extension or CORS";
         }
         setStatus(prev => ({ ...prev, isOnline: false, ip: errorMessage, ping: null, geo: null }));
       } finally {
