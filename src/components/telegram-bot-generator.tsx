@@ -34,8 +34,9 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 # --- Configuration ---
 # Get these from environment variables for security
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
-# This is the public URL of your NETRA-X webhook (e.g., from ngrok)
-NETRAX_WEBHOOK_URL = os.getenv("NETRAX_WEBHOOK_URL", "YOUR_NETRAX_WEBHOOK_URL")
+# This is the public URL of your NETRA-X webhook (e.g., from ngrok or Vercel)
+# IMPORTANT: The URL must end with your bot token for validation.
+NETRAX_WEBHOOK_URL_BASE = os.getenv("NETRAX_WEBHOOK_URL_BASE", "https://your-app.vercel.app/api/c2/telegram/webhook")
 
 # --- Logging Setup ---
 logging.basicConfig(
@@ -78,25 +79,30 @@ async def handle_netra_command(update: Update, context: CallbackContext.DEFAULT_
 
     logger.info(f"Forwarding command from chat {chat_id}: {message_text}")
     
-    if not NETRAX_WEBHOOK_URL or "YOUR_NETRAX_WEBHOOK_URL" in NETRAX_WEBHOOK_URL:
-        await update.message.reply_text("Error: NETRAX_WEBHOOK_URL is not configured on the agent.")
+    # Construct the full webhook URL with the bot token for security
+    webhook_url = f"{NETRAX_WEBHOOK_URL_BASE}/{TELEGRAM_BOT_TOKEN}"
+    
+    if "YOUR_NETRAX_WEBHOOK_URL" in webhook_url:
+        await update.message.reply_text("Error: NETRAX_WEBHOOK_URL_BASE is not configured on the agent.")
         return
 
     headers = {
         "Content-Type": "application/json",
-        "X-Telegram-Bot-Token": TELEGRAM_BOT_TOKEN,
     }
     payload = {
-        "message": message_text,
-        "chat_id": chat_id,
+        "message": { # Mimic the Telegram update structure
+            "text": message_text,
+            "chat": {
+                "id": chat_id
+            }
+        }
     }
 
     try:
-        response = requests.post(NETRAX_WEBHOOK_URL, json=payload, headers=headers)
+        response = requests.post(webhook_url, json=payload, headers=headers)
         response.raise_for_status()  # Raises an exception for 4XX/5XX errors
         logger.info(f"Successfully sent command to NETRA-X. Status: {response.status_code}")
         # The response from the webhook is sent directly back to the user by NETRA-X
-        # so we don't need to do anything with the response body here.
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to send command to NETRA-X: {e}")
         await update.message.reply_text(f"Error: Could not contact the NETRA-X C2 server. Please check the webhook URL and server status.")
@@ -125,32 +131,6 @@ if __name__ == '__main__':
     main()
 `;
 
-const usageInstructions = `
-1.  **Install Libraries**:
-    \`\`\`bash
-    pip install python-telegram-bot requests
-    \`\`\`
-
-2.  **Get Bot Token**: Talk to @BotFather on Telegram to create a new bot and get its API token.
-
-3.  **Find Your NETRA-X Webhook URL**:
-    *   This is the public URL of your NETRA-X application, followed by \`/api/c2/telegram/webhook\`.
-    *   If you are running NETRA-X locally, you must use a tunneling service like **ngrok** to get a public URL. Example: \`https://your-ngrok-url.io/api/c2/telegram/webhook\`
-
-4.  **Set Environment Variables**: Before running the script, set the following environment variables in your terminal:
-    \`\`\`bash
-    export TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN_HERE"
-    export NETRAX_WEBHOOK_URL="YOUR_NETRAX_WEBHOOK_URL_HERE"
-    \`\`\`
-
-5.  **Run the Bot Agent**:
-    \`\`\`bash
-    python your_bot_name.py
-    \`\`\`
-
-6.  **Start Interaction**: Find your bot on Telegram, press "Start". It will give you your Chat ID, which you can use in the NETRA-X UI. Send commands like \`!ping\` to test the connection.
-`;
-
 export function TelegramBotGenerator() {
   const [result, setResult] = useState<GenerateTelegramBotOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -169,11 +149,10 @@ export function TelegramBotGenerator() {
     setResult(null);
     setError(null);
     try {
-      // The AI flow is just a pass-through in the local version now.
       const response = await generateTelegramBot(values);
       setResult({
           pythonCode: botTemplate.trim(),
-          usageInstructions: usageInstructions.trim(),
+          usageInstructions: "See the updated setup guide.", // Placeholder, the accordion contains the real instructions
       });
     } catch (err) {
       setError('Failed to generate bot code. The AI may have refused the request due to safety policies.');
@@ -242,25 +221,30 @@ export function TelegramBotGenerator() {
                       <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">pip install python-telegram-bot requests</pre>
                     </li>
                     <li>
-                      <strong>Get Bot Token:</strong> Open Telegram and talk to <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-accent underline">@BotFather</a>. Create a new bot to get its unique API token.
+                      <strong>Get Bot Token:</strong> Talk to @BotFather on Telegram to create a new bot and get its unique API token.
                     </li>
                     <li>
-                      <strong>Get NETRA-X Webhook URL:</strong> This is the public URL of your NETRA-X app. If you're running locally, you must expose it to the internet using a tool like <a href="https://ngrok.com/" target="_blank" rel="noopener noreferrer" className="text-accent underline">ngrok</a>. Your final URL will look like this:
-                      <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">https://your-public-url.io/api/c2/telegram/webhook</pre>
+                      <strong>Get NETRA-X Webhook Base URL**:</strong> This is the public URL of your application. For example: `https://netra-x.vercel.app`
                     </li>
                      <li>
                       <strong>Set Environment Variables:</strong> Before running the script, set these variables in your terminal. This is more secure than hard-coding them.
                       <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">
                         export TELEGRAM_BOT_TOKEN="YOUR_TOKEN_HERE"<br/>
-                        export NETRAX_WEBHOOK_URL="YOUR_WEBHOOK_URL_HERE"
+                        export NETRAX_WEBHOOK_URL_BASE="https://your-app.vercel.app/api/c2/telegram/webhook"
                       </pre>
                     </li>
                     <li>
-                      <strong>Run the Agent:</strong> Save the generated code as a Python file (e.g., `agent.py`) and run it.
+                      <strong>Set the Webhook with Telegram:</strong> Open a browser and visit this URL, replacing the placeholders. This tells Telegram where to send updates.
+                      <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono break-all">
+                        https://api.telegram.org/bot&lt;YOUR_TOKEN&gt;/setWebhook?url=https://your-app.vercel.app/api/c2/telegram/webhook/&lt;YOUR_TOKEN&gt;
+                      </pre>
+                    </li>
+                    <li>
+                      <strong>Run the Agent:</strong> Save the generated code as a Python file (e.g., `agent.py`) and run it on a server.
                       <pre className="bg-background p-2 mt-1 rounded-md text-xs font-mono">python agent.py</pre>
                     </li>
                      <li>
-                      <strong>Interact:</strong> Find your bot on Telegram and send `/start`. It will reply with your Chat ID. Use this ID in the "Send Payload" form to send messages from NETRA-X. Send commands like `!ping` from Telegram to test the two-way connection.
+                      <strong>Interact:</strong> Find your bot on Telegram and send `/start`. It will reply with your Chat ID, which you can use in the NETRA-X UI. Send commands like `!ping` to test the connection.
                     </li>
                   </ol>
                 </AccordionContent>
@@ -278,7 +262,6 @@ export function TelegramBotGenerator() {
                 </Button>
              </div>
         </div>
-
       </CardContent>
     </Card>
   );
