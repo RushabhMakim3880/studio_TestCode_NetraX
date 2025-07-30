@@ -103,6 +103,42 @@ const RetroTermSplashScreen = () => (
     </div>
 );
 
+const OperatorV2SplashScreen = () => (
+  <div className="relative h-full w-full flex flex-col items-center justify-center bg-[#0A0E1A] p-4 font-mono overflow-hidden">
+    <style jsx>{`
+      @keyframes glitch-effect {
+        0% { transform: translate(0); }
+        20% { transform: translate(-2px, 2px); }
+        40% { transform: translate(-2px, -2px); }
+        60% { transform: translate(2px, 2px); }
+        80% { transform: translate(2px, -2px); }
+        100% { transform: translate(0); }
+      }
+      .glitch-bar > div {
+        animation: glitch-effect 0.5s infinite;
+        text-shadow: 0 0 5px hsl(var(--accent)), 0 0 10px hsl(var(--accent));
+      }
+    `}</style>
+    <div className="w-full max-w-lg flex flex-col items-center text-center">
+        <Logo className="h-16 w-16 mb-2" />
+        <h1 className="font-headline text-2xl font-bold tracking-widest text-foreground">NETRA-X</h1>
+        <div className="h-24 w-full text-left text-sm text-muted-foreground mt-8">
+            <p className="text-accent">> Booting main kernel...</p>
+            <p>> Decrypting secure modules...</p>
+            <p>> Authenticating user session...</p>
+        </div>
+        <div className="w-full pt-4 space-y-2">
+           <div className="glitch-bar">
+             <Progress value={60} className="h-1.5 bg-accent/20" />
+           </div>
+           <p className="text-xs text-muted-foreground">
+             SYSTEM STATUS: <span className="text-accent">OPERATIONAL</span>
+           </p>
+        </div>
+    </div>
+  </div>
+);
+
 
 export default function SplashscreenShowcasePage() {
   return (
@@ -143,8 +179,13 @@ export default function SplashscreenShowcasePage() {
                   <RetroTermSplashScreen />
               </CardContent>
           </Card>
+           <Card>
+              <CardHeader><CardTitle>6. Operator V2 (Re-imagined)</CardTitle></CardHeader>
+              <CardContent className="aspect-video">
+                  <OperatorV2SplashScreen />
+              </CardContent>
+          </Card>
       </div>
     </div>
   );
 }
-
