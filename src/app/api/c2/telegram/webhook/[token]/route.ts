@@ -15,9 +15,9 @@ type CommandResponse = {
 
 // A simple command router to execute actions based on the message text.
 async function handleCommand(command: string, args: string[]): Promise<CommandResponse> {
-    switch (command) {
+    switch (command.toLowerCase()) {
         case '!ping':
-            return { success: true, message: 'Pong!' };
+            return { success: true, message: 'Pong! The NETRA-X C2 is active.' };
 
         case '!subdomainscan':
             if (args.length === 0) return { success: false, message: 'Usage: !subdomainscan <domain>' };
@@ -40,8 +40,17 @@ async function handleCommand(command: string, args: string[]): Promise<CommandRe
                 return { success: false, message: `DNS lookup failed: ${e.message}` };
             }
 
+        case '!help':
+            const helpText = `
+NETRA-X C2 Bot Commands:
+- !ping: Check if the bot is responsive.
+- !subdomainscan <domain>: Find subdomains.
+- !dnslookup <domain> <type>: Perform a DNS lookup (e.g., A, MX, TXT).
+`;
+            return { success: true, message: helpText.trim() };
+
         default:
-            return { success: false, message: `Unknown command: ${command}` };
+            return { success: false, message: `Unknown command: ${command}. Type !help for a list of commands.` };
     }
 }
 
