@@ -48,9 +48,11 @@ async function handleCommand(command: string, args: string[]): Promise<CommandRe
 
 export async function POST(req: NextRequest, { params }: { params: { token: string }}) {
     const token = params.token;
-
+    
+    // IMPORTANT: A real production app should have a more secure way
+    // to validate the webhook, like checking against a securely stored token.
     if (!token) {
-        return NextResponse.json({ error: 'Bot token is required in the URL path.' }, { status: 401 });
+        return NextResponse.json({ error: 'Webhook misconfigured.' }, { status: 401 });
     }
 
     try {
