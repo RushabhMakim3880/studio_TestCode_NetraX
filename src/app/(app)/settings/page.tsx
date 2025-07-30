@@ -4,7 +4,6 @@
 import { useAuth } from '@/hooks/use-auth';
 import { AppearanceSettings } from '@/components/appearance-settings';
 import { CompanyProfileManager } from '@/components/company-profile-manager';
-import { CustomThemeGenerator } from '@/components/custom-theme-generator';
 import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
 import { PageSettingsManager } from '@/components/settings/page-settings-manager';
@@ -110,23 +109,6 @@ export default function SettingsPage() {
             </AccordionContent>
         </AccordionItem>
         
-        <AccordionItem value="theme-generator">
-            <AccordionTrigger>
-                <div className="flex items-center gap-3">
-                    <Palette className="h-6 w-6" />
-                    <div className="text-left">
-                        <p className="font-semibold">Custom Theme Generator</p>
-                        <p className="text-sm text-muted-foreground font-normal">Generate a UI theme from an image palette.</p>
-                    </div>
-                </div>
-            </AccordionTrigger>
-            <AccordionContent>
-                <div className="p-4 border-t">
-                    <CustomThemeGenerator />
-                </div>
-            </AccordionContent>
-        </AccordionItem>
-
         {user.role === 'Admin' && (
           <AccordionItem value="company-branding">
               <AccordionTrigger>
