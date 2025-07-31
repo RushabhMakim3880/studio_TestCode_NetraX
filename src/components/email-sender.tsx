@@ -17,7 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { generatePhishingEmail, type PhishingOutput } from '@/ai/flows/phishing-flow';
 import { sendTestEmail, type SmtpConfig } from '@/actions/send-email-action';
-import { useToast } from './hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
