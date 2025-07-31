@@ -30,6 +30,7 @@ const TelegramPayloadInputSchema = z.object({
   chatId: z.string().min(1).describe('The target Telegram Chat ID.'),
   message: z.string().min(1).describe('The message or payload to send.'),
   otherParams: z.any().optional(),
+  method: z.enum(['sendMessage', 'editMessageText']).optional(),
 });
 export type TelegramPayloadInput = z.infer<typeof TelegramPayloadInputSchema>;
 
@@ -78,7 +79,8 @@ export async function connectTelegramBot(input: TelegramConnectInput): Promise<T
 }
 
 export async function sendTelegramPayload(input: TelegramPayloadInput): Promise<TelegramPayloadOutput> {
-  const url = `https://api.telegram.org/bot${input.token}/sendMessage`;
+  const telegramMethod = input.method || 'sendMessage';
+  const url = `https://api.telegram.org/bot${input.token}/${telegramMethod}`;
   
   try {
     const response = await fetch(url, {
