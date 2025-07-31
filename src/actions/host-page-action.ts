@@ -1,40 +1,35 @@
 
 'use server';
 
-import { promises as fs } from 'fs';
-import path from 'path';
+import { db } from '@/services/firebase';
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 /**
- * Saves HTML content to a file on the server's filesystem under a unique ID.
- * This is a more robust approach than relying on client-side storage or ngrok for hosting.
+ * Saves HTML content to a Firestore document.
+ * This is a robust method for Vercel's serverless environment.
  * @param htmlContent - The HTML string to save.
- * @returns The unique ID for the saved document.
+ * @returns The unique ID for the saved Firestore document.
  */
 export async function hostPageOnServer(htmlContent: string): Promise<string> {
     if (!htmlContent) {
         throw new Error('No HTML content provided.');
     }
     
+    if (!db) {
+        throw new Error('Firebase Firestore is not configured on the server. Cannot host page.');
+    }
+
     try {
-        // Generate a unique ID for the page file
-        const pageId = crypto.randomUUID();
-        const fileName = `${pageId}.html`;
+        const docRef = await addDoc(collection(db, "hostedPages"), {
+            htmlContent: htmlContent,
+            createdAt: serverTimestamp(),
+        });
 
-        // Ensure the `hosted_pages` directory exists in the project root
-        const dirPath = path.join(process.cwd(), 'hosted_pages');
-        await fs.mkdir(dirPath, { recursive: true });
-
-        const filePath = path.join(dirPath, fileName);
-        
-        // Write the HTML content to the file
-        await fs.writeFile(filePath, htmlContent, 'utf-8');
-
-        // Return the ID so the client can construct the public URL
-        return pageId;
+        return docRef.id;
 
     } catch (error) {
-        console.error("Failed to host page on server:", error);
+        console.error("Failed to host page on Firestore:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
-        throw new Error(`Could not save the page to the server: ${message}`);
+        throw new Error(`Could not save the page to the database: ${message}`);
     }
 }

@@ -14,8 +14,6 @@ import type { JsPayload } from '@/types';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { EmailSender } from '@/components/email-sender';
-import { hostPageOnServer } from '@/actions/host-page-action';
-
 
 const storageKey = 'netra-captured-credentials';
 
