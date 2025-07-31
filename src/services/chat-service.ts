@@ -17,8 +17,8 @@ export type MessageType = 'text' | 'image' | 'audio' | 'file';
 export type Message = {
   id?: string;
   conversationId: string;
-  sender: Pick<User, 'username' | 'displayName' | 'avatarUrl'>;
-  receiver: Pick<User, 'username' | 'displayName' | 'avatarUrl'>;
+  sender: Pick<User, 'uid' | 'username' | 'displayName' | 'avatarUrl'>;
+  receiver: Pick<User, 'uid' | 'username' | 'displayName' | 'avatarUrl'>;
   type: MessageType;
   content: string; // text content or download URL for files
   fileName?: string;
@@ -38,7 +38,6 @@ export const listenForMessages = (
 ) => {
   if (!db) return () => {}; // Return a no-op unsubscribe function if db is not available
   
-  // Removed orderBy to prevent the index error. Sorting will be done on the client.
   const q = query(
     collection(db, 'messages'),
     where('conversationId', '==', conversationId)
@@ -73,11 +72,13 @@ export const sendTextMessage = async (
     await addDoc(collection(db, 'messages'), {
         conversationId,
         sender: {
+          uid: sender.uid,
           username: sender.username,
           displayName: sender.displayName || sender.username,
           avatarUrl: sender.avatarUrl || null,
         },
         receiver: {
+            uid: receiver.uid,
             username: receiver.username,
             displayName: receiver.displayName || receiver.username,
             avatarUrl: receiver.avatarUrl || null,
@@ -118,8 +119,8 @@ export const sendFileMessage = (
 
                 await addDoc(collection(db, 'messages'), {
                     conversationId,
-                     sender: { username: sender.username, displayName: sender.displayName || sender.username, avatarUrl: sender.avatarUrl || null },
-                     receiver: { username: receiver.username, displayName: receiver.displayName || receiver.username, avatarUrl: receiver.avatarUrl || null },
+                     sender: { uid: sender.uid, username: sender.username, displayName: sender.displayName || sender.username, avatarUrl: sender.avatarUrl || null },
+                     receiver: { uid: receiver.uid, username: receiver.username, displayName: receiver.displayName || receiver.username, avatarUrl: receiver.avatarUrl || null },
                     type: fileType,
                     content: dataUrl,
                     fileName: file.name,
