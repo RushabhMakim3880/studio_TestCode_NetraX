@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, Clipboard, Info, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { startNgrokTunnel } from '@/services/ngrok-service';
 
 const BOT_FATHER_URL = 'https://t.me/BotFather';
 
@@ -17,10 +18,11 @@ export function TelegramSetupGuide() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const tokenPlaceholder = '{YOUR_BOT_TOKEN}';
-      const baseUrl = `${window.location.origin}/api/c2/telegram/webhook/${tokenPlaceholder}`;
-      setWebhookUrl(baseUrl);
-      setRegistrationUrl(`https://api.telegram.org/bot${tokenPlaceholder}/setWebhook?url=${baseUrl}`);
+        const tokenPlaceholder = '{YOUR_BOT_TOKEN}';
+        const hostname = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : window.location.origin;
+        const baseUrl = `${hostname}/api/c2/telegram/webhook/${tokenPlaceholder}`;
+        setWebhookUrl(baseUrl);
+        setRegistrationUrl(`https://api.telegram.org/bot${tokenPlaceholder}/setWebhook?url=${baseUrl}`);
     }
   }, []);
 

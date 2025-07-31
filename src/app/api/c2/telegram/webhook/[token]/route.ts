@@ -7,8 +7,6 @@ import { dnsLookup } from '@/actions/osint-actions';
 import { generatePhishingEmail } from '@/ai/flows/phishing-flow';
 import { whoisLookup } from '@/actions/osint-actions';
 
-const PAYLOAD_LINK = process.env.PAYLOAD_LINK || "YOUR_APK_LINK_PLACEHOLDER";
-
 type CommandResponse = {
     text: string;
     parse_mode?: 'Markdown' | 'HTML';
@@ -116,7 +114,6 @@ async function processConversation(state: { command: string, step: number, data:
                     return { text: message, parse_mode: 'Markdown' };
                 } catch (e: any) { return { text: `Error: ${e.message}` }; }
             }
-             return { text: 'Invalid step in subdomain scan conversation.' };
         },
         'dns': async () => {
              if (state.step === 1) {
@@ -134,7 +131,6 @@ async function processConversation(state: { command: string, step: number, data:
                     return { text: message, parse_mode: 'Markdown' };
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
-            return { text: 'Invalid step in DNS lookup conversation.' };
         },
         'whois': async () => {
              if (state.step === 1) {
@@ -149,7 +145,6 @@ async function processConversation(state: { command: string, step: number, data:
                     return { text: `*WHOIS Record for ${args[0]}:*\n\`\`\`\n${result}\n\`\`\``, parse_mode: 'Markdown' };
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
-            return { text: 'Invalid step in WHOIS lookup conversation.' };
         },
         'ai': async () => { // Phishing AI
             if (state.step === 1) {
@@ -168,17 +163,17 @@ async function processConversation(state: { command: string, step: number, data:
                     };
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
-            return { text: 'Invalid step in AI phishing conversation.' };
         }
     };
     
     const processor = commandProcessor[state.command as keyof typeof commandProcessor];
     if (processor) {
-        return await processor();
+        const response = await processor();
+        if (response) return response;
     }
 
     delete conversationState[chatId];
-    return { text: 'Something went wrong. Please start over with /start.' };
+    return { text: 'An unexpected error occurred. Please start over with /start.' };
 }
 
 
