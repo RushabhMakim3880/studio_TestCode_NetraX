@@ -6,7 +6,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 // This is a dynamic route handler, so we should not cache it.
-export const revalidate = 0;
+// Note: `export const revalidate = 0;` is not needed here as API routes are dynamic by default.
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
     const id = params.id;
