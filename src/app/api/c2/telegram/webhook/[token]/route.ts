@@ -97,7 +97,7 @@ async function handleCommand(command: string, args: string[]): Promise<CommandRe
 // Processes multi-step conversational commands
 async function processConversation(state: { command: string, step: number, data: any }, args: string[], chatId: string): Promise<CommandResponse> {
     const commandProcessor = {
-        'subdomain': async () => {
+        'subdomain': async (): Promise<CommandResponse | void> => {
             if (state.step === 1) {
                 state.step = 2;
                 return { text: 'Please enter the domain to scan for subdomains:' };
@@ -115,7 +115,7 @@ async function processConversation(state: { command: string, step: number, data:
                 } catch (e: any) { return { text: `Error: ${e.message}` }; }
             }
         },
-        'dns': async () => {
+        'dns': async (): Promise<CommandResponse | void> => {
              if (state.step === 1) {
                 state.step = 2;
                 return { text: 'Please enter domain and record type (e.g., `google.com MX`):' };
@@ -132,7 +132,7 @@ async function processConversation(state: { command: string, step: number, data:
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
         },
-        'whois': async () => {
+        'whois': async (): Promise<CommandResponse | void> => {
              if (state.step === 1) {
                 state.step = 2;
                 return { text: 'Please enter the domain for WHOIS lookup:' };
@@ -146,7 +146,7 @@ async function processConversation(state: { command: string, step: number, data:
                 } catch(e: any) { return { text: `Error: ${e.message}` }; }
             }
         },
-        'ai': async () => { // Phishing AI
+        'ai': async (): Promise<CommandResponse | void> => { // Phishing AI
             if (state.step === 1) {
                 state.step = 2;
                 return { text: 'Describe the phishing scenario (e.g., "Urgent invoice for accountant at Google"):' };
