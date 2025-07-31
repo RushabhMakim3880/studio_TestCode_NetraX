@@ -1,19 +1,19 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Hosted phishing pages can be read by anyone, but only created/written by authenticated users.
+    // Hosted phishing pages can be read by anyone, but only created/updated by authenticated users.
     match /hostedPages/{pageId} {
-      allow get: if true;
-      allow list, write: if request.auth != null;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
-    // Chat messages can only be read or written by the sender or receiver of the message.
-    // This rule compares the email from the auth token with the emails stored in the message document.
+    // Chat messages can only be read or written by the sender or receiver,
+    // identified by their email address which is present in the auth token.
     match /messages/{messageId} {
       allow read, write: if request.auth != null && 
-        (request.auth.token.email == resource.data.sender.username || request.auth.token.email == resource.data.receiver.username);
+                           (request.auth.token.email == resource.data.sender.email || 
+                            request.auth.token.email == resource.data.receiver.email);
     }
   }
 }
