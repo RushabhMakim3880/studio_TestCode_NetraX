@@ -13,9 +13,9 @@ import type { JsPayload } from '@/types';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { EmailSender } from '@/components/email-sender';
-import { startNgrokTunnel } from '@/services/ngrok-service';
 import { hostPageOnServer } from '@/actions/host-page-action';
 import { QrCodeGenerator } from '@/components/qr-code-generator';
+import { JavaScriptLibrary } from '@/components/javascript-library';
 
 const storageKey = 'netra-captured-credentials';
 
