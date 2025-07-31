@@ -6,7 +6,7 @@ import { EmailSettings } from '@/components/email-settings';
 import { ApiKeysManager } from '@/components/api-keys-manager';
 import { PageSettingsManager } from '@/components/settings/page-settings-manager';
 import { LocalAiSettings } from '@/components/local-ai-settings';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Accordion } from '@/components/ui/accordion';
 import { OffensiveSettings } from '@/components/settings/offensive-settings';
 import { ScanningSettings } from '@/components/settings/scanning-settings';
 import { ReportingSettings } from '@/components/settings/reporting-settings';
@@ -14,7 +14,6 @@ import { GlobalAppSettings } from '@/components/settings/global-app-settings';
 import { SecuritySettings } from '@/components/settings/security-settings';
 import { DataPrivacySettings } from '@/components/settings/data-privacy-settings';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
-import { BrainCircuit, KeyRound, Mail, Palette } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -37,57 +36,9 @@ export default function SettingsPage() {
         <GlobalAppSettings />
         <DataPrivacySettings />
         <NotificationsSettings />
-        
-        <AccordionItem value="api-keys">
-            <AccordionTrigger>
-                <div className="flex items-center gap-3">
-                    <KeyRound className="h-6 w-6" />
-                    <div className="text-left">
-                        <p className="font-semibold">API Key Management</p>
-                        <p className="text-sm text-muted-foreground font-normal">Manage third-party API keys for integrated tools.</p>
-                    </div>
-                </div>
-            </AccordionTrigger>
-            <AccordionContent>
-                <div className="p-4 border-t">
-                    <ApiKeysManager />
-                </div>
-            </AccordionContent>
-        </AccordionItem>
-        
-        <AccordionItem value="local-ai-settings">
-          <AccordionTrigger>
-            <div className="flex items-center gap-3">
-              <BrainCircuit className="h-6 w-6" />
-              <div className="text-left">
-                <p className="font-semibold">Local AI Provider</p>
-                <p className="text-sm text-muted-foreground font-normal">Configure a local Ollama instance for AI tasks.</p>
-              </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="p-4 border-t">
-              <LocalAiSettings />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem value="email-settings">
-            <AccordionTrigger>
-                <div className="flex items-center gap-3">
-                    <Mail className="h-6 w-6" />
-                    <div className="text-left">
-                        <p className="font-semibold">Email SMTP Settings</p>
-                        <p className="text-sm text-muted-foreground font-normal">Configure SMTP for sending email invites and reports.</p>
-                    </div>
-                </div>
-            </AccordionTrigger>
-            <AccordionContent>
-                <div className="p-4 border-t">
-                    <EmailSettings />
-                </div>
-            </AccordionContent>
-        </AccordionItem>
+        <ApiKeysManager />
+        <LocalAiSettings />
+        <EmailSettings />
       </Accordion>
       
     </div>

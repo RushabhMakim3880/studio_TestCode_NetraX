@@ -8,8 +8,6 @@ import { app as firebaseApp, db } from '@/services/firebase';
 // This route serves the hosted phishing pages.
 // It fetches the HTML content from Firestore based on the ID in the URL.
 
-export const revalidate = 0; // Ensure fresh data on every request
-
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
     const id = params.id;
     if (!id) {
