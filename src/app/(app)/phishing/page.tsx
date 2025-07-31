@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CapturedCredential } from '@/components/credential-harvester';
 import { useToast } from '@/hooks/use-toast';
 import { CredentialHarvester } from '@/components/credential-harvester';
@@ -13,7 +13,9 @@ import type { JsPayload } from '@/types';
 import { logActivity } from '@/services/activity-log-service';
 import { useAuth } from '@/hooks/use-auth';
 import { EmailSender } from '@/components/email-sender';
-import { JavaScriptLibrary } from '@/components/javascript-library';
+import { startNgrokTunnel } from '@/services/ngrok-service';
+import { hostPageOnServer } from '@/actions/host-page-action';
+import { QrCodeGenerator } from '@/components/qr-code-generator';
 
 const storageKey = 'netra-captured-credentials';
 
@@ -22,7 +24,6 @@ export default function PhishingPage() {
   const { user } = useAuth();
   const [capturedCredentials, setCapturedCredentials] = useState<CapturedCredential[]>([]);
   
-  // Find the default recon payload to pre-select it
   const defaultPayload = PREMADE_PAYLOADS.find(p => p.name === "Full Recon Payload") || PREMADE_PAYLOADS[0];
   const [selectedPayload, setSelectedPayload] = useState<JsPayload>(defaultPayload);
   
