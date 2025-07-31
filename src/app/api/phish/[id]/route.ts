@@ -6,7 +6,6 @@ import { db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 // This is a dynamic route handler.
-export const revalidate = 0;
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
     const id = params.id;
