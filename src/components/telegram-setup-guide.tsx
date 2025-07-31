@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, Clipboard, Info, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { startNgrokTunnel } from '@/services/ngrok-service';
 
 const BOT_FATHER_URL = 'https://t.me/BotFather';
 
