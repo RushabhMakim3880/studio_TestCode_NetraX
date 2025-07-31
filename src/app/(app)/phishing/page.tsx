@@ -9,7 +9,7 @@ import { QrCodeGenerator } from '@/components/qr-code-generator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2, Save, Trash2 } from 'lucide-react';
+import { Loader2, Clipboard, Globe, Wand, StopCircle, Share2, Save, Trash2, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { logActivity } from '@/services/activity-log-service';
 import { useForm } from 'react-hook-form';
@@ -218,9 +218,9 @@ export default function PhishingPage() {
       // Inject <base> tag to fix relative links
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
-          html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
+          html = html.replace(/<head>/i, \`<head>\\n<base href="${baseHrefUrl}">\`);
         } else {
-          html = `<head><base href="${baseHrefUrl}"></head>${html}`;
+          html = \`<head><base href="${baseHrefUrl}"></head>\${html}\`;
         }
       }
 
@@ -247,20 +247,25 @@ export default function PhishingPage() {
     setHostedUrl(null);
     
     try {
-        const pageId = crypto.randomUUID();
-        const pageStorageKey = `phishing-html-${pageId}`;
-        localStorage.setItem(pageStorageKey, modifiedHtml);
+        const { url: relativeUrl } = await hostTestPage(modifiedHtml);
+        const pageId = relativeUrl.split('/').pop();
 
-        const finalUrl = `${window.location.origin}/phish/${pageId}`;
-        setHostedUrl(finalUrl);
-        toast({ title: "Local Link Generated!", description: "Your phishing page is now accessible." });
+        if (pageId) {
+            const pageStorageKey = `phishing-html-${pageId}`;
+            localStorage.setItem(pageStorageKey, modifiedHtml);
+            const finalUrl = `${window.location.origin}${relativeUrl}`;
+            setHostedUrl(finalUrl);
+            toast({ title: "Local Link Generated!", description: "Your phishing page is now accessible." });
 
-        const urlToClone = form.getValues('urlToClone');
-        logActivity({
-            user: user?.displayName || 'Operator',
-            action: 'Generated Phishing Link',
-            details: `Source: ${urlToClone || 'Pasted HTML'}`,
-        });
+            const urlToClone = form.getValues('urlToClone');
+            logActivity({
+                user: user?.displayName || 'Operator',
+                action: 'Generated Phishing Link',
+                details: `Source: ${urlToClone || 'Pasted HTML'}`,
+            });
+        } else {
+            throw new Error("Could not generate a valid page ID.");
+        }
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
         toast({ variant: 'destructive', title: 'Hosting Failed', description: error });
@@ -400,7 +405,7 @@ export default function PhishingPage() {
                         <div className="w-full flex gap-2">
                             <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                                 {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                                Generate Local Link
+                                Generate Public Link
                             </Button>
                              <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
                                 <DialogTrigger asChild>
@@ -431,22 +436,23 @@ export default function PhishingPage() {
             </Card>
           
           {hostedUrl && (
-             <div className="grid md:grid-cols-2 gap-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Hosted Page URL</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex w-full items-center gap-2">
-                            <Input readOnly value={hostedUrl} className="font-mono" />
-                            <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
-                                <Clipboard className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-                <QrCodeGenerator url={hostedUrl} />
-             </div>
+             <Card>
+               <CardHeader>
+                 <CardTitle>Hosted Page URL</CardTitle>
+                 <CardDescription>Your phishing page is live. Use the URL or QR code below.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="flex w-full items-center gap-2">
+                   <Input readOnly value={hostedUrl} className="font-mono" />
+                   <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
+                     <Clipboard className="h-4 w-4" />
+                   </Button>
+                 </div>
+                 <div className="flex justify-center">
+                   <QrCodeGenerator url={hostedUrl} />
+                 </div>
+               </CardContent>
+             </Card>
            )}
 
             <Card>

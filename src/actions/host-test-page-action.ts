@@ -12,18 +12,12 @@ import path from 'path';
  */
 export async function hostTestPage(htmlContent: string): Promise<{ url: string }> {
   try {
-    // Ensure the directory for hosted pages exists. This is now a private directory.
-    const hostedDir = path.join(process.cwd(), 'hosted_pages');
-    await fs.mkdir(hostedDir, { recursive: true });
+    // This server-side part is now simplified. It just needs to generate a unique ID.
+    // The actual storage will happen on the client-side.
+    const filename = `${crypto.randomUUID()}`;
 
-    const filename = `${crypto.randomUUID()}.html`;
-    const filePath = path.join(hostedDir, filename);
-
-    // Write the HTML content to the file.
-    await fs.writeFile(filePath, htmlContent, 'utf-8');
-
-    // The URL now points to our new public route handler.
-    const publicUrl = `/hosted/${filename}`;
+    // The URL now points to our new public rendering page.
+    const publicUrl = `/phish/${filename}`;
     
     return { url: publicUrl };
 
