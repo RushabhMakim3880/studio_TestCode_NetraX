@@ -19,6 +19,7 @@ export type Message = {
   conversationId: string;
   sender: Pick<User, 'uid' | 'username' | 'displayName' | 'avatarUrl'>;
   receiver: Pick<User, 'uid' | 'username' | 'displayName' | 'avatarUrl'>;
+  participants: string[]; // Array of UIDs for sender and receiver
   type: MessageType;
   content: string; // text content or download URL for files
   fileName?: string;
@@ -83,6 +84,7 @@ export const sendTextMessage = async (
             displayName: receiver.displayName || receiver.username,
             avatarUrl: receiver.avatarUrl || null,
         },
+        participants: [sender.uid, receiver.uid], // Added for security rules
         type: 'text',
         content,
         timestamp: Timestamp.now(),
@@ -121,6 +123,7 @@ export const sendFileMessage = (
                     conversationId,
                      sender: { uid: sender.uid, username: sender.username, displayName: sender.displayName || sender.username, avatarUrl: sender.avatarUrl || null },
                      receiver: { uid: receiver.uid, username: receiver.username, displayName: receiver.displayName || receiver.username, avatarUrl: receiver.avatarUrl || null },
+                    participants: [sender.uid, receiver.uid], // Added for security rules
                     type: fileType,
                     content: dataUrl,
                     fileName: file.name,
