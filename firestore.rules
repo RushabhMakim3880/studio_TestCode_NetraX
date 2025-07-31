@@ -3,20 +3,23 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Public read-only access for hosted phishing pages
+  
+    // Allow public read access for hosted phishing pages
     match /hostedPages/{pageId} {
-      allow get: if true;
-      allow list, create, update, delete: if request.auth != null;
+      allow read: if true;
+      allow write: if request.auth != null; // Only authenticated users can write
     }
 
-    // Chat messages can only be queried by participants, and only read/written by them.
+    // Secure chat messages
     match /messages/{messageId} {
-      allow read, write: if request.auth != null && request.auth.uid in resource.data.participants;
-    }
-
-    // Default deny all other document access
-    match /{document=**} {
-      allow read, write: if false;
+      // Allow read access if the user's UID is in the participants array
+      allow read: if request.auth != null && request.auth.uid in resource.data.participants;
+      
+      // Allow create access if the user is the sender
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.sender.uid;
+      
+      // Do not allow update or delete for message immutability
+      allow update, delete: if false;
     }
   }
 }

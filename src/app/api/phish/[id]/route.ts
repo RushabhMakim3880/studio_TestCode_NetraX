@@ -2,11 +2,11 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { app as firebaseApp, db } from '@/services/firebase';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-// This route serves the hosted phishing pages.
-// It fetches the HTML content from Firestore based on the ID in the URL.
+// This is a dynamic route handler, so we should not cache it.
+export const revalidate = 0;
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
     const id = params.id;
@@ -14,38 +14,27 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         console.warn("Phishing page request missing ID.");
         return new NextResponse('Missing page ID.', { status: 400 });
     }
-
-    if (!db) {
-        console.error("Firestore is not initialized. Cannot serve phishing page.");
-        return new NextResponse('Server configuration error.', { status: 500 });
-    }
+    
+    // Construct a safe path to the file.
+    // This prevents directory traversal attacks.
+    const safeFilename = path.basename(id);
+    const filePath = path.join(process.cwd(), 'hosted_pages', `${safeFilename}.html`);
 
     try {
-        const docRef = doc(db, 'hostedPages', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const htmlContent = docSnap.data().htmlContent;
-            if (typeof htmlContent !== 'string') {
-                 console.error(`Firestore document for page ID ${id} is missing 'htmlContent' field.`);
-                 return new NextResponse('Invalid page content.', { status: 500 });
-            }
-            return new NextResponse(htmlContent, {
-                status: 200,
-                headers: { 
-                    'Content-Type': 'text/html; charset=utf-8',
-                    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0',
-                },
-            });
-        } else {
-            console.warn(`Phishing page with ID not found in Firestore: ${id}`);
-            // Return a generic 404 to avoid leaking information about valid/invalid IDs
-            return new NextResponse('Not Found', { status: 404 });
-        }
+        await fs.access(filePath); // Check if file exists
+        const htmlContent = await fs.readFile(filePath, 'utf-8');
+        return new NextResponse(htmlContent, {
+            status: 200,
+            headers: { 
+                'Content-Type': 'text/html; charset=utf-8',
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            },
+        });
     } catch (error) {
-        console.error(`Error fetching phishing page ${id}:`, error);
-        return new NextResponse('Internal Server Error', { status: 500 });
+        console.error(`Error serving page ${id}:`, error);
+        // If file doesn't exist (ENOENT) or any other error, return a generic 404.
+        return new NextResponse('Not Found', { status: 404 });
     }
 }
