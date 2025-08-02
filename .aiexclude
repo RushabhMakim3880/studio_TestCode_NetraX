@@ -1,0 +1,43 @@
+# Exclude node_modules and build outputs
+node_modules/
+dist/
+build/
+.next/
+.out/
+
+# Exclude environment variables and secrets
+.env
+.env.*
+.secrets.json
+
+# Exclude AI prompt logs or feedback data
+prompts/
+ai_logs/
+*.prompt.json
+*.feedback.json
+
+# Exclude large files and assets
+*.zip
+*.mp4
+*.png
+*.jpg
+*.jpeg
+*.gif
+public/assets/
+static/
+
+# Exclude testing files
+__tests__/
+*.test.*
+*.spec.*
+
+# Exclude config files not relevant to model
+tsconfig.json
+tailwind.config.ts
+next.config.ts
+vite.config.ts
+
+# Exclude anything temporary
+*.tmp
+*.log
+.DS_Store
